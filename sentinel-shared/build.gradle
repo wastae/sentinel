@@ -1,0 +1,43 @@
+/*
+ * Copyright © 2018 Frederik Mikkelsen <fred at frederikam.com>
+ * FredBoat microservice for handling JDA and Lavalink over RabbitMQ.
+ *
+ * This program is licensed under GNU AGPLv3 under no warranty.
+ */
+
+buildscript {
+    ext.kotlin_version = '1.3.20'
+
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+group 'com.fredboat'
+version '0.1'
+
+apply plugin: 'java'
+apply plugin: 'kotlin'
+apply plugin: 'maven'
+apply plugin: "maven-publish"
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
