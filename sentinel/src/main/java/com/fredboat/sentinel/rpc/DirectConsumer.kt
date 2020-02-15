@@ -46,6 +46,7 @@ class DirectConsumer(
     @RabbitHandler fun consume(request: SendEmbedRequest) = message.consume(request)
     @RabbitHandler fun consume(request: SendPrivateMessageRequest) = message.consume(request)
     @RabbitHandler fun consume(request: EditMessageRequest) = message.consume(request)
+	@RabbitHandler fun consume(request: EditEmbedRequest) = message.consume(request)
     @RabbitHandler fun consume(request: MessageDeleteRequest) = message.consume(request)
     @RabbitHandler fun consume(request: SendTypingRequest) = message.consume(request)
 
