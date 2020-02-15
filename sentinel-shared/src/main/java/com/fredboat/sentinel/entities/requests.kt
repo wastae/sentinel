@@ -53,7 +53,7 @@ data class EditMessageRequest(
 data class EditEmbedRequest(
         val channel: Long,
         val messageId: Long,
-        val message: Embed
+        val embed: Embed
 )
 
 data class SendMessageResponse(
