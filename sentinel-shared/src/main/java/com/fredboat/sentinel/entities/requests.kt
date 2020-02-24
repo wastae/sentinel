@@ -56,6 +56,13 @@ data class EditEmbedRequest(
         val embed: Embed
 )
 
+/** Returns [Unit]*/
+data class AddReactionRequest(
+        val channel: Long,
+        val messageId: Long,
+        val emote: String
+)
+
 data class SendMessageResponse(
         val messageId: Long
 )

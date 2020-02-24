@@ -14,6 +14,7 @@ import com.fredboat.sentinel.util.toJda
 import net.dv8tion.jda.bot.sharding.ShardManager
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.entities.TextChannel
+import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.entities.impl.JDAImpl
 import net.dv8tion.jda.core.entities.impl.UserImpl
 import org.slf4j.Logger
@@ -81,7 +82,19 @@ class MessageRequests(private val shardManager: ShardManager) {
             log.error("Received EditEmbedRequest for channel ${request.channel} which was not found")
             return
         }
+
         channel.editMessageById(request.messageId, request.embed.toJda()).queue()
+    }
+
+    fun consume(request: AddReactionRequest) {
+        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+
+        if (channel == null) {
+            log.error("Received AddReactionRequest for channel ${request.channel} which was not found")
+            return
+        }
+        
+        channel.addReactionById(request.messageId, request.emote).queue()
     }
 
     fun consume(request: MessageDeleteRequest) {
@@ -111,5 +124,4 @@ class MessageRequests(private val shardManager: ShardManager) {
 
         channel.sendTyping().queue("sendTyping")
     }
-
 }
