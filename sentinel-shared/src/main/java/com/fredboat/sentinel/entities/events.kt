@@ -94,6 +94,6 @@ data class MessageReactionAddEvent (
         val id: Long,
         val guild: Long,
         val channel: Long,
-        val emote: Long,
-        val isBot: Boolean
+        val isBot: Boolean,
+        val emote: Long
 )
