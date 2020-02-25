@@ -89,3 +89,9 @@ data class MessageDeleteEvent(
         val guild: Long,
         val channel: Long
 )
+
+data class MessageReactionAddEvent(
+        val id: Long,
+        val guild: Long,
+        val channel: Long
+)

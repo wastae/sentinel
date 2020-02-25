@@ -42,6 +42,7 @@ import net.dv8tion.jda.core.events.guild.voice.GuildVoiceJoinEvent
 import net.dv8tion.jda.core.events.guild.voice.GuildVoiceLeaveEvent
 import net.dv8tion.jda.core.events.guild.voice.GuildVoiceMoveEvent
 import net.dv8tion.jda.core.events.http.HttpRequestEvent
+import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionAddEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageDeleteEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.core.events.message.priv.PrivateMessageReceivedEvent
@@ -215,6 +216,14 @@ class JdaRabbitEventListener(
 
     override fun onGuildMessageDelete(event: GuildMessageDeleteEvent) {
         dispatch(MessageDeleteEvent(
+                event.messageIdLong,
+                event.guild.idLong,
+                event.channel.idLong
+        ))
+    }
+
+    override fun onGuildMessageReactionAdd(event: GuildMessageReactionAddEvent) {
+        dispatch(MessageReactionAddEvent(
                 event.messageIdLong,
                 event.guild.idLong,
                 event.channel.idLong
