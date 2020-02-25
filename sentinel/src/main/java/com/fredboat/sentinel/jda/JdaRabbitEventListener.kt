@@ -346,6 +346,4 @@ class JdaRabbitEventListener(
     override fun onGenericEvent(event: Event) {
         Counters.jdaEvents.labels(event.javaClass.simpleName).inc()
     }
-
-
 }
