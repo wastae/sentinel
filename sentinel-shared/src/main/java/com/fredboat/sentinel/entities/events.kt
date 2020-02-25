@@ -93,5 +93,7 @@ data class MessageDeleteEvent(
 data class MessageReactionAddEvent(
         val id: Long,
         val guild: Long,
-        val channel: Long
+        val channel: Long,
+        val emote: Long,
+        val isBot: Boolean
 )

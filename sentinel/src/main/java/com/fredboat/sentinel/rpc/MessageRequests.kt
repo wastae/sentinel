@@ -14,7 +14,6 @@ import com.fredboat.sentinel.util.toJda
 import net.dv8tion.jda.bot.sharding.ShardManager
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.entities.TextChannel
-import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.entities.impl.JDAImpl
 import net.dv8tion.jda.core.entities.impl.UserImpl
 import org.slf4j.Logger

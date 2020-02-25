@@ -226,7 +226,9 @@ class JdaRabbitEventListener(
         dispatch(MessageReactionAddEvent(
                 event.messageIdLong,
                 event.guild.idLong,
-                event.channel.idLong
+                event.channel.idLong,
+                event.reactionEmote.idLong,
+                event.user.isBot
         ))
     }
 
