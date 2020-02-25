@@ -8,11 +8,11 @@
 package com.fredboat.sentinel.entities
 
 /* Shard lifecycle */
-data class ShardStatusChange(
+data class ShardStatusChange (
         val shard: Shard
 )
 
-data class ShardLifecycleEvent(
+data class ShardLifecycleEvent (
         val shard: Shard,
         val change: LifecycleEventEnum
 )
@@ -26,41 +26,41 @@ enum class LifecycleEventEnum {
 }
 
 /* Guild leave/join */
-data class GuildJoinEvent(
+data class GuildJoinEvent (
         val guild: Long
 )
 
-data class GuildLeaveEvent(
+data class GuildLeaveEvent (
         val guild: Long,
         /** Millis */
         val joinTime: Long
 )
 
 /* Guild member jda  */
-data class GuildMemberJoinEvent(
+data class GuildMemberJoinEvent (
         val guild: Long,
         val member: Member
 )
 
-data class GuildMemberLeaveEvent(
+data class GuildMemberLeaveEvent (
         val guild: Long,
         val member: Long
 )
 
 /* Voice jda */
-data class VoiceJoinEvent(
+data class VoiceJoinEvent (
         val guild: Long,
         val channel: Long,
         val member: Long
 )
 
-data class VoiceLeaveEvent(
+data class VoiceLeaveEvent (
         val guild: Long,
         val channel: Long,
         val member: Long
 )
 
-data class VoiceMoveEvent(
+data class VoiceMoveEvent (
         val guild: Long,
         val oldChannel: Long,
         val newChannel: Long,
@@ -68,7 +68,7 @@ data class VoiceMoveEvent(
 )
 
 /* Messages */
-data class MessageReceivedEvent(
+data class MessageReceivedEvent (
         val id: Long,
         val guild: Long,
         val channel: Long,
@@ -79,18 +79,18 @@ data class MessageReceivedEvent(
         val attachments: List<String>
 )
 
-data class PrivateMessageReceivedEvent(
+data class PrivateMessageReceivedEvent (
         val content: String,
         val author: User
 )
 
-data class MessageDeleteEvent(
+data class MessageDeleteEvent (
         val id: Long,
         val guild: Long,
         val channel: Long
 )
 
-data class MessageReactionAddEvent(
+data class MessageReactionAddEvent (
         val id: Long,
         val guild: Long,
         val channel: Long,
