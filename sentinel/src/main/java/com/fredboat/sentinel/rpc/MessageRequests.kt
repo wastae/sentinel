@@ -107,6 +107,17 @@ class MessageRequests(private val shardManager: ShardManager) {
         channel.removeReactionById(request.messageId, request.emote).queue()
     }
 
+    fun consume(request: RemoveReactionsRequest) {
+        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+
+        if (channel == null) {
+            log.error("Received RemoveReactionsRequest for channel ${request.channel} which was not found")
+            return
+        }
+        
+        channel.clearReactionsById(request.messageId).queue()
+    }
+
     fun consume(request: MessageDeleteRequest) {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
