@@ -8,7 +8,7 @@
 buildscript {
     ext {
         gradleGitVersion = '2.1.0'
-        kotlin_version = '1.3.71'
+        kotlin_version = '1.3.20'
         bootVersion = '2.0.1.RELEASE'
         aptVersion = '0.17'
     }
