@@ -19,6 +19,7 @@ import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.MessageType
 import net.dv8tion.jda.core.entities.impl.JDAImpl
 import net.dv8tion.jda.core.events.*
+import net.dv8tion.jda.core.events.channel.category.CategoryCreateEvent
 import net.dv8tion.jda.core.events.channel.category.CategoryDeleteEvent
 import net.dv8tion.jda.core.events.channel.category.GenericCategoryEvent
 import net.dv8tion.jda.core.events.channel.category.update.CategoryUpdatePermissionsEvent
@@ -248,8 +249,7 @@ class JdaRabbitEventListener(
 
     override fun onGenericGuild(event: GenericGuildEvent) {
         if (!subscriptions.contains(event.guild.idLong)) return
-        if (event is GuildUpdateNameEvent
-                || event is GuildUpdateOwnerEvent) {
+        if (event is GuildUpdateNameEvent || event is GuildUpdateOwnerEvent) {
             updateGuild(event, event.guild)
         }
     }
@@ -259,10 +259,9 @@ class JdaRabbitEventListener(
         if (event is TextChannelDeleteEvent || event is TextChannelCreateEvent) {
             updateGuild(event, event.guild)
             return
-        } else if (event is RoleUpdatePositionEvent || event is RoleUpdatePermissionsEvent) {
+		} else if (event is RoleUpdatePositionEvent || event is RoleUpdatePermissionsEvent) {
             updateChannelPermissions(event.guild)
         }
-
         dispatch(TextChannelUpdate(
                 event.guild.idLong,
                 event.channel.toEntity()
@@ -278,7 +277,6 @@ class JdaRabbitEventListener(
         } else if (event is VoiceChannelUpdatePositionEvent || event is RoleUpdatePermissionsEvent) {
             updateChannelPermissions(event.guild)
         }
-
         dispatch(VoiceChannelUpdate(
                 event.guild.idLong,
                 event.channel.toEntity()
@@ -287,25 +285,34 @@ class JdaRabbitEventListener(
 
     override fun onGenericCategory(event: GenericCategoryEvent) {
         if (!subscriptions.contains(event.guild.idLong)) return
-        if (event is CategoryDeleteEvent
-                || event is CategoryUpdatePositionEvent
-                || event is CategoryUpdatePermissionsEvent) {
+        if (event is CategoryDeleteEvent || event is CategoryCreateEvent) {
             updateGuild(event, event.guild)
+            return
+        } else if (event is CategoryUpdatePositionEvent || event is CategoryUpdatePermissionsEvent) {
+            updateChannelPermissions(event.guild)
         }
     }
 
     override fun onGenericRole(event: GenericRoleEvent) {
         if (!subscriptions.contains(event.guild.idLong)) return
-        if (event is RoleCreateEvent || event is RoleDeleteEvent) {
+        if (event is RoleDeleteEvent || event is RoleCreateEvent) {
             updateGuild(event, event.guild)
             return
-        } else if (event is RoleUpdatePermissionsEvent || event is RoleUpdatePositionEvent) {
+        } else if (event is RoleUpdatePositionEvent || event is RoleUpdatePermissionsEvent) {
             updateChannelPermissions(event.guild)
         }
         dispatch(RoleUpdate(
                 event.guild.idLong,
                 event.role.toEntity()
         ))
+    }
+
+    override fun onGenericGuildMember(event: GenericGuildMemberEvent) {
+        if (!subscriptions.contains(event.guild.idLong)) return
+        if (event is GuildMemberRoleAddEvent || event is GuildMemberRoleRemoveEvent) {
+            updateGuild(event, event.guild)
+            return 
+        }
     }
 
     private fun updateGuild(event: Event, guild: net.dv8tion.jda.core.entities.Guild) {
