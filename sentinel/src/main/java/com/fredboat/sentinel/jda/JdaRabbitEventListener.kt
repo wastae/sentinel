@@ -224,6 +224,9 @@ class JdaRabbitEventListener(
     }
 
     override fun onGuildMessageReactionAdd(event: GuildMessageReactionAddEvent) {
+        if (!subscriptions.contains(event.guild.idLong)) return
+        if (!event.reactionEmote.isEmote) return
+
         dispatch(MessageReactionAddEvent(
                 event.messageIdLong,
                 event.guild.idLong,
