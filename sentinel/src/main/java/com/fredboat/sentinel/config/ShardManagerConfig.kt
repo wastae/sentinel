@@ -13,6 +13,7 @@ import com.fredboat.sentinel.jda.RemoteSessionController
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.SessionController
+import net.dv8tion.jda.api.utils.ChunkingFilter
 import net.dv8tion.jda.api.utils.cache.CacheFlag
 import net.dv8tion.jda.api.requests.GatewayIntent
 import net.dv8tion.jda.api.entities.Activity
@@ -40,8 +41,8 @@ class ShardManagerConfig {
         val INTENTS = listOf(
             GatewayIntent.DIRECT_MESSAGES,
             GatewayIntent.GUILD_MESSAGES,
-            GatewayIntent.GUILD_VOICE_STATES
-            //,GatewayIntent.GUILD_MEMBERS
+            GatewayIntent.GUILD_VOICE_STATES,
+            GatewayIntent.GUILD_MEMBERS
         )
 
         val builder = DefaultShardManagerBuilder.create(sentinelProperties.discordToken, INTENTS)
@@ -54,6 +55,7 @@ class ShardManagerConfig {
                 .setShardsTotal(sentinelProperties.shardCount)
                 .setShards(sentinelProperties.shardStart, sentinelProperties.shardEnd)
                 .setSessionController(sessionController)
+                .setChunkingFilter(ChunkingFilter.NONE)
                 .addEventListeners(rabbitEventListener)
 
         val shardManager: ShardManager

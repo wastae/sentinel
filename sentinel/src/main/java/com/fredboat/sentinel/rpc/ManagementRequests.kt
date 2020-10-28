@@ -58,11 +58,6 @@ class ManagementRequests(
         return GetPingResponse(shard?.gatewayPing ?: -1, shardManager.averageGatewayPing)
     }
 
-    fun consume(request: GetMemberRequest): GetMemberResponse {
-        val member = shardManager.getGuildById(request.guildId)!!.retrieveMemberById(request.authorId).complete()
-        return GetMemberResponse(member.toString())
-    }
-
     fun consume(request: SentinelInfoRequest) = shardManager.run { SentinelInfoResponse(
             guildCache.size(),
             roleCache.size(),

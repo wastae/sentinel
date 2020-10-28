@@ -29,10 +29,6 @@ data class LeaveGuildRequest(val guildId: Long)
 data class GetPingRequest(val shardId: Int)
 data class GetPingResponse(val shardPing: Long, val average: Double)
 
-/** Returns requested member with [GetMemberReponse]*/
-data class GetMemberRequest(val guildId: Long, val authorId: Long)
-data class GetMemberResponse(val member: String)
-
 /** Responds with [List] of [Ban]*/
 data class BanListRequest(val guildId: Long)
 data class Ban(val user: User, val reason: String?)

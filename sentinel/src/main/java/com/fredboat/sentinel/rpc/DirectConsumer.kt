@@ -37,7 +37,6 @@ class DirectConsumer(
     @RabbitHandler fun consume(request: ReviveShardRequest) = management.consume(request)
     @RabbitHandler fun consume(request: LeaveGuildRequest) = management.consume(request)
     @RabbitHandler fun consume(request: GetPingRequest) = management.consume(request)
-	@RabbitHandler fun consume(request: GetMemberRequest) = management.consume(request)
     @RabbitHandler fun consume(request: SentinelInfoRequest) = management.consume(request)
     @RabbitHandler fun consume(request: UserListRequest) = management.consume(request)
     @RabbitHandler fun consume(request: BanListRequest) = management.consume(request)
