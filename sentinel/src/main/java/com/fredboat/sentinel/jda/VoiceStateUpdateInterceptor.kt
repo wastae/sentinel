@@ -15,20 +15,20 @@ import net.dv8tion.jda.api.utils.data.DataObject
 class VoiceStateUpdateInterceptor(jda: JDAImpl) : VoiceStateUpdateHandler(jda) {
 
     override fun handleInternally(content: DataObject): Long? {
-        val guildId = content.getLong("guild_id")
-        if (jda.guildSetupController.isLocked(guildId.toLong()))
+        val guildId = if (!content.isNull("guild_id")) content.getLong("guild_id") else null
+        if (guildId != null && jda.guildSetupController.isLocked(guildId))
             return guildId
 
         val userId = content.getLong("user_id")
-        val channelId = content.getLong("channel_id")
-        val guild = jda.getGuildById(guildId.toLong()) ?: return super.handleInternally(content)
+        val channelId = if (!content.isNull("channel_id")) content.getLong("channel_id") else null
+        val guild = jda.getGuildById(guildId!!) ?: return super.handleInternally(content)
 
-        val member = guild.getMemberById(userId.toLong()) ?: return super.handleInternally(content)
+        val member = guild.getMemberById(userId) ?: return super.handleInternally(content)
 
         // We only need special handling if our own state is modified
         if (member != guild.selfMember) return super.handleInternally(content)
 
-        val channel = guild.getVoiceChannelById(channelId.toLong())
+        val channel = if (channelId != null) guild.getVoiceChannelById(channelId) else null
 
         /* These should be handled by JDA jda on FredBoat
         if (channelId == null) {
@@ -42,7 +42,7 @@ class VoiceStateUpdateInterceptor(jda: JDAImpl) : VoiceStateUpdateHandler(jda) {
 
         //if (link.getState() === Link.State.CONNECTED) {
         // This may be problematic
-        jda.client.updateAudioConnection(guildId.toLong(), channel)
+        jda.client.updateAudioConnection(guildId, channel)
         //}
 
         return super.handleInternally(content)

@@ -34,7 +34,7 @@ class VoiceServerUpdateInterceptor(
             return idLong
 
         // Get session
-        val guild = jda.guildsView.get(idLong)
+        val guild = jda.getGuildById(idLong)
                 ?: throw IllegalArgumentException("Attempted to start audio connection with Guild that doesn't exist! JSON: $content")
 
         val event = VoiceServerUpdate(guild.selfMember.voiceState!!.sessionId, content.toString())
@@ -43,5 +43,4 @@ class VoiceServerUpdateInterceptor(
 
         return null
     }
-
 }

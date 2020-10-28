@@ -176,7 +176,11 @@ class JdaRabbitEventListener(
     override fun onGuildMessageReceived(event: GuildMessageReceivedEvent) = event.run {
         if (message.type != MessageType.DEFAULT) return
 
-        dispatch(MessageReceivedEvent(
+        if (subscriptions.contains(event.guild.idLong)) {
+			updateGuild(event, event.guild)
+		}
+
+		dispatch(MessageReceivedEvent(
                 message.idLong,
                 message.guild.idLong,
                 channel.idLong,
@@ -299,7 +303,6 @@ class JdaRabbitEventListener(
     }
 
     private fun updateGuild(event: Event, guild: net.dv8tion.jda.api.entities.Guild) {
-        log.info("Updated ${guild.id} because of ${event.javaClass.simpleName}")
         dispatch(GuildUpdateEvent(guild.toEntity(voiceServerUpdateCache)))
     }
 
