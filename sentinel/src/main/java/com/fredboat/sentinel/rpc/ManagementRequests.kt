@@ -11,8 +11,8 @@ import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.entities.ModRequestType.*
 import com.fredboat.sentinel.jda.RemoteSessionController
 import com.fredboat.sentinel.util.*
-import net.dv8tion.jda.bot.sharding.ShardManager
-import net.dv8tion.jda.core.entities.Icon
+import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.api.entities.Icon
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -26,7 +26,7 @@ class ManagementRequests(
     fun consume(modRequest: ModRequest): String = modRequest.run {
         val guild = shardManager.getGuildById(guildId)
                 ?: throw RuntimeException("Guild $guildId not found")
-        val control = guild.controller
+        val control = guild
 
         val action = when(type) {
             KICK -> control.kick(userId.toString(), reason)
@@ -53,9 +53,14 @@ class ManagementRequests(
         guild.leave().queue("leaveGuild")
     }
 
-    fun consume(request: GetPingRequest): GetPingReponse {
+    fun consume(request: GetPingRequest): GetPingResponse {
         val shard = shardManager.getShardById(request.shardId)
-        return GetPingReponse(shard?.ping ?: -1, shardManager.averagePing)
+        return GetPingResponse(shard?.gatewayPing ?: -1, shardManager.averageGatewayPing)
+    }
+
+    fun consume(request: GetMemberRequest): GetMemberResponse {
+        val member = shardManager.getGuildById(request.guildId)!!.retrieveMemberById(request.authorId).complete()
+        return GetMemberResponse(member.toString())
     }
 
     fun consume(request: SentinelInfoRequest) = shardManager.run { SentinelInfoResponse(
@@ -73,7 +78,7 @@ class ManagementRequests(
     fun consume(request: BanListRequest): Array<Ban> {
         val guild = shardManager.getGuildById(request.guildId)
                 ?: throw RuntimeException("Guild ${request.guildId} not found")
-        return guild.banList.complete("getBanList").map {
+        return guild.retrieveBanList().complete("getBanList").map {
             Ban(it.user.toEntity(), it.reason)
         }.toTypedArray()
     }

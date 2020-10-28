@@ -8,9 +8,9 @@
 package com.fredboat.sentinel.rpc
 
 import com.fredboat.sentinel.entities.*
-import net.dv8tion.jda.bot.sharding.ShardManager
-import net.dv8tion.jda.core.entities.Channel
-import net.dv8tion.jda.core.utils.PermissionUtil
+import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.api.entities.GuildChannel
+import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.springframework.stereotype.Service
 
 @Service
@@ -38,7 +38,7 @@ class PermissionRequests(private val shardManager: ShardManager) {
      * Returns true if the Role and/or Member has the given permissions in a Channel
      */
     fun consume(request: ChannelPermissionRequest): PermissionCheckResponse {
-        var channel: Channel? = shardManager.getTextChannelById(request.channel)
+        var channel: GuildChannel? = shardManager.getTextChannelById(request.channel)
                 ?: shardManager.getVoiceChannelById(request.channel)
         channel = channel ?: shardManager.getCategoryById(request.channel)
         channel ?: throw RuntimeException("Got request for channel which isn't found")

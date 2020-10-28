@@ -10,15 +10,18 @@ package com.fredboat.sentinel.config
 import com.fredboat.sentinel.ApplicationState
 import com.fredboat.sentinel.jda.JdaRabbitEventListener
 import com.fredboat.sentinel.jda.RemoteSessionController
-import net.dv8tion.jda.bot.sharding.DefaultShardManagerBuilder
-import net.dv8tion.jda.bot.sharding.ShardManager
-import net.dv8tion.jda.core.utils.SessionController
-import net.dv8tion.jda.core.utils.cache.CacheFlag
+import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder
+import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.api.utils.SessionController
+import net.dv8tion.jda.api.utils.cache.CacheFlag
+import net.dv8tion.jda.api.requests.GatewayIntent
+import net.dv8tion.jda.api.entities.Activity
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.util.*
+import java.util.Arrays
 import javax.security.auth.login.LoginException
 import kotlin.collections.HashSet
 
@@ -34,18 +37,23 @@ class ShardManagerConfig {
                           sessionController: RemoteSessionController
     ): ShardManager {
 
-        val builder = DefaultShardManagerBuilder()
-                .setToken(sentinelProperties.discordToken)
+        val INTENTS = listOf(
+            GatewayIntent.DIRECT_MESSAGES,
+            GatewayIntent.GUILD_MESSAGES,
+            GatewayIntent.GUILD_VOICE_STATES
+            //,GatewayIntent.GUILD_MEMBERS
+        )
+
+        val builder = DefaultShardManagerBuilder.create(sentinelProperties.discordToken, INTENTS)
+                .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE)
+                .disableCache(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE)
+                //.setActivity(Activity.listening("test"))
                 .setBulkDeleteSplittingEnabled(false)
                 .setEnableShutdownHook(false)
-                .setAudioEnabled(true)
                 .setAutoReconnect(true)
                 .setShardsTotal(sentinelProperties.shardCount)
                 .setShards(sentinelProperties.shardStart, sentinelProperties.shardEnd)
                 .setSessionController(sessionController)
-                .setDisabledCacheFlags(EnumSet.of(CacheFlag.GAME, CacheFlag.EMOTE))
-                //.setHttpClientBuilder(Http.DEFAULT_BUILDER.newBuilder() TODO
-                //        .eventListener(OkHttpEventMetrics("jda", Metrics.httpEventCounter)))
                 .addEventListeners(rabbitEventListener)
 
         val shardManager: ShardManager

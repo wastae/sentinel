@@ -9,22 +9,22 @@ package com.fredboat.sentinel.util
 
 import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.jda.VoiceServerUpdateCache
-import net.dv8tion.jda.core.JDA
-import net.dv8tion.jda.core.utils.PermissionUtil
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.internal.utils.PermissionUtil
 
-fun net.dv8tion.jda.core.JDA.toEntity() = Shard(
-        if(shardInfo == null) 0 else shardInfo.shardId,
-        if(shardInfo == null) 1 else shardInfo.shardTotal,
+fun net.dv8tion.jda.api.JDA.toEntity() = Shard(
+        shardInfo.shardId,
+        shardInfo.shardTotal,
         status.toEntity()
 )
 
-fun net.dv8tion.jda.core.JDA.toEntityExtended() = ExtendedShardInfo(
+fun net.dv8tion.jda.api.JDA.toEntityExtended() = ExtendedShardInfo(
         toEntity(),
         guildCache.size().toInt(),
         userCache.size().toInt()
 )
 
-fun net.dv8tion.jda.core.entities.Guild.toEntity(updateCache: VoiceServerUpdateCache) = Guild(
+fun net.dv8tion.jda.api.entities.Guild.toEntity(updateCache: VoiceServerUpdateCache) = Guild(
         idLong,
         name,
         owner?.user?.idLong,
@@ -34,13 +34,13 @@ fun net.dv8tion.jda.core.entities.Guild.toEntity(updateCache: VoiceServerUpdateC
         roles.map { it.toEntity() },
         updateCache[idLong])
 
-fun net.dv8tion.jda.core.entities.User.toEntity() = User(
+fun net.dv8tion.jda.api.entities.User.toEntity() = User(
         idLong,
         name,
         discriminator,
         isBot)
 
-fun net.dv8tion.jda.core.entities.Member.toEntity(): Member {
+fun net.dv8tion.jda.api.entities.Member.toEntity(): Member {
     return Member(
             user.idLong,
             user.name,
@@ -52,19 +52,19 @@ fun net.dv8tion.jda.core.entities.Member.toEntity(): Member {
             voiceState?.channel?.idLong)
 }
 
-fun net.dv8tion.jda.core.entities.VoiceChannel.toEntity() = VoiceChannel(
+fun net.dv8tion.jda.api.entities.VoiceChannel.toEntity() = VoiceChannel(
         idLong,
         name,
         members.map { it.user.idLong },
         userLimit,
         PermissionUtil.getExplicitPermission(this, guild.selfMember))
 
-fun net.dv8tion.jda.core.entities.TextChannel.toEntity() = TextChannel(
+fun net.dv8tion.jda.api.entities.TextChannel.toEntity() = TextChannel(
         idLong,
         name,
         PermissionUtil.getExplicitPermission(this, guild.selfMember))
 
-fun net.dv8tion.jda.core.entities.Role.toEntity() = Role(
+fun net.dv8tion.jda.api.entities.Role.toEntity() = Role(
         idLong,
         name,
         permissionsRaw

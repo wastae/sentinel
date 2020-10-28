@@ -8,8 +8,8 @@
 package com.fredboat.sentinel.util
 
 import com.fredboat.sentinel.entities.Embed
-import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.entities.MessageEmbed
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.entities.MessageEmbed
 import java.time.Instant
 
 private val threadLocal: ThreadLocal<EmbedBuilder> = ThreadLocal.withInitial { EmbedBuilder() }

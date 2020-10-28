@@ -27,8 +27,11 @@ data class LeaveGuildRequest(val guildId: Long)
 
 /** Returns the ping time of JDA's websocket and the shard manager average in milliseconds with [GetPingReponse]*/
 data class GetPingRequest(val shardId: Int)
+data class GetPingResponse(val shardPing: Long, val average: Double)
 
-data class GetPingReponse(val shardPing: Long, val average: Double)
+/** Returns requested member with [GetMemberReponse]*/
+data class GetMemberRequest(val guildId: Long, val authorId: Long)
+data class GetMemberResponse(val member: String)
 
 /** Responds with [List] of [Ban]*/
 data class BanListRequest(val guildId: Long)

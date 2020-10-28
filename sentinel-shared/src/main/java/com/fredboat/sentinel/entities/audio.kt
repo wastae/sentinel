@@ -20,6 +20,6 @@ enum class AudioQueueRequestEnum {
 }
 
 data class VoiceServerUpdate(
-        val sessionId: String,
+        val sessionId: String?,
         val raw: String // The raw JSON from Discord
 )

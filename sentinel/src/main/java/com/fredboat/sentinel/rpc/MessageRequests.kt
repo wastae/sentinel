@@ -11,11 +11,11 @@ import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.util.complete
 import com.fredboat.sentinel.util.queue
 import com.fredboat.sentinel.util.toJda
-import net.dv8tion.jda.bot.sharding.ShardManager
-import net.dv8tion.jda.core.JDA
-import net.dv8tion.jda.core.entities.TextChannel
-import net.dv8tion.jda.core.entities.impl.JDAImpl
-import net.dv8tion.jda.core.entities.impl.UserImpl
+import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.internal.JDAImpl
+import net.dv8tion.jda.internal.entities.UserImpl
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service

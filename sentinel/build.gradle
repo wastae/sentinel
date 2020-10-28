@@ -37,6 +37,8 @@ dependencies {
     compile "ch.qos.logback:logback-classic:$logbackVersion"
     compile group: 'io.sentry', name: 'sentry-logback', version: sentryVersion
 
+    compile group: 'org.json', name: 'json', version: '20180130'
+    compile group: 'org.yaml', name: 'snakeyaml', version: '1.27'
     compile group: 'io.prometheus', name: 'simpleclient', version: prometheusClientVersion
     compile group: 'io.prometheus', name: 'simpleclient_hotspot', version: prometheusClientVersion
     compile group: 'io.prometheus', name: 'simpleclient_logback', version: prometheusClientVersion

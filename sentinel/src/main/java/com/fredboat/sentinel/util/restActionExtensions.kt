@@ -8,8 +8,8 @@
 package com.fredboat.sentinel.util
 
 import com.fredboat.sentinel.metrics.Counters
-import net.dv8tion.jda.core.exceptions.ErrorResponseException
-import net.dv8tion.jda.core.requests.RestAction
+import net.dv8tion.jda.api.exceptions.ErrorResponseException
+import net.dv8tion.jda.api.requests.RestAction
 import java.util.concurrent.TimeUnit
 
 fun <T> RestAction<T>.queue(name: String) { toFuture(name) }

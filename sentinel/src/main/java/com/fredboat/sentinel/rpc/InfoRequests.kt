@@ -10,58 +10,66 @@ package com.fredboat.sentinel.rpc
 import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.util.complete
 import com.fredboat.sentinel.util.toEntity
-import net.dv8tion.jda.bot.sharding.ShardManager
-import net.dv8tion.jda.core.JDA
-import net.dv8tion.jda.core.OnlineStatus
-import net.dv8tion.jda.core.exceptions.ErrorResponseException
-import net.dv8tion.jda.core.requests.ErrorResponse
+import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.OnlineStatus
+import net.dv8tion.jda.api.exceptions.ErrorResponseException
+import net.dv8tion.jda.api.requests.ErrorResponse
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
 class InfoRequests(private val shardManager: ShardManager) {
 
+    companion object {
+        private val log: Logger = LoggerFactory.getLogger(InfoRequests::class.java)
+    }
+
     fun consume(request: MemberInfoRequest): MemberInfo {
-        val member = shardManager.getGuildById(request.guildId).getMemberById(request.id)
+        val member = shardManager.getGuildById(request.guildId)!!.retrieveMemberById(request.id).complete()
         return member.run {
-            MemberInfo(
-                    user.idLong,
-                    guild.idLong,
-                    user.avatarUrl,
-                    color?.rgb,
-                    joinDate.toInstant().toEpochMilli()
+            MemberInfo (
+                user.idLong,
+                guild.idLong,
+                user.avatarUrl,
+                color?.rgb,
+                timeJoined.toInstant().toEpochMilli()
             )
         }
     }
 
     fun consume(request: GuildInfoRequest): GuildInfo {
         val guild = shardManager.getGuildById(request.id)
-        return guild.run {
-            GuildInfo(
-                    idLong,
-                    guild.iconUrl,
-                    guild.memberCache.count { it.onlineStatus != OnlineStatus.OFFLINE },
-                    verificationLevel.name
+        if (guild == null) { log.error("Received null on guild request for ${request.id}") }
+        return guild!!.run {
+            GuildInfo (
+                idLong,
+                guild.iconUrl,
+                guild.memberCache.count { it.onlineStatus != OnlineStatus.OFFLINE },
+                verificationLevel.name
             )
         }
     }
 
     fun consume(request: RoleInfoRequest): RoleInfo {
         val role = shardManager.getRoleById(request.id)
-        return role.run {
-            RoleInfo(
-                    idLong,
-                    position,
-                    color?.rgb,
-                    isHoisted,
-                    isMentionable,
-                    isManaged
+        if (role == null) { log.error("Received null on role request for ${request.id}") }
+        return role!!.run {
+            RoleInfo (
+                idLong,
+                position,
+                color?.rgb,
+                isHoisted,
+                isMentionable,
+                isManaged
             )
         }
     }
 
     fun consume(request: GetUserRequest): User? {
         val user = shardManager.getUserById(request.id)
-        if(user != null) return user.toEntity()
+        if (user != null) return user.toEntity()
 
         for (shard in shardManager.shards) {
             if (shard.status != JDA.Status.CONNECTED) continue

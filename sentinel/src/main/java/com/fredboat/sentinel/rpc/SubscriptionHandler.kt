@@ -12,7 +12,7 @@ import com.fredboat.sentinel.entities.GuildSubscribeRequest
 import com.fredboat.sentinel.entities.GuildUnsubscribeRequest
 import com.fredboat.sentinel.jda.VoiceServerUpdateCache
 import com.fredboat.sentinel.util.toEntity
-import net.dv8tion.jda.bot.sharding.ShardManager
+import net.dv8tion.jda.api.sharding.ShardManager
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
@@ -28,9 +28,6 @@ class SubscriptionHandler(
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(SubscriptionHandler::class.java)
-        /** Threshold at which we will send a warning if the guild being loaded is large */
-        private const val LARGE_GUILD_THRESHOLD = 500000L
-        private const val LARGE_GUILD_WARNING = "Soon your request being processed..."
     }
 
     fun consume(request: GuildSubscribeRequest): Guild? {
@@ -52,14 +49,6 @@ class SubscriptionHandler(
                 log.warn("Attempt to subscribe ${request.id} while we are already subscribed")
             } else {
                 log.error("Failed to subscribe to ${request.id}")
-            }
-        } else if (request.channelInvoked != null && guild.memberCache.size() > LARGE_GUILD_THRESHOLD) {
-            try {
-                guild.getTextChannelById(request.channelInvoked!!)
-                        ?.sendMessage(LARGE_GUILD_WARNING)
-                        ?.queue()
-            } catch (e: Exception) {
-                log.error("Failed to send subscription warning", e)
             }
         }
 

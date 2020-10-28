@@ -9,7 +9,7 @@ package com.fredboat.sentinel.util
 
 import com.fredboat.sentinel.config.RoutingKey
 import com.fredboat.sentinel.config.SentinelProperties
-import net.dv8tion.jda.bot.sharding.ShardManager
+import net.dv8tion.jda.api.sharding.ShardManager
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationContext

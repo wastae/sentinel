@@ -9,8 +9,8 @@ package com.fredboat.sentinel.metrics.collectors
 
 import io.prometheus.client.Collector
 import io.prometheus.client.GaugeMetricFamily
-import net.dv8tion.jda.bot.sharding.ShardManager
-import net.dv8tion.jda.core.JDA
+import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.api.JDA
 import org.springframework.stereotype.Service
 import java.util.*
 

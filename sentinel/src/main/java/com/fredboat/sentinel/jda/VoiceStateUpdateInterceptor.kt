@@ -7,29 +7,28 @@
 
 package com.fredboat.sentinel.jda
 
-import net.dv8tion.jda.core.entities.impl.JDAImpl
-import net.dv8tion.jda.core.handle.VoiceStateUpdateHandler
-import org.json.JSONObject
+import net.dv8tion.jda.internal.JDAImpl
+import net.dv8tion.jda.internal.handle.VoiceStateUpdateHandler
+import net.dv8tion.jda.api.utils.data.DataObject
+
 
 class VoiceStateUpdateInterceptor(jda: JDAImpl) : VoiceStateUpdateHandler(jda) {
 
-    override fun handleInternally(content: JSONObject): Long? {
-        val guildId = if (content.has("guild_id")) content.getLong("guild_id") else null
-        if (guildId != null && jda.guildSetupController.isLocked(guildId))
+    override fun handleInternally(content: DataObject): Long? {
+        val guildId = content.getLong("guild_id")
+        if (jda.guildSetupController.isLocked(guildId.toLong()))
             return guildId
-        if (guildId == null)
-            return super.handleInternally(content)
 
         val userId = content.getLong("user_id")
-        val channelId = if (!content.isNull("channel_id")) content.getLong("channel_id") else null
-        val guild = jda.getGuildById(guildId) ?: return super.handleInternally(content)
+        val channelId = content.getLong("channel_id")
+        val guild = jda.getGuildById(guildId.toLong()) ?: return super.handleInternally(content)
 
-        val member = guild.getMemberById(userId) ?: return super.handleInternally(content)
+        val member = guild.getMemberById(userId.toLong()) ?: return super.handleInternally(content)
 
         // We only need special handling if our own state is modified
         if (member != guild.selfMember) return super.handleInternally(content)
 
-        val channel = if (channelId != null) guild.getVoiceChannelById(channelId) else null
+        val channel = guild.getVoiceChannelById(channelId.toLong())
 
         /* These should be handled by JDA jda on FredBoat
         if (channelId == null) {
@@ -43,7 +42,7 @@ class VoiceStateUpdateInterceptor(jda: JDAImpl) : VoiceStateUpdateHandler(jda) {
 
         //if (link.getState() === Link.State.CONNECTED) {
         // This may be problematic
-        jda.client.updateAudioConnection(guildId, channel)
+        jda.client.updateAudioConnection(guildId.toLong(), channel)
         //}
 
         return super.handleInternally(content)
