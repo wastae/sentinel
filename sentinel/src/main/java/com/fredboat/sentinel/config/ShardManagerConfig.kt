@@ -48,7 +48,6 @@ class ShardManagerConfig {
         val builder = DefaultShardManagerBuilder.create(sentinelProperties.discordToken, INTENTS)
                 .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE)
                 .disableCache(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE)
-                //.setActivity(Activity.listening("test"))
                 .setBulkDeleteSplittingEnabled(false)
                 .setEnableShutdownHook(false)
                 .setAutoReconnect(true)

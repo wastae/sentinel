@@ -59,6 +59,13 @@ class FanoutConsumer(
         }
 
         sendHello()
+
+        val game = if (event.game.isBlank()) null else Activity.listening(event.game)
+        shardManager.shards.forEach {
+            if (it.presence.activity?.name != game?.name) {
+                it.presence.setPresence(OnlineStatus.ONLINE, game)
+            }
+        }
     }
 
     private fun sendHello() {
