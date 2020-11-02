@@ -128,8 +128,6 @@ class JdaRabbitEventListener(
 
     override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) = onMemberChange(event.member)
     override fun onGuildMemberRoleRemove(event: GuildMemberRoleRemoveEvent) = onMemberChange(event.member)
-    // override fun onGenericUserPresence(event: GenericUserPresenceEvent<*>) = onMemberChange(event.member)
-    // override fun onGuildMemberUpdateNickname(event: GuildMemberUpdateNicknameEvent) = onMemberChange(event.member)
 
     private fun onMemberChange(member: net.dv8tion.jda.api.entities.Member) {
         if (!subscriptions.contains(member.guild.idLong)) return
@@ -142,10 +140,11 @@ class JdaRabbitEventListener(
     /* Voice jda */
     override fun onGuildVoiceJoin(event: GuildVoiceJoinEvent) {
         if (!subscriptions.contains(event.guild.idLong)) return
+        updateGuild(event.guild)
         dispatch(VoiceJoinEvent(
                 event.guild.idLong,
                 event.channelJoined.idLong,
-                event.member.user.idLong
+                event.member.toEntity()
         ))
     }
 
@@ -155,26 +154,29 @@ class JdaRabbitEventListener(
         }
 
         if (!subscriptions.contains(event.guild.idLong)) return
+        updateGuild(event.guild)
         dispatch(VoiceLeaveEvent(
                 event.guild.idLong,
                 event.channelLeft.idLong,
-                event.member.user.idLong
+                event.member.toEntity()
         ))
     }
 
     override fun onGuildVoiceMove(event: GuildVoiceMoveEvent) {
         if (!subscriptions.contains(event.guild.idLong)) return
+        updateGuild(event.guild)
         dispatch(VoiceMoveEvent(
                 event.guild.idLong,
                 event.channelLeft.idLong,
                 event.channelJoined.idLong,
-                event.member.user.idLong
+                event.member.toEntity()
         ))
     }
 
     /* Message jda */
     override fun onGuildMessageReceived(event: GuildMessageReceivedEvent) = event.run {
         if (message.type != MessageType.DEFAULT) return
+        if (message.isWebhookMessage) return
 
         if (subscriptions.contains(event.guild.idLong)) {
 			updateGuild(event.guild)
@@ -188,7 +190,8 @@ class JdaRabbitEventListener(
                 message.contentRaw,
                 author.idLong,
                 author.isBot,
-                message.attachments.map { if (it.isImage) it.proxyUrl else it.url }
+                message.attachments.map { if (it.isImage) it.proxyUrl else it.url },
+                event.message.member!!.toEntity()
         ), print = false)
     }
 

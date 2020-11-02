@@ -51,20 +51,20 @@ data class GuildMemberLeaveEvent (
 data class VoiceJoinEvent (
         val guild: Long,
         val channel: Long,
-        val member: Long
+        val member: Member
 )
 
 data class VoiceLeaveEvent (
         val guild: Long,
         val channel: Long,
-        val member: Long
+        val member: Member
 )
 
 data class VoiceMoveEvent (
         val guild: Long,
         val oldChannel: Long,
         val newChannel: Long,
-        val member: Long
+        val member: Member
 )
 
 /* Messages */
@@ -76,7 +76,8 @@ data class MessageReceivedEvent (
         val content: String,
         val author: Long,
         val fromBot: Boolean,
-        val attachments: List<String>
+        val attachments: List<String>,
+        val member: Member
 )
 
 data class PrivateMessageReceivedEvent (

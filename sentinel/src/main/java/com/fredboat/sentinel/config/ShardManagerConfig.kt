@@ -41,8 +41,7 @@ class ShardManagerConfig {
         val INTENTS = listOf(
             GatewayIntent.DIRECT_MESSAGES,
             GatewayIntent.GUILD_MESSAGES,
-            GatewayIntent.GUILD_VOICE_STATES,
-            GatewayIntent.GUILD_MEMBERS
+            GatewayIntent.GUILD_VOICE_STATES
         )
 
         val builder = DefaultShardManagerBuilder.create(sentinelProperties.discordToken, INTENTS)
