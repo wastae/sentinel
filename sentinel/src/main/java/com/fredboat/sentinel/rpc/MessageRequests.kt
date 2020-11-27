@@ -92,7 +92,7 @@ class MessageRequests(private val shardManager: ShardManager) {
             log.error("Received AddReactionRequest for channel ${request.channel} which was not found")
             return
         }
-        
+
         channel.addReactionById(request.messageId, request.emote).queue()
     }
 
@@ -103,7 +103,7 @@ class MessageRequests(private val shardManager: ShardManager) {
             log.error("Received RemoveReactionRequest for channel ${request.channel} which was not found")
             return
         }
-        
+
         channel.removeReactionById(request.messageId, request.emote).queue()
     }
 

@@ -336,3 +336,4 @@ gradle/
 **/test/
 **/resources
 .vscode
+gradlew

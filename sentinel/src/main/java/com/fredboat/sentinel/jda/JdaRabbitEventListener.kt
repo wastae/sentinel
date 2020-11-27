@@ -12,12 +12,10 @@ import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.metrics.Counters
 import com.fredboat.sentinel.util.toEntity
 import com.neovisionaries.ws.client.WebSocketFrame
-import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.entities.GuildChannel
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.GuildChannel
 import net.dv8tion.jda.api.entities.MessageType
-import net.dv8tion.jda.internal.JDAImpl
 import net.dv8tion.jda.api.events.*
 import net.dv8tion.jda.api.events.channel.category.CategoryCreateEvent
 import net.dv8tion.jda.api.events.channel.category.CategoryDeleteEvent
@@ -30,21 +28,22 @@ import net.dv8tion.jda.api.events.channel.voice.GenericVoiceChannelEvent
 import net.dv8tion.jda.api.events.channel.voice.VoiceChannelCreateEvent
 import net.dv8tion.jda.api.events.channel.voice.VoiceChannelDeleteEvent
 import net.dv8tion.jda.api.events.channel.voice.update.VoiceChannelUpdatePositionEvent
-import net.dv8tion.jda.api.events.guild.override.GenericPermissionOverrideEvent
 import net.dv8tion.jda.api.events.guild.GenericGuildEvent
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
-import net.dv8tion.jda.api.events.guild.member.*
-import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
-import net.dv8tion.jda.api.events.guild.update.GuildUpdateOwnerEvent
+import net.dv8tion.jda.api.events.guild.member.GenericGuildMemberEvent
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent
+import net.dv8tion.jda.api.events.guild.override.GenericPermissionOverrideEvent
 import net.dv8tion.jda.api.events.guild.update.GuildUpdateNameEvent
+import net.dv8tion.jda.api.events.guild.update.GuildUpdateOwnerEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent
 import net.dv8tion.jda.api.events.http.HttpRequestEvent
-import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent
 import net.dv8tion.jda.api.events.message.guild.GuildMessageDeleteEvent
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
+import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent
 import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent
 import net.dv8tion.jda.api.events.role.GenericRoleEvent
 import net.dv8tion.jda.api.events.role.RoleCreateEvent
@@ -52,6 +51,8 @@ import net.dv8tion.jda.api.events.role.RoleDeleteEvent
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePermissionsEvent
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePositionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.internal.JDAImpl
 import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -219,7 +220,8 @@ class JdaRabbitEventListener(
                 event.guild.idLong,
                 event.channel.idLong,
                 event.user.idLong,
-                event.reactionEmote.idLong
+                event.reactionEmote.idLong,
+                event.reactionEmote.name
         ))
     }
 
