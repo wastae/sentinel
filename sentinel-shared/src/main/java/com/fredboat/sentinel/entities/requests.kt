@@ -67,6 +67,7 @@ data class AddReactionRequest(
 data class RemoveReactionRequest(
         val channel: Long,
         val messageId: Long,
+        val userId: Long,
         val emote: String
 )
 
