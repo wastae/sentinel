@@ -95,6 +95,7 @@ data class MessageReactionAddEvent (
         val id: Long,
         val guild: Long,
         val channel: Long,
+        val channelPermissions: Long,
         val user: Long,
         val emoteId: Long,
         val emoteName: String

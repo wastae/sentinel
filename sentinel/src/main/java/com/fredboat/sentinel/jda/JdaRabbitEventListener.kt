@@ -219,6 +219,7 @@ class JdaRabbitEventListener(
                 event.messageIdLong,
                 event.guild.idLong,
                 event.channel.idLong,
+                PermissionUtil.getEffectivePermission(event.channel, event.guild.selfMember),
                 event.user.idLong,
                 event.reactionEmote.idLong,
                 event.reactionEmote.name
