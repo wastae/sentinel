@@ -92,11 +92,12 @@ data class MessageDeleteEvent (
 )
 
 data class MessageReactionAddEvent (
-        val id: Long,
+        val member: Member,
+        val messageId: Long,
         val guild: Long,
         val channel: Long,
         val channelPermissions: Long,
-        val user: Long,
+        val author: Long,
         val emoteId: Long,
         val emoteName: String
 )

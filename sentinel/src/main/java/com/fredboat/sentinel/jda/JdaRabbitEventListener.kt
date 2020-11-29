@@ -216,11 +216,12 @@ class JdaRabbitEventListener(
         if (!event.reactionEmote.isEmote) return
 
         dispatch(MessageReactionAddEvent(
+                event.member.toEntity(),
                 event.messageIdLong,
                 event.guild.idLong,
                 event.channel.idLong,
                 PermissionUtil.getEffectivePermission(event.channel, event.guild.selfMember),
-                event.user.idLong,
+                event.member.idLong,
                 event.reactionEmote.idLong,
                 event.reactionEmote.name
         ))
