@@ -119,7 +119,7 @@ class MessageRequests(private val shardManager: ShardManager) {
             log.error("Received RemoveReactionsRequest for channel ${request.channel} which was not found")
             return
         }
-        
+
         channel.clearReactionsById(request.messageId).queue()
     }
 

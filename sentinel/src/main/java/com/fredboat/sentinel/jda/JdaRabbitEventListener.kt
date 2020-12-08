@@ -119,7 +119,10 @@ class JdaRabbitEventListener(
 
     /* Guild jda */
     override fun onGuildJoin(event: GuildJoinEvent) =
-            dispatch(com.fredboat.sentinel.entities.GuildJoinEvent(event.guild.idLong))
+            dispatch(com.fredboat.sentinel.entities.GuildJoinEvent(
+                event.guild.idLong,
+                event.guild.regionRaw
+            ))
 
     override fun onGuildLeave(event: GuildLeaveEvent) =
             dispatch(com.fredboat.sentinel.entities.GuildLeaveEvent(

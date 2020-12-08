@@ -27,7 +27,8 @@ enum class LifecycleEventEnum {
 
 /* Guild leave/join */
 data class GuildJoinEvent (
-        val guild: Long
+        val guild: Long,
+        val region: String
 )
 
 data class GuildLeaveEvent (
