@@ -49,6 +49,7 @@ fun net.dv8tion.jda.api.entities.Member.toEntity(): Member {
             guild.idLong,
             user.isBot,
             roles.map { it.idLong },
+            PermissionUtil.getEffectivePermission(this),
             voiceState?.channel?.idLong)
 }
 
