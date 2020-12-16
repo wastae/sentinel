@@ -44,6 +44,7 @@ data class Member(
         val guildId: Long,
         val bot: Boolean,
         val roles: List<Long>,
+        val permissions: Long,
         val voiceChannel: Long?
 )
 
