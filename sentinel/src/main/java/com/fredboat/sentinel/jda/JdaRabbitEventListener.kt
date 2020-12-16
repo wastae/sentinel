@@ -119,13 +119,13 @@ class JdaRabbitEventListener(
 
     /* Guild jda */
     override fun onGuildJoin(event: GuildJoinEvent) =
-            dispatch(com.fredboat.sentinel.entities.GuildJoinEvent(
+            dispatch(GuildJoinEvent(
                 event.guild.idLong,
                 event.guild.regionRaw
             ))
 
     override fun onGuildLeave(event: GuildLeaveEvent) =
-            dispatch(com.fredboat.sentinel.entities.GuildLeaveEvent(
+            dispatch(GuildLeaveEvent(
                     event.guild.idLong,
                     event.guild.selfMember.timeJoined.toEpochSecond() * 1000
             ))
@@ -191,6 +191,7 @@ class JdaRabbitEventListener(
                 message.guild.idLong,
                 channel.idLong,
                 PermissionUtil.getEffectivePermission(channel, guild.selfMember),
+                PermissionUtil.getEffectivePermission(channel, event.message.member),
                 message.contentRaw,
                 author.idLong,
                 author.isBot,
@@ -312,7 +313,7 @@ class JdaRabbitEventListener(
         }
     }
 
-    private fun updateGuild(guild: net.dv8tion.jda.api.entities.Guild) {
+    private fun updateGuild(guild: Guild) {
         dispatch(GuildUpdateEvent(guild.toEntity(voiceServerUpdateCache)))
     }
 
