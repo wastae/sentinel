@@ -97,19 +97,15 @@ class MessageRequests(private val shardManager: ShardManager) {
     }
 
     fun consume(request: RemoveReactionRequest) {
-        val user = shardManager.getUserById(request.userId)
-        if (user == null) {
-            log.error("Received RemoveReactionRequest for user ${request.userId} which was not found")
-            return
-        }
+        shardManager.retrieveUserById(request.userId).queue {
+            val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+            if (channel == null) {
+                log.error("Received RemoveReactionRequest for channel ${request.channel} which was not found")
+                return@queue
+            }
 
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
-        if (channel == null) {
-            log.error("Received RemoveReactionRequest for channel ${request.channel} which was not found")
-            return
+            channel.removeReactionById(request.messageId, request.emote, it).queue()
         }
-
-        channel.removeReactionById(request.messageId, request.emote, user).queue()
     }
 
     fun consume(request: RemoveReactionsRequest) {
