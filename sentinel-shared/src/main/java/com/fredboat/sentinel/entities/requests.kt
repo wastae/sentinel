@@ -64,6 +64,13 @@ data class AddReactionRequest(
 )
 
 /** Returns [Unit]*/
+data class AddReactionsRequest(
+        val channel: Long,
+        val messageId: Long,
+        val emote: ArrayList<String>
+)
+
+/** Returns [Unit]*/
 data class RemoveReactionRequest(
         val channel: Long,
         val messageId: Long,

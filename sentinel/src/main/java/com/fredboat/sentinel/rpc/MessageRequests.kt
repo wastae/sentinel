@@ -93,7 +93,20 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        channel.addReactionById(request.messageId, request.emote).queue()
+        channel.addReactionById(request.messageId, request.emote).submit()
+    }
+
+    fun consume(request: AddReactionsRequest) {
+        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+
+        if (channel == null) {
+            log.error("Received AddReactionsRequest for channel ${request.channel} which was not found")
+            return
+        }
+
+        for (emote in request.emote) {
+            channel.addReactionById(request.messageId, emote).submit()
+        }
     }
 
     fun consume(request: RemoveReactionRequest) {
