@@ -219,16 +219,21 @@ class JdaRabbitEventListener(
         if (!subscriptions.contains(event.guild.idLong)) return
         if (!event.reactionEmote.isEmote) return
 
+        if (subscriptions.contains(event.guild.idLong)) {
+            updateGuild(event.guild)
+        }
+
         dispatch(MessageReactionAddEvent(
                 event.member.toEntity(),
                 event.messageIdLong,
                 event.guild.idLong,
                 event.channel.idLong,
                 PermissionUtil.getEffectivePermission(event.channel, event.guild.selfMember),
+                PermissionUtil.getEffectivePermission(event.channel, event.member),
                 event.member.idLong,
                 event.reactionEmote.idLong,
                 event.reactionEmote.name
-        ))
+        ), print = false)
     }
 
     /*
