@@ -16,6 +16,7 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.GuildChannel
 import net.dv8tion.jda.api.entities.MessageType
+import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.events.*
 import net.dv8tion.jda.api.events.channel.category.CategoryCreateEvent
 import net.dv8tion.jda.api.events.channel.category.CategoryDeleteEvent
@@ -145,6 +146,9 @@ class JdaRabbitEventListener(
     override fun onGuildVoiceJoin(event: GuildVoiceJoinEvent) {
         if (!subscriptions.contains(event.guild.idLong)) return
         updateGuild(event.guild)
+        if (event.channelJoined.type == ChannelType.STAGE && event.member.user.idLong == event.guild.selfMember.user.idLong) {
+            event.guild.requestToSpeak().submit()
+        }
         dispatch(VoiceJoinEvent(
                 event.guild.idLong,
                 event.channelJoined.idLong,
@@ -156,7 +160,6 @@ class JdaRabbitEventListener(
         if (event.member.user.idLong == event.guild.selfMember.user.idLong) {
             voiceServerUpdateCache.onVoiceLeave(event.guild.idLong)
         }
-
         if (!subscriptions.contains(event.guild.idLong)) return
         updateGuild(event.guild)
         dispatch(VoiceLeaveEvent(
@@ -169,6 +172,9 @@ class JdaRabbitEventListener(
     override fun onGuildVoiceMove(event: GuildVoiceMoveEvent) {
         if (!subscriptions.contains(event.guild.idLong)) return
         updateGuild(event.guild)
+        if (event.channelJoined.type == ChannelType.STAGE && event.member.user.idLong == event.guild.selfMember.user.idLong) {
+            event.guild.requestToSpeak().submit()
+        }
         dispatch(VoiceMoveEvent(
                 event.guild.idLong,
                 event.channelLeft.idLong,

@@ -64,7 +64,7 @@ allprojects {
 }
 
 ext {
-    jdaVersion = "4.2.0_211"
+    //jdaVersion = "4.2.0_211"
     amqpVersion = "2.0.4.RELEASE"
     gsonVersion = '2.8.2'
     jacksonKotlinVersion = "2.9.+"
