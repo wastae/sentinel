@@ -7,16 +7,16 @@
 
 package com.fredboat.sentinel.jda
 
-import com.fredboat.sentinel.SentinelExchanges
 import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.metrics.Counters
+import com.fredboat.sentinel.util.Rabbit
 import com.fredboat.sentinel.util.toEntity
 import com.neovisionaries.ws.client.WebSocketFrame
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.GuildChannel
 import net.dv8tion.jda.api.entities.MessageType
-import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.events.*
 import net.dv8tion.jda.api.events.channel.category.CategoryCreateEvent
 import net.dv8tion.jda.api.events.channel.category.CategoryDeleteEvent
@@ -53,18 +53,16 @@ import net.dv8tion.jda.api.events.role.update.RoleUpdatePermissionsEvent
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePositionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.sharding.ShardManager
-import net.dv8tion.jda.internal.JDAImpl
 import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.io.File
 
 @Component
 class JdaRabbitEventListener(
-        private val rabbitTemplate: RabbitTemplate,
+        private val rabbit: Rabbit,
         @param:Qualifier("guildSubscriptions")
         private val subscriptions: MutableSet<Long>,
         private val voiceServerUpdateCache: VoiceServerUpdateCache
@@ -85,10 +83,6 @@ class JdaRabbitEventListener(
 
     override fun onReady(event: ReadyEvent) {
         dispatch(ShardLifecycleEvent(event.jda.toEntity(), LifecycleEventEnum.READIED))
-
-        val handlers = (event.jda as JDAImpl).client.handlers
-        handlers["VOICE_SERVER_UPDATE"] = VoiceServerUpdateInterceptor(event.jda as JDAImpl, rabbitTemplate, voiceServerUpdateCache)
-        handlers["VOICE_STATE_UPDATE"] = VoiceStateUpdateInterceptor(event.jda as JDAImpl)
 
         if (shardManager.shards.all { it.status == JDA.Status.CONNECTED }) {
             // This file can be used by Ansible playbooks
@@ -139,7 +133,7 @@ class JdaRabbitEventListener(
         dispatch(GuildMemberUpdate(
                 member.guild.idLong,
                 member.toEntity()
-        ), print = false)
+        ))
     }
 
     /* Voice jda */
@@ -203,7 +197,7 @@ class JdaRabbitEventListener(
                 author.isBot,
                 message.attachments.map { if (it.isImage) it.proxyUrl else it.url },
                 event.message.member!!.toEntity()
-        ), print = false)
+        ))
     }
 
     override fun onPrivateMessageReceived(event: PrivateMessageReceivedEvent) {
@@ -239,7 +233,7 @@ class JdaRabbitEventListener(
                 event.member.idLong,
                 event.reactionEmote.idLong,
                 event.reactionEmote.name
-        ), print = false)
+        ))
     }
 
     /*
@@ -346,19 +340,15 @@ class JdaRabbitEventListener(
 
     /* Util */
 
-    private fun dispatch(event: Any, print: Boolean = false) {
-        rabbitTemplate.convertAndSend(SentinelExchanges.EVENTS, rabbitTemplate.routingKey, event)
-        if (print) log.info("Sent $event")
+    private fun dispatch(event: Any) {
+        rabbit.sendEvent(event)
+        log.info("Sent $event")
     }
 
     override fun onHttpRequest(event: HttpRequestEvent) {
-        if (event.response!!.code >= 300) {
+        if (event.response?.code ?: -2 >= 300) {
             log.warn("Unsuccessful JDA HTTP Request:\n{}\nResponse:{}\n",
                     event.requestRaw, event.responseRaw)
         }
-    }
-
-    fun onGenericEvent(event: Event) {
-        Counters.jdaEvents.labels(event.javaClass.simpleName).inc()
     }
 }

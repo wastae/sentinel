@@ -8,17 +8,20 @@
 package com.fredboat.sentinel.rpc
 
 import com.fredboat.sentinel.entities.*
+import com.fredboat.sentinel.rpc.meta.SentinelRequest
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.entities.GuildChannel
 import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.springframework.stereotype.Service
 
 @Service
+@SentinelRequest
 class PermissionRequests(private val shardManager: ShardManager) {
 
     /**
      * Returns true if the Role and/or Member has the given permissions in a Guild
      */
+    @SentinelRequest
     fun consume(request: GuildPermissionRequest): PermissionCheckResponse {
         val guild = shardManager.getGuildById(request.guild)
                 ?: throw RuntimeException("Got request for guild which isn't found")
@@ -37,6 +40,7 @@ class PermissionRequests(private val shardManager: ShardManager) {
     /**
      * Returns true if the Role and/or Member has the given permissions in a Channel
      */
+    @SentinelRequest
     fun consume(request: ChannelPermissionRequest): PermissionCheckResponse {
         var channel: GuildChannel? = shardManager.getTextChannelById(request.channel)
                 ?: shardManager.getVoiceChannelById(request.channel)
@@ -61,6 +65,7 @@ class PermissionRequests(private val shardManager: ShardManager) {
         return PermissionCheckResponse(effective, getMissing(request.rawPermissions, effective), false)
     }
 
+    @SentinelRequest
     fun consume(request: BulkGuildPermissionRequest): BulkGuildPermissionResponse {
         val guild = shardManager.getGuildById(request.guild)
                 ?: throw RuntimeException("Got request for guild which isn't found")
