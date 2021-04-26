@@ -1,12 +1,13 @@
 package com.fredboat.sentinel.rpc.meta
 
 import com.fredboat.sentinel.util.Rabbit
+import com.rabbitmq.client.AMQP
+import com.rabbitmq.client.Delivery
 import org.reflections.Reflections
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationContext
 import reactor.core.publisher.Mono
-import reactor.rabbitmq.AcknowledgableDelivery
 import reactor.rabbitmq.OutboundMessage
 
 class ReactiveConsumer<T : Annotation>(
@@ -41,49 +42,55 @@ class ReactiveConsumer<T : Annotation>(
         log.info("Found {} listening methods annotated with {}", handlers.size, annotation.simpleName)
     }
 
-    fun handleIncoming(delivery: AcknowledgableDelivery) = try {
+    fun handleIncoming(delivery: Delivery) = try {
         handleIncoming0(delivery)
     } catch (t: Throwable) {
         handleFailure(delivery, t)
     }
 
-    private fun handleIncoming0(delivery: AcknowledgableDelivery) {
+    private fun handleIncoming0(delivery: Delivery) {
         val clazz = rabbit.getType(delivery)
         val message = rabbit.fromJson(delivery, clazz)
-
 
         val handler = handlers[clazz]
         if (handler == null) {
             log.warn("Unhandled type {}!", clazz)
-            delivery.nack(false)
             return
         }
 
-        when(val reply: Any? = handler(message)) {
+        when (val reply: Any? = handler(message)) {
             is Unit, null -> {
                 if (delivery.properties.replyTo != null) {
                     log.warn("Sender with {} message expected reply, but we have none!", clazz)
-                    delivery.nack(false)
-                } else {
-                    // Empty response
-                    delivery.ack()
                 }
             }
             is Mono<*> -> reply.doOnError { handleFailure(delivery, it) }
-                .subscribe{ sendReply(delivery, it); delivery.ack() }
-            else -> {
-                sendReply(delivery, reply)
-                delivery.ack()
-            }
+                .subscribe{ sendReply(delivery, it) }
+            else -> sendReply(delivery, reply)
         }
     }
 
-    private fun handleFailure(incoming: AcknowledgableDelivery, throwable: Throwable) {
+    private fun handleFailure(incoming: Delivery, throwable: Throwable) {
         log.error("Got exception while consuming message", throwable)
-        incoming.nack(false)
+        if (incoming.properties.replyTo == null) return
+
+        val message = "${throwable.javaClass.simpleName} ${throwable.message}"
+
+        val props = AMQP.BasicProperties.Builder()
+            .contentType("text/plain")
+            .correlationId(incoming.properties.correlationId)
+            .build()
+
+        // Replies are always sent via the default exchange
+        rabbit.send(OutboundMessage(
+            "",
+            incoming.properties.replyTo,
+            props,
+            message.toByteArray()
+        ))
     }
 
-    private fun sendReply(incoming: AcknowledgableDelivery, reply: Any) {
+    private fun sendReply(incoming: Delivery, reply: Any) {
         val (body, builder) = rabbit.toJson(reply)
 
         // Replies are always sent via the default exchange

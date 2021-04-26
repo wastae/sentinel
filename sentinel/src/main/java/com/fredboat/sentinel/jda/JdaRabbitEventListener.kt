@@ -340,9 +340,9 @@ class JdaRabbitEventListener(
 
     /* Util */
 
-    private fun dispatch(event: Any) {
+    private fun dispatch(event: Any, print: Boolean = false) {
         rabbit.sendEvent(event)
-        log.info("Sent $event")
+        if (print) log.info("Sent $event")
     }
 
     override fun onHttpRequest(event: HttpRequestEvent) {

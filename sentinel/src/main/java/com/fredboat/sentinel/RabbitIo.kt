@@ -1,7 +1,7 @@
 package com.fredboat.sentinel
 
-import com.fredboat.sentinel.SentinelExchanges.EVENTS
 import com.fredboat.sentinel.SentinelExchanges.FANOUT
+import com.fredboat.sentinel.SentinelExchanges.JDA
 import com.fredboat.sentinel.SentinelExchanges.REQUESTS
 import com.fredboat.sentinel.SentinelExchanges.SESSIONS
 import com.fredboat.sentinel.config.RoutingKey
@@ -17,11 +17,7 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.stereotype.Controller
 import reactor.core.publisher.Flux
-import reactor.rabbitmq.BindingSpecification
-import reactor.rabbitmq.ExchangeSpecification
-import reactor.rabbitmq.QueueSpecification
-import reactor.rabbitmq.Receiver
-import reactor.rabbitmq.Sender
+import reactor.rabbitmq.*
 
 @Controller
 class RabbitIo(
@@ -58,21 +54,22 @@ class RabbitIo(
             sessionControl.handleRatelimitSet(event)
         }
         val requestsHandler = ReactiveConsumer(rabbit, spring, SentinelRequest::class.java)
-        receiver.consumeManualAck(requestsQueueName).subscribe { requestsHandler.handleIncoming(it) }
+        receiver.consumeAutoAck(requestsQueueName).subscribe { requestsHandler.handleIncoming(it as AcknowledgableDelivery) }
         val fanoutHandler = ReactiveConsumer(rabbit, spring, FanoutRequest::class.java)
-        receiver.consumeManualAck(fanoutQueueName).subscribe { fanoutHandler.handleIncoming(it) }
+        receiver.consumeAutoAck(fanoutQueueName).subscribe { fanoutHandler.handleIncoming(it as AcknowledgableDelivery) }
     }
 
     private fun declareExchanges() = mutableListOf(
-        declareExchange(REQUESTS, durable = true),
-        declareExchange(SESSIONS),
-        declareExchange(EVENTS, durable = true),
-        declareExchange(FANOUT, type = "fanout")
+        declareExchange(REQUESTS, "direct", true),
+        declareExchange(SESSIONS, "fanout"),
+        declareExchange(JDA, "direct", true),
+        declareExchange(FANOUT, "fanout")
     )
 
     private fun declareQueues() = mutableListOf(
         declareQueue(requestsQueueName),
         declareQueue(sessionQueueName),
+        declareQueue(JDA, durable = false, autoDelete = false, exclusive = false),
         declareQueue(fanoutQueueName)
     )
 
@@ -89,18 +86,24 @@ class RabbitIo(
     ) = sender.declareExchange(ExchangeSpecification().apply {
         name(name)
         durable(durable)
-        autoDelete(true)
         type(type)
     }).onErrorContinue { t, _ ->
         log.error("Failed to declare exchange", t)
-    }.doOnSuccess { log.info("Declared $name") }
+    }.doOnSuccess { log.info("Declared exchange $name") }
 
-    private fun declareQueue(name: String) = sender.declareQueue(QueueSpecification().apply {
+    private fun declareQueue(
+        name: String,
+        durable: Boolean = false,
+        autoDelete: Boolean = true,
+        exclusive: Boolean = true
+    ) = sender.declareQueue(QueueSpecification().apply {
         name(name)
-        durable(false)
-        autoDelete(true)
-        exclusive(false)
-    })
+        durable(durable)
+        autoDelete(autoDelete)
+        exclusive(exclusive)
+    }).onErrorContinue { t, _ ->
+        log.error("Failed to declare queue", t)
+    }.doOnSuccess { log.info("Declared queue $name") }
 
     private fun declareBinding(
         exchange: String,
@@ -110,5 +113,7 @@ class RabbitIo(
         exchange(exchange)
         queue(queue)
         routingKey(key?.key ?: "")
-    })
+    }).onErrorContinue { t, _ ->
+        log.error("Failed to declare binding", t)
+    }.doOnSuccess { log.info("Declared binding $exchange") }
 }

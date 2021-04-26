@@ -72,7 +72,7 @@ class MessageRequests(private val shardManager: ShardManager) {
     }
 
     @SentinelRequest
-    fun consume(request: EditMessageRequest): Mono<Void> {
+    fun consume(request: EditMessageRequest): Mono<EditMessageRequest> {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
@@ -81,11 +81,12 @@ class MessageRequests(private val shardManager: ShardManager) {
         }
 
         return channel.editMessageById(request.messageId, request.message)
-            .mono("editMessage").then()
+            .mono("editMessage")
+            .map { EditMessageRequest(request.channel, request.messageId, request.message) }
     }
 
     @SentinelRequest
-    fun consume(request: EditEmbedRequest): Mono<Void> {
+    fun consume(request: EditEmbedRequest): Mono<EditEmbedRequest> {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
@@ -94,7 +95,8 @@ class MessageRequests(private val shardManager: ShardManager) {
         }
 
         return channel.editMessageById(request.messageId, request.embed.toJda())
-            .mono("editEmbedMessage").then()
+            .mono("editEmbedMessage")
+            .map { EditEmbedRequest(request.channel, request.messageId, request.embed) }
     }
 
     @SentinelRequest
@@ -120,17 +122,22 @@ class MessageRequests(private val shardManager: ShardManager) {
             return Mono.empty()
         }
 
-        return request.emote.forEach { emote -> channel.addReactionById(request.messageId, emote).mono("addReactions") }
-            .toMono().map { AddReactionsRequest(request.channel, request.messageId, request.emote) }
+        for (emote in request.emote) {
+            channel.addReactionById(request.messageId, emote).queue()
+        }
+
+        return Mono.empty()
     }
 
     @SentinelRequest
     fun consume(request: RemoveReactionRequest): Mono<RemoveReactionRequest> {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
-            if (channel == null) {
-                log.error("Received RemoveReactionRequest for channel ${request.channel} which was not found")
-                return Mono.empty()
-            }
+
+        if (channel == null) {
+            log.error("Received RemoveReactionRequest for channel ${request.channel} which was not found")
+            return Mono.empty()
+        }
+
         return shardManager.retrieveUserById(request.userId)
             .mono("removeReaction")
             .onErrorContinue { t, _ ->
@@ -155,7 +162,7 @@ class MessageRequests(private val shardManager: ShardManager) {
     }
 
     @SentinelRequest
-    fun consume(request: MessageDeleteRequest): Mono<Void> {
+    fun consume(request: MessageDeleteRequest): Mono<MessageDeleteRequest> {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
@@ -166,15 +173,17 @@ class MessageRequests(private val shardManager: ShardManager) {
         if (request.messages.size < 2) {
             return channel.deleteMessageById(request.messages[0].toString())
                 .mono("deleteMessage")
-                .then()
+                .map { MessageDeleteRequest(request.channel, request.messages) }
         }
 
         val list = request.messages.map { toString() }
-        return channel.deleteMessagesByIds(list).mono("deleteMessages")
+        return channel.deleteMessagesByIds(list)
+            .mono("deleteMessages")
+            .map { MessageDeleteRequest(request.channel, request.messages) }
     }
 
     @SentinelRequest
-    fun consume(request: SendTypingRequest): Mono<Void> {
+    fun consume(request: SendTypingRequest): Mono<SendTypingRequest> {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
@@ -182,6 +191,8 @@ class MessageRequests(private val shardManager: ShardManager) {
             return Mono.empty()
         }
 
-        return channel.sendTyping().mono("sendTyping")
+        return channel.sendTyping()
+            .mono("sendTyping")
+            .map { SendTypingRequest(request.channel) }
     }
 }

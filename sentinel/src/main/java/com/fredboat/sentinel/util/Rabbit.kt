@@ -3,7 +3,7 @@ package com.fredboat.sentinel.util
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import com.fredboat.sentinel.SentinelExchanges.EVENTS
+import com.fredboat.sentinel.SentinelExchanges.JDA
 import com.fredboat.sentinel.SentinelExchanges.SESSIONS
 import com.rabbitmq.client.AMQP
 import com.rabbitmq.client.Delivery
@@ -42,7 +42,7 @@ class Rabbit(sender: Sender) {
     }
 
     fun send(message: OutboundMessage) { sink.next(message) }
-    fun sendEvent(event: Any) = send(EVENTS, event)
+    fun sendEvent(event: Any) = send(JDA, event)
     fun sendSession(event: Any) = send(SESSIONS, event)
 
     private fun send(exchange: String, event: Any) {
