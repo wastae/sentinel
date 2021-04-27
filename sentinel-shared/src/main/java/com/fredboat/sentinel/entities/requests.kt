@@ -150,11 +150,11 @@ data class SentinelInfoRequest(val includeShards: Boolean)
 /** Data about all shards */
 data class SentinelInfoResponse(
         val guilds: Long,
+        val users: Long,
         val roles: Long,
         val categories: Long,
         val textChannels: Long,
         val voiceChannels: Long,
-        val emotes: Long,
         val shards: List<ExtendedShardInfo>?
 )
 

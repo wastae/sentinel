@@ -73,11 +73,11 @@ class ManagementRequests(
     fun consume(request: SentinelInfoRequest) = shardManager.run {
         SentinelInfoResponse(
             guildCache.size(),
+            userCache.size(),
             roleCache.size(),
             categoryCache.size(),
             textChannelCache.size(),
             voiceChannelCache.size(),
-            emoteCache.size(),
             if (request.includeShards) shards.map { it.toEntityExtended() } else null
         )
     }
