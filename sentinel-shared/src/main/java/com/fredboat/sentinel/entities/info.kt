@@ -18,16 +18,6 @@ data class GuildInfo(
 
 data class GuildInfoRequest(val id: Long)
 
-data class MemberInfo(
-        val id: Long,
-        val guildId: Long,
-        val iconUrl: String?,
-        val colorRgb: Int?,
-        val joinDateMillis: Long
-)
-
-data class MemberInfoRequest(val id: Long, val guildId: Long)
-
 data class RoleInfo(
         val id: Long,
         val position: Int,
@@ -39,5 +29,29 @@ data class RoleInfo(
 
 data class RoleInfoRequest(val id: Long)
 
-/** Returns a [User] if found */
-data class GetUserRequest(val id: Long)
+data class MemberInfo(
+        val id: Long,
+        val name: String,
+        val nickname: String?,
+        val discrim: String,
+        val guildId: Long,
+        val avatarUrl: String,
+        val colorRgb: Int?,
+        val joinDateMillis: Long,
+        val bot: Boolean,
+        val roles: List<Long>,
+        val permissions: Long,
+        val voiceChannel: Long?
+)
+
+data class MemberInfoRequest(val id: Long, val guildId: Long)
+
+data class UserInfo(
+        val id: Long,
+        val name: String,
+        val discrim: String,
+        val avatarUrl: String,
+        val bot: Boolean
+)
+
+data class UserInfoRequest(val id: Long)
