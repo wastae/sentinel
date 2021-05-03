@@ -335,4 +335,3 @@ logs/
 **/test/
 **/resources
 .vscode
-gradlew
