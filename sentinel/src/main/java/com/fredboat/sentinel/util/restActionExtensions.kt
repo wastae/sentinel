@@ -12,7 +12,7 @@ import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import net.dv8tion.jda.api.requests.RestAction
 import reactor.core.publisher.Mono
 
-fun <T> RestAction<T>.mono(name: String): Mono<T> = Mono.create<T> { sink ->
+fun <T> RestAction<T>.mono(name: String): Mono<T> = Mono.create { sink ->
     this.queue({ result ->
         Counters.successfulRestActions.labels(name).inc()
         sink.success(result)

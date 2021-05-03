@@ -13,8 +13,6 @@ import com.fredboat.sentinel.util.mono
 import com.fredboat.sentinel.util.toJda
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.TextChannel
-import net.dv8tion.jda.api.exceptions.ErrorResponseException
-import net.dv8tion.jda.api.requests.ErrorResponse
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.JDAImpl
 import net.dv8tion.jda.internal.entities.UserImpl
@@ -22,7 +20,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
-import reactor.core.publisher.toMono
 
 @Service
 @SentinelRequest
@@ -41,9 +38,10 @@ class MessageRequests(private val shardManager: ShardManager) {
             return Mono.empty()
         }
 
-        return channel.sendMessage(request.message)
-                .mono("sendMessage")
-                .map { SendMessageResponse(it.idLong) }
+        return channel.sendMessage(request.message).mono("sendMessage")
+            .map {
+                SendMessageResponse(it.idLong)
+            }
     }
 
     @SentinelRequest
@@ -55,9 +53,10 @@ class MessageRequests(private val shardManager: ShardManager) {
             return Mono.empty()
         }
 
-        return channel.sendMessage(request.embed.toJda()).mono("sendEmbed").map {
-            SendMessageResponse(it.idLong)
-        }
+        return channel.sendMessage(request.embed.toJda()).mono("sendEmbed")
+            .map {
+                SendMessageResponse(it.idLong)
+            }
     }
 
     @SentinelRequest
@@ -65,10 +64,12 @@ class MessageRequests(private val shardManager: ShardManager) {
         val shard = shardManager.shards.find { it.status == JDA.Status.CONNECTED } as JDAImpl
         val user = UserImpl(request.recipient, shard)
 
-        return user.openPrivateChannel()
-            .mono("openPrivateChannel")
-            .flatMap { it.sendMessage(request.message).mono("sendPrivateMessage") }
-            .map { SendMessageResponse(it.idLong) }
+        return user.openPrivateChannel().mono("openPrivateChannel")
+            .flatMap {
+                it.sendMessage(request.message).mono("sendPrivateMessage")
+            }.map {
+                SendMessageResponse(it.idLong)
+            }
     }
 
     @SentinelRequest
@@ -80,9 +81,8 @@ class MessageRequests(private val shardManager: ShardManager) {
             return Mono.empty()
         }
 
-        return channel.editMessageById(request.messageId, request.message)
-            .mono("editMessage")
-            .map { EditMessageRequest(request.channel, request.messageId, request.message) }
+        return channel.editMessageById(request.messageId, request.message).mono("editMessage")
+            .thenReturn(EditMessageRequest(request.channel, request.messageId, request.message))
     }
 
     @SentinelRequest
@@ -94,9 +94,8 @@ class MessageRequests(private val shardManager: ShardManager) {
             return Mono.empty()
         }
 
-        return channel.editMessageById(request.messageId, request.embed.toJda())
-            .mono("editEmbedMessage")
-            .map { EditEmbedRequest(request.channel, request.messageId, request.embed) }
+        return channel.editMessageById(request.messageId, request.embed.toJda()).mono("editEmbedMessage")
+            .thenReturn(EditEmbedRequest(request.channel, request.messageId, request.embed))
     }
 
     @SentinelRequest
@@ -108,9 +107,8 @@ class MessageRequests(private val shardManager: ShardManager) {
             return Mono.empty()
         }
 
-        return channel.addReactionById(request.messageId, request.emote)
-            .mono("addReaction")
-            .map { AddReactionRequest(request.channel, request.messageId, request.emote) }
+        return channel.addReactionById(request.messageId, request.emote).mono("addReaction")
+            .thenReturn(AddReactionRequest(request.channel, request.messageId, request.emote))
     }
 
     @SentinelRequest
@@ -123,7 +121,11 @@ class MessageRequests(private val shardManager: ShardManager) {
         }
 
         for (emote in request.emote) {
-            channel.addReactionById(request.messageId, emote).queue()
+            channel.addReactionById(request.messageId, emote).mono("addReactions")
+            if (request.emote.last() == emote) { // Maybe there's possibly more beautifully decision how it's can be done
+                return channel.addReactionById(request.messageId, emote).mono("addReactions")
+                    .thenReturn(AddReactionsRequest(request.channel, request.messageId, request.emote))
+            }
         }
 
         return Mono.empty()
@@ -138,13 +140,10 @@ class MessageRequests(private val shardManager: ShardManager) {
             return Mono.empty()
         }
 
-        return shardManager.retrieveUserById(request.userId)
-            .mono("removeReaction")
-            .onErrorContinue { t, _ ->
-                t is ErrorResponseException && t.errorResponse == ErrorResponse.UNKNOWN_USER
-            }
-            .flatMap { user -> channel.removeReactionById(request.messageId, request.emote, user).mono("removeReaction") }
-            .map { RemoveReactionRequest(channel.idLong, request.messageId, request.userId, request.emote) }
+        return shardManager.retrieveUserById(request.userId).mono("retrieveUser")
+            .flatMap {
+                channel.removeReactionById(request.messageId, request.emote, it).mono("removeReaction")
+            }.thenReturn(RemoveReactionRequest(request.channel, request.messageId, request.userId, request.emote))
     }
 
     @SentinelRequest
@@ -156,9 +155,8 @@ class MessageRequests(private val shardManager: ShardManager) {
             return Mono.empty()
         }
 
-        return channel.clearReactionsById(request.messageId)
-            .mono("removeReactions")
-            .map { RemoveReactionsRequest(channel.idLong, request.messageId) }
+        return channel.clearReactionsById(request.messageId).mono("clearReactions")
+            .thenReturn(RemoveReactionsRequest(request.channel, request.messageId))
     }
 
     @SentinelRequest
@@ -171,15 +169,13 @@ class MessageRequests(private val shardManager: ShardManager) {
         }
 
         if (request.messages.size < 2) {
-            return channel.deleteMessageById(request.messages[0].toString())
-                .mono("deleteMessage")
-                .map { MessageDeleteRequest(request.channel, request.messages) }
+            return channel.deleteMessageById(request.messages[0].toString()).mono("deleteMessage")
+                .thenReturn(MessageDeleteRequest(request.channel, request.messages))
         }
 
         val list = request.messages.map { toString() }
-        return channel.deleteMessagesByIds(list)
-            .mono("deleteMessages")
-            .map { MessageDeleteRequest(request.channel, request.messages) }
+        return channel.deleteMessagesByIds(list).mono("deleteMessages")
+            .thenReturn(MessageDeleteRequest(request.channel, request.messages))
     }
 
     @SentinelRequest
@@ -191,8 +187,7 @@ class MessageRequests(private val shardManager: ShardManager) {
             return Mono.empty()
         }
 
-        return channel.sendTyping()
-            .mono("sendTyping")
-            .map { SendTypingRequest(request.channel) }
+        return channel.sendTyping().mono("sendTyping")
+            .thenReturn(SendTypingRequest(request.channel))
     }
 }
