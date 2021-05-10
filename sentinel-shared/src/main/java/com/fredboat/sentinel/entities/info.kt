@@ -39,6 +39,7 @@ data class MemberInfo(
         val colorRgb: Int?,
         val joinDateMillis: Long,
         val bot: Boolean,
+        val mutualGuilds: List<Long>,
         val roles: List<Long>,
         val permissions: Long,
         val voiceChannel: Long?
@@ -46,12 +47,17 @@ data class MemberInfo(
 
 data class MemberInfoRequest(val id: Long, val guildId: Long)
 
+data class GetMemberRequest(val id: Long, val guildId: Long)
+
 data class UserInfo(
         val id: Long,
         val name: String,
         val discrim: String,
         val avatarUrl: String,
-        val bot: Boolean
+        val bot: Boolean,
+        val mutualGuilds: List<Long>
 )
 
 data class UserInfoRequest(val id: Long)
+
+data class GetUserRequest(val id: Long)

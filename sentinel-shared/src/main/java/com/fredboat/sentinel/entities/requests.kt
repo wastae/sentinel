@@ -42,35 +42,35 @@ data class SendPrivateMessageRequest(
         val message: String
 )
 
-/** Returns [Unit]*/
+/** Returns [EditMessageRequest]*/
 data class EditMessageRequest(
         val channel: Long,
         val messageId: Long,
         val message: String
 )
 
-/** Returns [Unit]*/
+/** Returns [EditEmbedRequest]*/
 data class EditEmbedRequest(
         val channel: Long,
         val messageId: Long,
         val embed: Embed
 )
 
-/** Returns [Unit]*/
+/** Returns [AddReactionRequest]*/
 data class AddReactionRequest(
         val channel: Long,
         val messageId: Long,
         val emote: String
 )
 
-/** Returns [Unit]*/
+/** Returns [AddReactionsRequest]*/
 data class AddReactionsRequest(
         val channel: Long,
         val messageId: Long,
         val emote: ArrayList<String>
 )
 
-/** Returns [Unit]*/
+/** Returns [RemoveReactionRequest]*/
 data class RemoveReactionRequest(
         val channel: Long,
         val messageId: Long,
@@ -78,7 +78,7 @@ data class RemoveReactionRequest(
         val emote: String
 )
 
-/** Returns [Unit]*/
+/** Returns [RemoveReactionsRequest]*/
 data class RemoveReactionsRequest(
         val channel: Long,
         val messageId: Long
@@ -88,13 +88,13 @@ data class SendMessageResponse(
         val messageId: Long
 )
 
-/** Returns [Unit]*/
+/** Returns [MessageDeleteRequest]*/
 data class MessageDeleteRequest(
         val channel: Long,
         val messages: List<Long>
 )
 
-/** Returns [Unit]*/
+/** Returns [SendTypingRequest]*/
 data class SendTypingRequest(
         val channel: Long
 )

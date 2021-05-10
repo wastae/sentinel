@@ -55,12 +55,12 @@ class InfoRequests(private val shardManager: ShardManager) {
 
     @SentinelRequest
     fun consume(request: MemberInfoRequest): Mono<MemberInfo>? {
-        return shardManager.getGuildById(request.guildId)?.retrieveMemberById(request.id)
-            ?.mono("fetchMember")
-            ?.onErrorContinue { t, _ ->
+        return shardManager.getGuildById(request.guildId)!!.retrieveMemberById(request.id)
+            .mono("fetchMemberInfo")
+            .onErrorContinue { t, _ ->
                 t is ErrorResponseException && t.errorResponse == ErrorResponse.UNKNOWN_USER
                         && t.errorResponse == ErrorResponse.UNKNOWN_MEMBER
-            }?.map { it ->
+            }.map {
                 MemberInfo(
                     it.user.idLong,
                     it.user.name,
@@ -71,6 +71,7 @@ class InfoRequests(private val shardManager: ShardManager) {
                     it.color?.rgb,
                     it.timeJoined.toInstant().toEpochMilli(),
                     it.user.isBot,
+                    it.user.mutualGuilds.map { it.idLong },
                     it.roles.map { it.idLong },
                     PermissionUtil.getEffectivePermission(it),
                     it.voiceState?.channel?.idLong
@@ -79,11 +80,20 @@ class InfoRequests(private val shardManager: ShardManager) {
     }
 
     @SentinelRequest
+    fun consume(request: GetMemberRequest): Mono<Member> {
+        return shardManager.getGuildById(request.guildId)!!.retrieveMemberById(request.id)
+            .mono("fetchMember")
+            .onErrorContinue { t, _ ->
+                t is ErrorResponseException && t.errorResponse == ErrorResponse.UNKNOWN_USER
+                        && t.errorResponse == ErrorResponse.UNKNOWN_MEMBER
+            }.map { it.toEntity() }
+    }
+
+    @SentinelRequest
     fun consume(request: UserInfoRequest): Mono<UserInfo> {
         return shardManager.retrieveUserById(request.id)
-            .mono("fetchUser")
+            .mono("fetchUserInfo")
             .onErrorContinue { t, _ ->
-                // Just drop the user if it was not found. Fail otherwise.
                 t is ErrorResponseException && t.errorResponse == ErrorResponse.UNKNOWN_USER
             }.map {
                 UserInfo(
@@ -91,8 +101,18 @@ class InfoRequests(private val shardManager: ShardManager) {
                     it.name,
                     it.discriminator,
                     it.effectiveAvatarUrl,
-                    it.isBot
+                    it.isBot,
+                    it.mutualGuilds.map { it.idLong }
                 )
             }
+    }
+
+    @SentinelRequest
+    fun consume(request: GetUserRequest): Mono<User> {
+        return shardManager.retrieveUserById(request.id)
+            .mono("fetchUser")
+            .onErrorContinue { t, _ ->
+                t is ErrorResponseException && t.errorResponse == ErrorResponse.UNKNOWN_USER
+            }.map { it.toEntity() }
     }
 }

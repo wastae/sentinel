@@ -22,7 +22,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.util.*
 import javax.security.auth.login.LoginException
-import kotlin.collections.HashSet
 
 @Configuration
 class ShardManagerConfig {
@@ -37,14 +36,15 @@ class ShardManagerConfig {
                           voiceInterceptor: VoiceInterceptor
     ): ShardManager {
 
-        val INTENTS = listOf(
+        val intents = listOf(
             GatewayIntent.DIRECT_MESSAGES,
             GatewayIntent.GUILD_MESSAGES,
             GatewayIntent.GUILD_MESSAGE_REACTIONS,
-            GatewayIntent.GUILD_VOICE_STATES
+            GatewayIntent.GUILD_VOICE_STATES,
+			GatewayIntent.GUILD_MEMBERS
         )
 
-        val builder = DefaultShardManagerBuilder.create(sentinelProperties.discordToken, INTENTS)
+        val builder = DefaultShardManagerBuilder.create(sentinelProperties.discordToken, intents)
                 .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE)
                 .disableCache(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE, CacheFlag.ROLE_TAGS)
                 .setBulkDeleteSplittingEnabled(false)
@@ -53,7 +53,7 @@ class ShardManagerConfig {
                 .setShardsTotal(sentinelProperties.shardCount)
                 .setShards(sentinelProperties.getShards())
                 .setSessionController(sessionController)
-                .setChunkingFilter(ChunkingFilter.NONE)
+                .setChunkingFilter(ChunkingFilter.ALL)
                 .setVoiceDispatchInterceptor(voiceInterceptor)
                 .addEventListeners(rabbitEventListener)
 
@@ -80,6 +80,6 @@ class ShardManagerConfig {
     }
 
     @Bean
-    fun guildSubscriptions(): MutableSet<Long> = Collections.synchronizedSet(HashSet<Long>())
+    fun guildSubscriptions(): MutableSet<Long> = Collections.synchronizedSet(HashSet())
 
 }

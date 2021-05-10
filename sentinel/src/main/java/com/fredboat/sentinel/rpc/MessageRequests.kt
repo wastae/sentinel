@@ -121,7 +121,7 @@ class MessageRequests(private val shardManager: ShardManager) {
         }
 
         for (emote in request.emote) {
-            channel.addReactionById(request.messageId, emote).mono("addReactions")
+            channel.addReactionById(request.messageId, emote).queue()
             if (request.emote.last() == emote) { // Maybe there's possibly more beautifully decision how it's can be done
                 return channel.addReactionById(request.messageId, emote).mono("addReactions")
                     .thenReturn(AddReactionsRequest(request.channel, request.messageId, request.emote))

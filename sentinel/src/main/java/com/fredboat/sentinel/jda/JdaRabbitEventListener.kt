@@ -32,9 +32,8 @@ import net.dv8tion.jda.api.events.channel.voice.update.VoiceChannelUpdatePositio
 import net.dv8tion.jda.api.events.guild.GenericGuildEvent
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
-import net.dv8tion.jda.api.events.guild.member.GenericGuildMemberEvent
-import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
-import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent
+import net.dv8tion.jda.api.events.guild.member.*
+import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.api.events.guild.override.GenericPermissionOverrideEvent
 import net.dv8tion.jda.api.events.guild.update.GuildUpdateNameEvent
 import net.dv8tion.jda.api.events.guild.update.GuildUpdateOwnerEvent
@@ -127,6 +126,8 @@ class JdaRabbitEventListener(
 
     override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) = onMemberChange(event.member)
     override fun onGuildMemberRoleRemove(event: GuildMemberRoleRemoveEvent) = onMemberChange(event.member)
+    override fun onGuildMemberJoin(event: GuildMemberJoinEvent) = onMemberChange(event.member)
+    override fun onGuildMemberRemove(event: GuildMemberRemoveEvent) = onMemberChange(event.member!!)
 
     private fun onMemberChange(member: net.dv8tion.jda.api.entities.Member) {
         if (!subscriptions.contains(member.guild.idLong)) return
@@ -141,7 +142,7 @@ class JdaRabbitEventListener(
         if (!subscriptions.contains(event.guild.idLong)) return
         updateGuild(event.guild)
         if (event.channelJoined.type == ChannelType.STAGE && event.member.user.idLong == event.guild.selfMember.user.idLong) {
-            event.guild.requestToSpeak().submit()
+            event.guild.requestToSpeak().queue()
         }
         dispatch(VoiceJoinEvent(
                 event.guild.idLong,
@@ -167,7 +168,7 @@ class JdaRabbitEventListener(
         if (!subscriptions.contains(event.guild.idLong)) return
         updateGuild(event.guild)
         if (event.channelJoined.type == ChannelType.STAGE && event.member.user.idLong == event.guild.selfMember.user.idLong) {
-            event.guild.requestToSpeak().submit()
+            event.guild.requestToSpeak().queue()
         }
         dispatch(VoiceMoveEvent(
                 event.guild.idLong,
