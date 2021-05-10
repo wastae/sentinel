@@ -49,6 +49,8 @@ data class MemberInfoRequest(val id: Long, val guildId: Long)
 
 data class GetMemberRequest(val id: Long, val guildId: Long)
 
+data class MembersByPrefixResponse(val members: List<Member>)
+
 data class GetMembersByPrefixRequest(val prefix: String, val limit: Int, val guildId: Long)
 
 data class UserInfo(

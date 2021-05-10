@@ -36,10 +36,11 @@ dependencies {
     compile "com.github.DV8FromTheWorld:JDA:5492d1d2eb"
     compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-script-runtime:$kotlin_version"      // For kotlin eval
-    //compile "org.jetbrains.kotlin:kotlin-script-util:$kotlin_version"         // For kotlin eval
+    //compile "org.jetbrains.kotlin:kotlin-script-util:$kotlin_version"       // For kotlin eval
     compile "org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlin_version" // For kotlin eval
     compile "org.springframework.boot:spring-boot-starter-web:$bootVersion"
     compile "io.projectreactor.rabbitmq:reactor-rabbitmq:$reactorRabbitVersion"
+    compile "io.projectreactor.kotlin:reactor-kotlin-extensions:$reactorKotlinVersion"
     compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion"
     compile "org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$coroutinesVersion"
     //compile "org.springframework.amqp:spring-rabbit:$amqpVersion"
