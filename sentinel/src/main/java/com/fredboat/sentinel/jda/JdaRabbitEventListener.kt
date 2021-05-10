@@ -197,7 +197,8 @@ class JdaRabbitEventListener(
                 author.idLong,
                 author.isBot,
                 message.attachments.map { if (it.isImage) it.proxyUrl else it.url },
-                event.message.member!!.toEntity()
+                event.message.member!!.toEntity(),
+                event.message.mentionedMembers.map { it.toEntity() }
         ))
     }
 

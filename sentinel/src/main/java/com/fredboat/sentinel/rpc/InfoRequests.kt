@@ -54,6 +54,18 @@ class InfoRequests(private val shardManager: ShardManager) {
     }
 
     @SentinelRequest
+    fun consume(request: GetMembersByPrefixRequest): MembersByPrefixResponse {
+        val members = shardManager.getGuildById(request.guildId)!!.retrieveMembersByPrefix(request.prefix, request.limit)
+        return MembersByPrefixResponse(members.get().map { it.toEntity() })
+    }
+
+    @SentinelRequest
+    fun consume(request: GetMembersByIdsRequest): MembersByIdsResponse {
+        val members = shardManager.getGuildById(request.guildId)!!.retrieveMembersByIds(request.ids)
+        return MembersByIdsResponse(members.get().map { it.toEntity() })
+    }
+
+    @SentinelRequest
     fun consume(request: MemberInfoRequest): Mono<MemberInfo>? {
         return shardManager.getGuildById(request.guildId)!!.retrieveMemberById(request.id)
             .mono("fetchMemberInfo")

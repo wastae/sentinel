@@ -79,7 +79,8 @@ data class MessageReceivedEvent (
         val author: Long,
         val fromBot: Boolean,
         val attachments: List<String>,
-        val member: Member
+        val member: Member,
+        val mentionedMembers: List<Member>
 )
 
 data class PrivateMessageReceivedEvent (
