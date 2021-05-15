@@ -40,8 +40,7 @@ class ShardManagerConfig {
             GatewayIntent.DIRECT_MESSAGES,
             GatewayIntent.GUILD_MESSAGES,
             GatewayIntent.GUILD_MESSAGE_REACTIONS,
-            GatewayIntent.GUILD_VOICE_STATES,
-            GatewayIntent.GUILD_MEMBERS
+            GatewayIntent.GUILD_VOICE_STATES
         )
 
         val builder = DefaultShardManagerBuilder.create(sentinelProperties.discordToken, intents)
@@ -53,7 +52,7 @@ class ShardManagerConfig {
                 .setShardsTotal(sentinelProperties.shardCount)
                 .setShards(sentinelProperties.getShards())
                 .setSessionController(sessionController)
-                .setChunkingFilter(ChunkingFilter.ALL)
+                .setChunkingFilter(ChunkingFilter.NONE)
                 .setVoiceDispatchInterceptor(voiceInterceptor)
                 .addEventListeners(rabbitEventListener)
 
