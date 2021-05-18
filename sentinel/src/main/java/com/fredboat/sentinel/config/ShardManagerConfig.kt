@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.requests.GatewayIntent
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.ChunkingFilter
+import net.dv8tion.jda.api.utils.MemberCachePolicy
 import net.dv8tion.jda.api.utils.cache.CacheFlag
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -52,7 +53,8 @@ class ShardManagerConfig {
                 .setShardsTotal(sentinelProperties.shardCount)
                 .setShards(sentinelProperties.getShards())
                 .setSessionController(sessionController)
-                .setChunkingFilter(ChunkingFilter.NONE)
+                .setMemberCachePolicy(MemberCachePolicy.DEFAULT)
+                .setChunkingFilter(ChunkingFilter.ALL)
                 .setVoiceDispatchInterceptor(voiceInterceptor)
                 .addEventListeners(rabbitEventListener)
 

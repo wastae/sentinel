@@ -14,10 +14,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import reactor.rabbitmq.RabbitFlux
-import reactor.rabbitmq.ReceiverOptions
-import reactor.rabbitmq.Sender
-import reactor.rabbitmq.SenderOptions
+import reactor.rabbitmq.*
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.Socket
@@ -73,20 +70,20 @@ class RabbitConfig(val props: RabbitProperties) {
     }
 
     @Bean
-    fun senderOptions(factory: ConnectionFactory, routingKey: RoutingKey) = SenderOptions()
+    fun senderOptions(factory: ConnectionFactory, routingKey: RoutingKey): SenderOptions = SenderOptions()
         .connectionFactory(factory)
-        .connectionSupplier { supplier(factory, routingKey) }!!
+        .connectionSupplier { supplier(factory, routingKey) }
 
     @Bean
-    fun receiverOptions(factory: ConnectionFactory, routingKey: RoutingKey) = ReceiverOptions()
+    fun receiverOptions(factory: ConnectionFactory, routingKey: RoutingKey): ReceiverOptions = ReceiverOptions()
         .connectionFactory(factory)
-        .connectionSupplier { supplier(factory, routingKey) }!!
+        .connectionSupplier { supplier(factory, routingKey) }
 
     @Bean
-    fun sender(opts: SenderOptions) = RabbitFlux.createSender(opts)!!
+    fun sender(opts: SenderOptions): Sender = RabbitFlux.createSender(opts)
 
     @Bean
-    fun receiver(opts: ReceiverOptions) = RabbitFlux.createReceiver(opts)!!
+    fun receiver(opts: ReceiverOptions): Receiver = RabbitFlux.createReceiver(opts)
 
     @Bean
     fun rabbit(sender: Sender) = Rabbit(sender)
