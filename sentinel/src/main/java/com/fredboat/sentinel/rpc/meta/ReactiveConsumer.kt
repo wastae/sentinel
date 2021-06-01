@@ -71,10 +71,10 @@ class ReactiveConsumer<T : Annotation>(
     }
 
     private fun handleFailure(incoming: Delivery, throwable: Throwable) {
-        log.error("Got exception while consuming message", throwable)
         if (incoming.properties.replyTo == null) return
 
         val message = "${throwable.javaClass.simpleName} ${throwable.message}"
+        log.error("Message: ${throwable.javaClass.simpleName} ${throwable.message}")
 
         val props = AMQP.BasicProperties.Builder()
             .contentType("text/plain")

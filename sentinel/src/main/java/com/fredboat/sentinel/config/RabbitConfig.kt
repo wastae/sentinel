@@ -70,20 +70,20 @@ class RabbitConfig(val props: RabbitProperties) {
     }
 
     @Bean
-    fun senderOptions(factory: ConnectionFactory, routingKey: RoutingKey): SenderOptions = SenderOptions()
+    fun senderOptions(factory: ConnectionFactory, routingKey: RoutingKey) = SenderOptions()
         .connectionFactory(factory)
-        .connectionSupplier { supplier(factory, routingKey) }
+        .connectionSupplier { supplier(factory, routingKey) }!!
 
     @Bean
-    fun receiverOptions(factory: ConnectionFactory, routingKey: RoutingKey): ReceiverOptions = ReceiverOptions()
+    fun receiverOptions(factory: ConnectionFactory, routingKey: RoutingKey) = ReceiverOptions()
         .connectionFactory(factory)
-        .connectionSupplier { supplier(factory, routingKey) }
+        .connectionSupplier { supplier(factory, routingKey) }!!
 
     @Bean
-    fun sender(opts: SenderOptions): Sender = RabbitFlux.createSender(opts)
+    fun sender(opts: SenderOptions) = RabbitFlux.createSender(opts)!!
 
     @Bean
-    fun receiver(opts: ReceiverOptions): Receiver = RabbitFlux.createReceiver(opts)
+    fun receiver(opts: ReceiverOptions) = RabbitFlux.createReceiver(opts)!!
 
     @Bean
     fun rabbit(sender: Sender) = Rabbit(sender)

@@ -16,9 +16,9 @@ fun <T> RestAction<T>.mono(name: String): Mono<T> = Mono.create { sink ->
     this.queue({ result ->
         Counters.successfulRestActions.labels(name).inc()
         sink.success(result)
-    }, { t ->
-        val errCode = (t as? ErrorResponseException)?.errorCode?.toString() ?: "none"
+    }, { throwable ->
+        val errCode = (throwable as? ErrorResponseException)?.errorCode?.toString() ?: "none"
         Counters.failedRestActions.labels(name, errCode).inc()
-        sink.error(t)
+        sink.error(throwable)
     })
 }

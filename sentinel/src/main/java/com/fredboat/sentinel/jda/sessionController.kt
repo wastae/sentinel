@@ -53,12 +53,12 @@ class RemoteSessionController(
     fun syncSessionQueue() {
         localQueue.values.forEach { it.send(false) }
     }
-    
+
     fun onRunRequest(id: Int): String {
         val status = shardManager.getShardById(id)?.status
         log.info("Received request to run shard $id, which has status $status")
         val node = localQueue[id]
-        if(node == null) {
+        if (node == null) {
             val msg = RemoveSessionEvent(id, sentinelProps.shardCount, routingKey.key)
             rabbit.sendEvent(msg)
             throw IllegalStateException("Node $id is not queued")

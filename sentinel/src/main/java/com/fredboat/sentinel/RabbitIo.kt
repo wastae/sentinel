@@ -54,9 +54,9 @@ class RabbitIo(
             sessionControl.handleRatelimitSet(event)
         }
         val requestsHandler = ReactiveConsumer(rabbit, spring, SentinelRequest::class.java)
-        receiver.consumeAutoAck(requestsQueueName).subscribe { requestsHandler.handleIncoming(it as AcknowledgableDelivery) }
+        receiver.consumeAutoAck(requestsQueueName).subscribe { requestsHandler.handleIncoming(it) }
         val fanoutHandler = ReactiveConsumer(rabbit, spring, FanoutRequest::class.java)
-        receiver.consumeAutoAck(fanoutQueueName).subscribe { fanoutHandler.handleIncoming(it as AcknowledgableDelivery) }
+        receiver.consumeAutoAck(fanoutQueueName).subscribe { fanoutHandler.handleIncoming(it) }
     }
 
     private fun declareExchanges() = mutableListOf(

@@ -9,8 +9,8 @@ buildscript {
     ext {
         depCheckerVersion = "0.38.0"
         gradleGitVersion = "2.3.1"
-        kotlin_version = "1.4.32"
-        bootVersion = "2.4.5"
+        kotlin_version = "1.5.10"
+        bootVersion = "2.5.0"
         aptVersion = "0.21"
     }
 
@@ -67,7 +67,7 @@ allprojects {
 
 ext {
     //jdaVersion = "4.2.0_211"
-    amqpVersion = "2.0.4.RELEASE"
+    amqpVersion = "2.3.7"
     gsonVersion = "2.8.6"
     jacksonKotlinVersion = "2.12.3"
     logbackVersion = "1.2.3"
@@ -75,7 +75,7 @@ ext {
     prometheusClientVersion = "0.10.0"
     reactorRabbitVersion = "1.5.2"
     reactorKotlinVersion = "1.1.3"
-    coroutinesVersion = "1.4.3"
+    coroutinesVersion = "1.5.0"
     reflectionsVersion = "0.9.12"
     jsonVersion = "20210307"
     snakeYamlVersion = "1.28"
@@ -84,7 +84,7 @@ ext {
     junitVersion = "5.7.1"
     apiGuardianVersion = "1.0.0"
     dockerComposeRuleVersion = "1.5.0"
-    mockitoVersion = "3.9.0"
+    mockitoVersion = "3.10.0"
 }
 
 wrapper {

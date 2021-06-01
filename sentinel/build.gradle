@@ -43,7 +43,7 @@ dependencies {
     compile "io.projectreactor.kotlin:reactor-kotlin-extensions:$reactorKotlinVersion"
     compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion"
     compile "org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$coroutinesVersion"
-    //compile "org.springframework.amqp:spring-rabbit:$amqpVersion"
+    compile "org.springframework.amqp:spring-rabbit:$amqpVersion"
     annotationProcessor "org.springframework.boot:spring-boot-configuration-processor:$bootVersion"
     compile "com.google.code.gson:gson:$gsonVersion"
     compile "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonKotlinVersion"
