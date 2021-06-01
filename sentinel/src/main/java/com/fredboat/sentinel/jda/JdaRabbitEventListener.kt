@@ -7,16 +7,16 @@
 
 package com.fredboat.sentinel.jda
 
-import com.fredboat.sentinel.SentinelExchanges
 import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.metrics.Counters
+import com.fredboat.sentinel.util.Rabbit
 import com.fredboat.sentinel.util.toEntity
 import com.neovisionaries.ws.client.WebSocketFrame
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.GuildChannel
 import net.dv8tion.jda.api.entities.MessageType
-import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.events.*
 import net.dv8tion.jda.api.events.channel.category.CategoryCreateEvent
 import net.dv8tion.jda.api.events.channel.category.CategoryDeleteEvent
@@ -32,9 +32,8 @@ import net.dv8tion.jda.api.events.channel.voice.update.VoiceChannelUpdatePositio
 import net.dv8tion.jda.api.events.guild.GenericGuildEvent
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
-import net.dv8tion.jda.api.events.guild.member.GenericGuildMemberEvent
-import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
-import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent
+import net.dv8tion.jda.api.events.guild.member.*
+import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.api.events.guild.override.GenericPermissionOverrideEvent
 import net.dv8tion.jda.api.events.guild.update.GuildUpdateNameEvent
 import net.dv8tion.jda.api.events.guild.update.GuildUpdateOwnerEvent
@@ -53,18 +52,16 @@ import net.dv8tion.jda.api.events.role.update.RoleUpdatePermissionsEvent
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePositionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.sharding.ShardManager
-import net.dv8tion.jda.internal.JDAImpl
 import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.io.File
 
 @Component
 class JdaRabbitEventListener(
-        private val rabbitTemplate: RabbitTemplate,
+        private val rabbit: Rabbit,
         @param:Qualifier("guildSubscriptions")
         private val subscriptions: MutableSet<Long>,
         private val voiceServerUpdateCache: VoiceServerUpdateCache
@@ -85,10 +82,6 @@ class JdaRabbitEventListener(
 
     override fun onReady(event: ReadyEvent) {
         dispatch(ShardLifecycleEvent(event.jda.toEntity(), LifecycleEventEnum.READIED))
-
-        val handlers = (event.jda as JDAImpl).client.handlers
-        handlers["VOICE_SERVER_UPDATE"] = VoiceServerUpdateInterceptor(event.jda as JDAImpl, rabbitTemplate, voiceServerUpdateCache)
-        handlers["VOICE_STATE_UPDATE"] = VoiceStateUpdateInterceptor(event.jda as JDAImpl)
 
         if (shardManager.shards.all { it.status == JDA.Status.CONNECTED }) {
             // This file can be used by Ansible playbooks
@@ -133,13 +126,15 @@ class JdaRabbitEventListener(
 
     override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) = onMemberChange(event.member)
     override fun onGuildMemberRoleRemove(event: GuildMemberRoleRemoveEvent) = onMemberChange(event.member)
+    override fun onGuildMemberJoin(event: GuildMemberJoinEvent) = onMemberChange(event.member)
+    override fun onGuildMemberRemove(event: GuildMemberRemoveEvent) = onMemberChange(event.member!!)
 
     private fun onMemberChange(member: net.dv8tion.jda.api.entities.Member) {
         if (!subscriptions.contains(member.guild.idLong)) return
         dispatch(GuildMemberUpdate(
                 member.guild.idLong,
                 member.toEntity()
-        ), print = false)
+        ))
     }
 
     /* Voice jda */
@@ -147,7 +142,7 @@ class JdaRabbitEventListener(
         if (!subscriptions.contains(event.guild.idLong)) return
         updateGuild(event.guild)
         if (event.channelJoined.type == ChannelType.STAGE && event.member.user.idLong == event.guild.selfMember.user.idLong) {
-            event.guild.requestToSpeak().submit()
+            event.guild.requestToSpeak().queue()
         }
         dispatch(VoiceJoinEvent(
                 event.guild.idLong,
@@ -173,7 +168,7 @@ class JdaRabbitEventListener(
         if (!subscriptions.contains(event.guild.idLong)) return
         updateGuild(event.guild)
         if (event.channelJoined.type == ChannelType.STAGE && event.member.user.idLong == event.guild.selfMember.user.idLong) {
-            event.guild.requestToSpeak().submit()
+            event.guild.requestToSpeak().queue()
         }
         dispatch(VoiceMoveEvent(
                 event.guild.idLong,
@@ -202,8 +197,9 @@ class JdaRabbitEventListener(
                 author.idLong,
                 author.isBot,
                 message.attachments.map { if (it.isImage) it.proxyUrl else it.url },
-                event.message.member!!.toEntity()
-        ), print = false)
+                event.message.member!!.toEntity(),
+                event.message.mentionedMembers.map { it.toEntity() }
+        ))
     }
 
     override fun onPrivateMessageReceived(event: PrivateMessageReceivedEvent) {
@@ -223,23 +219,22 @@ class JdaRabbitEventListener(
 
     override fun onGuildMessageReactionAdd(event: GuildMessageReactionAddEvent) {
         if (!subscriptions.contains(event.guild.idLong)) return
-        if (!event.reactionEmote.isEmote) return
 
         if (subscriptions.contains(event.guild.idLong)) {
             updateGuild(event.guild)
         }
 
         dispatch(MessageReactionAddEvent(
-                event.member.toEntity(),
                 event.messageIdLong,
                 event.guild.idLong,
                 event.channel.idLong,
                 PermissionUtil.getEffectivePermission(event.channel, event.guild.selfMember),
                 PermissionUtil.getEffectivePermission(event.channel, event.member),
                 event.member.idLong,
-                event.reactionEmote.idLong,
-                event.reactionEmote.name
-        ), print = false)
+                event.reactionEmote.asReactionCode,
+                event.reactionEmote.isEmoji,
+                event.member.toEntity()
+        ))
     }
 
     /*
@@ -347,18 +342,14 @@ class JdaRabbitEventListener(
     /* Util */
 
     private fun dispatch(event: Any, print: Boolean = false) {
-        rabbitTemplate.convertAndSend(SentinelExchanges.EVENTS, rabbitTemplate.routingKey, event)
+        rabbit.sendEvent(event)
         if (print) log.info("Sent $event")
     }
 
     override fun onHttpRequest(event: HttpRequestEvent) {
-        if (event.response!!.code >= 300) {
+        if (event.response?.code ?: -2 >= 300) {
             log.warn("Unsuccessful JDA HTTP Request:\n{}\nResponse:{}\n",
                     event.requestRaw, event.responseRaw)
         }
-    }
-
-    fun onGenericEvent(event: Event) {
-        Counters.jdaEvents.labels(event.javaClass.simpleName).inc()
     }
 }

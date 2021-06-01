@@ -332,8 +332,6 @@ application.yaml
 VERSION.txt
 logs/
 *.bat
-gradle/
 **/test/
 **/resources
 .vscode
-gradlew
