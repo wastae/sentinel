@@ -54,7 +54,7 @@ class ShardManagerConfig {
                 .setShards(sentinelProperties.getShards())
                 .setSessionController(sessionController)
                 .setMemberCachePolicy(MemberCachePolicy.DEFAULT)
-                .setChunkingFilter(ChunkingFilter.ALL)
+                .setChunkingFilter(ChunkingFilter.NONE)
                 .setVoiceDispatchInterceptor(voiceInterceptor)
                 .addEventListeners(rabbitEventListener)
 

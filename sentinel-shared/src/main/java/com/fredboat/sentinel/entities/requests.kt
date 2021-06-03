@@ -14,7 +14,7 @@ data class GuildsRequest(
 )
 
 data class GuildsResponse(
-        val guilds: List<Guild>) {
+        val guilds: List<Long>) {
 
     override fun toString() = "GuildsResponse(guilds.size=${guilds.size})"
 }

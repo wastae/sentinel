@@ -24,6 +24,16 @@ import reactor.core.publisher.Mono
 class InfoRequests(private val shardManager: ShardManager) {
 
     @SentinelRequest
+    fun consume(request: GuildsRequest): GuildsResponse {
+        val guilds = shardManager.guilds
+        return guilds.run {
+            GuildsResponse(
+                this.map { it.idLong }.toList()
+            )
+        }
+    }
+
+    @SentinelRequest
     fun consume(request: GuildInfoRequest): GuildInfo {
         val guild = shardManager.getGuildById(request.id)
             ?: throw IllegalStateException("Guild ${request.id} not found")
