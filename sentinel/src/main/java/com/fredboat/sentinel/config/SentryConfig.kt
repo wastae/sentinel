@@ -41,27 +41,19 @@ class SentryConfig(sentryProperties: SentryProperties) {
         }
     }
 
-    private final fun turnOn(dsn: String, tags: Map<String, String>) {
+    private fun turnOn(dsn: String, tags: Map<String, String>) {
         log.info("Turning on sentry")
-        val gitProps = Properties()
-        Sentry.init { options ->
-            options.dsn = dsn
-            tags.forEach { (name, value) ->
-                run {
-                    log.info("Adding MDC: {} = {}", name, value)
-                    options.setTag(name, value)
-                }
-            }
-            val commitHash = gitProps.getProperty("git.commit.id")
-            if (commitHash != null && commitHash.isNotEmpty()) {
-                log.info("Setting sentry release to commit hash {}", commitHash)
-                options.release = commitHash
-            } else {
-                log.warn("No git commit hash found to set up sentry release")
+        val sentryClient = Sentry.init(dsn)
+
+        tags.forEach { (name, value) ->
+            run {
+                log.info("Adding MDC: {} = {}", name, value)
+                sentryClient.addTag(name, value)
             }
         }
 
         // set the git commit hash this was build on as the release
+        val gitProps = Properties()
         try {
             gitProps.load(Launcher::class.java.classLoader.getResourceAsStream("git.properties"))
         } catch (e: NullPointerException) {
@@ -69,10 +61,19 @@ class SentryConfig(sentryProperties: SentryProperties) {
         } catch (e: IOException) {
             log.error("Failed to load git repo information", e)
         }
+
+        val commitHash = gitProps.getProperty("git.commit.id")
+        if (commitHash != null && commitHash.isNotEmpty()) {
+            log.info("Setting sentry release to commit hash {}", commitHash)
+            sentryClient.release = commitHash
+        } else {
+            log.warn("No git commit hash found to set up sentry release")
+        }
+
         getSentryLogbackAppender().start()
     }
 
-    private final fun turnOff() {
+    private fun turnOff() {
         log.warn("Turning off sentry")
         Sentry.close()
         getSentryLogbackAppender().stop()

@@ -14,7 +14,6 @@ apply plugin: "kotlin-spring"
 apply plugin: "maven"
 apply plugin: "maven-publish"
 apply plugin: 'org.springframework.boot'
-apply plugin: 'com.gorylenko.gradle-git-properties'
 apply plugin: 'net.ltgt.apt'
 apply plugin: "com.github.ben-manes.versions"
 
@@ -40,7 +39,6 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlin_version" // For kotlin eval
     compile "org.springframework.boot:spring-boot-starter-web:$bootVersion"
     compile "io.projectreactor.rabbitmq:reactor-rabbitmq:$reactorRabbitVersion"
-    compile "io.projectreactor.kotlin:reactor-kotlin-extensions:$reactorKotlinVersion"
     compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion"
     compile "org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$coroutinesVersion"
     compile "org.springframework.amqp:spring-rabbit:$amqpVersion"
