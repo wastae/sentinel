@@ -72,7 +72,8 @@ class FanoutConsumer(
 
     private fun sendHello() {
         rabbit.sendEvent(sentinelProperties.run { SentinelHello(
-                sentinelProperties.getShards(),
+                shardStart,
+                shardEnd,
                 shardCount,
                 key.key
         )})
