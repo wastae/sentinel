@@ -35,19 +35,15 @@ dependencies {
     compile "com.github.DV8FromTheWorld:JDA:5492d1d2eb"
     compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-script-runtime:$kotlin_version"      // For kotlin eval
-    //compile "org.jetbrains.kotlin:kotlin-script-util:$kotlin_version"         // For kotlin eval
+    compile "org.jetbrains.kotlin:kotlin-script-util:$kotlin_version"         // For kotlin eval
     compile "org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlin_version" // For kotlin eval
     compile "org.springframework.boot:spring-boot-starter-web:$bootVersion"
-    compile "io.projectreactor.rabbitmq:reactor-rabbitmq:$reactorRabbitVersion"
-    compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion"
-    compile "org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$coroutinesVersion"
-    //compile "org.springframework.amqp:spring-rabbit:$amqpVersion"
+    compile "org.springframework.amqp:spring-rabbit:$amqpVersion"
     annotationProcessor "org.springframework.boot:spring-boot-configuration-processor:$bootVersion"
     compile "com.google.code.gson:gson:$gsonVersion"
     compile "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonKotlinVersion"
     compile "ch.qos.logback:logback-classic:$logbackVersion"
     compile group: 'io.sentry', name: 'sentry-logback', version: sentryVersion
-    compile "org.reflections:reflections:$reflectionsVersion"
 
     compile group: 'org.json', name: 'json', version: '20180130'
     compile group: 'org.yaml', name: 'snakeyaml', version: '1.27'

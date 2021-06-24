@@ -25,7 +25,7 @@ data class ReviveShardRequest(val shardId: Int)
 
 data class LeaveGuildRequest(val guildId: Long)
 
-/** Returns the ping time of JDA's websocket and the shard manager average in milliseconds with [GetPingResponse]*/
+/** Returns the ping time of JDA's websocket and the shard manager average in milliseconds with [GetPingReponse]*/
 data class GetPingRequest(val shardId: Int)
 data class GetPingResponse(val shardPing: Long, val average: Double)
 

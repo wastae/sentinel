@@ -19,7 +19,8 @@ class FredBoatHello(
 /** Sent when Sentinel starts or [FredBoatHello] is received.
  *  Used for mapping what Sentinels we have in FredBoat */
 data class SentinelHello(
-        val shards: Set<Int>,
+        val shardStart: Int,
+        val shardEnd: Int,
         val shardCount: Int,
         val key: String,
         val time: Long = System.currentTimeMillis()

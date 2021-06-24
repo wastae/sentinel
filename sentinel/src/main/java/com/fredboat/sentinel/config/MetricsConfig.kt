@@ -13,16 +13,16 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-class MetricsConfig {
+open class MetricsConfig {
 
     //guava cache metrics
     @Bean
-    fun cacheMetrics(): CacheMetricsCollector {
+    open fun cacheMetrics(): CacheMetricsCollector {
         return CacheMetricsCollector().register()
     }
 
     @Bean
-    fun instrumentedAppender(): InstrumentedAppender {
+    open fun instrumentedAppender(): InstrumentedAppender {
         return InstrumentedAppender()
     }
 

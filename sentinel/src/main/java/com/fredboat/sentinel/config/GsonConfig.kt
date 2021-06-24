@@ -14,10 +14,10 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-class GsonConfig {
+open class GsonConfig {
 
     @Bean
-    fun buildGson(): Gson = GsonBuilder()
+    open fun buildGson(): Gson = GsonBuilder()
             .setLongSerializationPolicy(LongSerializationPolicy.STRING)
             .create()
 

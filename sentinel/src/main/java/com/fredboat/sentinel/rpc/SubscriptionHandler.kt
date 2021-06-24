@@ -11,7 +11,6 @@ import com.fredboat.sentinel.entities.Guild
 import com.fredboat.sentinel.entities.GuildSubscribeRequest
 import com.fredboat.sentinel.entities.GuildUnsubscribeRequest
 import com.fredboat.sentinel.jda.VoiceServerUpdateCache
-import com.fredboat.sentinel.rpc.meta.SentinelRequest
 import com.fredboat.sentinel.util.toEntity
 import net.dv8tion.jda.api.sharding.ShardManager
 import org.slf4j.Logger
@@ -20,7 +19,6 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 
 @Service
-@SentinelRequest
 class SubscriptionHandler(
         @param:Qualifier("guildSubscriptions")
         private val subscriptions: MutableSet<Long>,
@@ -32,7 +30,6 @@ class SubscriptionHandler(
         private val log: Logger = LoggerFactory.getLogger(SubscriptionHandler::class.java)
     }
 
-    @SentinelRequest
     fun consume(request: GuildSubscribeRequest): Guild? {
         val guild = shardManager.getGuildById(request.id)
         log.info(
@@ -64,7 +61,6 @@ class SubscriptionHandler(
         return entity
     }
 
-    @SentinelRequest
     fun consume(request: GuildUnsubscribeRequest) {
         val removed = subscriptions.remove(request.id)
         if (!removed) {

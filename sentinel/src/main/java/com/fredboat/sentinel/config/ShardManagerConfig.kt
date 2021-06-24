@@ -10,17 +10,19 @@ package com.fredboat.sentinel.config
 import com.fredboat.sentinel.ApplicationState
 import com.fredboat.sentinel.jda.JdaRabbitEventListener
 import com.fredboat.sentinel.jda.RemoteSessionController
-import com.fredboat.sentinel.jda.VoiceInterceptor
-import net.dv8tion.jda.api.requests.GatewayIntent
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder
 import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.api.utils.SessionController
 import net.dv8tion.jda.api.utils.ChunkingFilter
 import net.dv8tion.jda.api.utils.cache.CacheFlag
+import net.dv8tion.jda.api.requests.GatewayIntent
+import net.dv8tion.jda.api.entities.Activity
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.util.*
+import java.util.Arrays
 import javax.security.auth.login.LoginException
 import kotlin.collections.HashSet
 
@@ -33,8 +35,7 @@ class ShardManagerConfig {
     @Bean
     fun buildShardManager(sentinelProperties: SentinelProperties,
                           rabbitEventListener: JdaRabbitEventListener,
-                          sessionController: RemoteSessionController,
-                          voiceInterceptor: VoiceInterceptor
+                          sessionController: RemoteSessionController
     ): ShardManager {
 
         val INTENTS = listOf(
@@ -46,15 +47,14 @@ class ShardManagerConfig {
 
         val builder = DefaultShardManagerBuilder.create(sentinelProperties.discordToken, INTENTS)
                 .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE)
-                .disableCache(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE, CacheFlag.ROLE_TAGS)
+                .disableCache(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE)
                 .setBulkDeleteSplittingEnabled(false)
-                .setEnableShutdownHook(true)
+                .setEnableShutdownHook(false)
                 .setAutoReconnect(true)
                 .setShardsTotal(sentinelProperties.shardCount)
-                .setShards(sentinelProperties.getShards())
+                .setShards(sentinelProperties.shardStart, sentinelProperties.shardEnd)
                 .setSessionController(sessionController)
                 .setChunkingFilter(ChunkingFilter.NONE)
-                .setVoiceDispatchInterceptor(voiceInterceptor)
                 .addEventListeners(rabbitEventListener)
 
         val shardManager: ShardManager

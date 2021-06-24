@@ -8,8 +8,8 @@
 buildscript {
     ext {
         gradleGitVersion = '2.1.0'
-        kotlin_version = '1.4.32'
-        bootVersion = '2.1.6.RELEASE'
+        kotlin_version = '1.3.20'
+        bootVersion = '2.0.1.RELEASE'
         aptVersion = '0.17'
     }
 
@@ -71,9 +71,6 @@ ext {
     logbackVersion = "1.2.3"
     sentryVersion = '1.7.5'
     prometheusClientVersion = "0.4.0"
-    reactorRabbitVersion = "1.5.2"
-    coroutinesVersion = "1.4.3"
-    reflectionsVersion = "0.9.12"
 
     //testing deps
     junitVersion                = '5.1.0'
@@ -83,7 +80,7 @@ ext {
 }
 
 wrapper {
-    gradleVersion = '6.6.1'
+    gradleVersion = '4.10.2'
     //noinspection UnnecessaryQualifiedReference
     distributionType = Wrapper.DistributionType.ALL
 }

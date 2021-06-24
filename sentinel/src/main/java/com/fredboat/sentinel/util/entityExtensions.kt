@@ -12,13 +12,13 @@ import com.fredboat.sentinel.jda.VoiceServerUpdateCache
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.internal.utils.PermissionUtil
 
-fun JDA.toEntity() = Shard(
+fun net.dv8tion.jda.api.JDA.toEntity() = Shard(
         shardInfo.shardId,
         shardInfo.shardTotal,
         status.toEntity()
 )
 
-fun JDA.toEntityExtended() = ExtendedShardInfo(
+fun net.dv8tion.jda.api.JDA.toEntityExtended() = ExtendedShardInfo(
         toEntity(),
         guildCache.size().toInt(),
         userCache.size().toInt()

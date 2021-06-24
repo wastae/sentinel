@@ -7,26 +7,30 @@
 
 package com.fredboat.sentinel.config
 
-import com.fredboat.sentinel.util.Rabbit
-import com.rabbitmq.client.Connection
-import com.rabbitmq.client.ConnectionFactory
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import com.fredboat.sentinel.metrics.Counters
+import org.aopalliance.aop.Advice
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory
+import org.springframework.amqp.rabbit.connection.ConnectionFactory
+import org.springframework.amqp.rabbit.core.RabbitTemplate
+import org.springframework.amqp.rabbit.listener.RabbitListenerErrorHandler
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter
+import org.springframework.amqp.support.converter.MessageConverter
+import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import reactor.rabbitmq.RabbitFlux
-import reactor.rabbitmq.ReceiverOptions
-import reactor.rabbitmq.Sender
-import reactor.rabbitmq.SenderOptions
-import java.io.IOException
-import java.net.InetSocketAddress
-import java.net.Socket
+import org.springframework.retry.interceptor.RetryInterceptorBuilder
+import org.springframework.retry.interceptor.RetryOperationsInterceptor
 import java.util.*
-import java.util.concurrent.atomic.AtomicReference
 
 
 @Configuration
-class RabbitConfig(val props: RabbitProperties) {
+class RabbitConfig {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(RabbitConfig::class.java)
@@ -41,53 +45,44 @@ class RabbitConfig(val props: RabbitProperties) {
     }
 
     @Bean
-    fun connectionFactory() = ConnectionFactory().apply {
-        host = props.host
-        port = props.port
-        username = props.username
-        password = props.password
-        useNio()
-    }
-
-    private var connection = AtomicReference<Connection>()
-    private fun supplier(factory: ConnectionFactory, routingKey: RoutingKey): Connection {
-        return connection.updateAndGet { conn ->
-            waitForRabbit()
-            if (conn != null) return@updateAndGet conn
-            factory.newConnection(routingKey.key)
-        }
-    }
-
-    private fun waitForRabbit() {
-        while (!isRabbitAvailable()) { Thread.sleep(2000) }
-    }
-
-    private fun isRabbitAvailable(): Boolean = try {
-        val sock = Socket()
-        sock.soTimeout = 5000
-        sock.connect(InetSocketAddress(props.host, props.port))
-        true
-    } catch (e: IOException) {
-        log.info("Waiting for RabbitMQ... {}", e.message)
-        false
+    fun jsonMessageConverter(): MessageConverter {
+        // We must register this Kotlin module to get deserialization to work with data classes
+        val mapper = ObjectMapper()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                .registerKotlinModule()
+        return Jackson2JsonMessageConverter(mapper)
     }
 
     @Bean
-    fun senderOptions(factory: ConnectionFactory, routingKey: RoutingKey) = SenderOptions()
-        .connectionFactory(factory)
-        .connectionSupplier { supplier(factory, routingKey) }!!
+    fun asyncTemplate(underlying: RabbitTemplate) = AsyncRabbitTemplate(underlying)
 
     @Bean
-    fun receiverOptions(factory: ConnectionFactory, routingKey: RoutingKey) = ReceiverOptions()
-        .connectionFactory(factory)
-        .connectionSupplier { supplier(factory, routingKey) }!!
+    fun rabbitListenerErrorHandler() = RabbitListenerErrorHandler { _, msg, e ->
+        val name = msg.payload?.javaClass?.simpleName ?: "unknown"
+        Counters.failedSentinelRequests.labels(name).inc()
+        log.error("Error handling request $name", e)
+        null
+    }
+
+    /* Don't retry ad infinitum */
+    @Bean
+    fun retryOperationsInterceptor() = RetryInterceptorBuilder
+            .stateless()
+            .maxAttempts(1)
+            .build()!!
 
     @Bean
-    fun sender(opts: SenderOptions) = RabbitFlux.createSender(opts)!!
+    fun rabbitListenerContainerFactory(
+            configurer: SimpleRabbitListenerContainerFactoryConfigurer,
+            connectionFactory: ConnectionFactory,
+            retryOperationsInterceptor: RetryOperationsInterceptor
+    ): SimpleRabbitListenerContainerFactory {
+        val factory = SimpleRabbitListenerContainerFactory()
+        configurer.configure(factory, connectionFactory)
+        val chain = factory.adviceChain?.toMutableList() ?: mutableListOf<Advice>()
+        chain.add(retryOperationsInterceptor)
+        factory.setAdviceChain(*chain.toTypedArray())
+        return factory
+    }
 
-    @Bean
-    fun receiver(opts: ReceiverOptions) = RabbitFlux.createReceiver(opts)!!
-
-    @Bean
-    fun rabbit(sender: Sender) = Rabbit(sender)
 }
