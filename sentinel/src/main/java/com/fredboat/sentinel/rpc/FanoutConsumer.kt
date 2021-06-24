@@ -7,26 +7,28 @@
 
 package com.fredboat.sentinel.rpc
 
+import com.fredboat.sentinel.SentinelExchanges
 import com.fredboat.sentinel.config.RoutingKey
 import com.fredboat.sentinel.config.SentinelProperties
 import com.fredboat.sentinel.entities.FredBoatHello
 import com.fredboat.sentinel.entities.SentinelHello
 import com.fredboat.sentinel.entities.SyncSessionQueueRequest
 import com.fredboat.sentinel.jda.RemoteSessionController
-import com.fredboat.sentinel.rpc.meta.FanoutRequest
-import com.fredboat.sentinel.util.Rabbit
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.entities.Activity
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.amqp.rabbit.annotation.RabbitHandler
+import org.springframework.amqp.rabbit.annotation.RabbitListener
+import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 
 @Service
-@FanoutRequest
+@RabbitListener(queues = ["#{fanoutQueue.name}"], errorHandler = "rabbitListenerErrorHandler")
 class FanoutConsumer(
-        private val rabbit: Rabbit,
+        private val template: RabbitTemplate,
         private val sentinelProperties: SentinelProperties,
         private val key: RoutingKey,
         @param:Qualifier("guildSubscriptions")
@@ -49,8 +51,8 @@ class FanoutConsumer(
         }
     }
 
-    @FanoutRequest
-    fun consume(event: FredBoatHello) {
+    @RabbitHandler
+    fun onHello(event: FredBoatHello) {
         if (event.id != knownFredBoatId) {
             log.info("FredBoat ${event.id} says hello \uD83D\uDC4B - Replaces $knownFredBoatId")
             knownFredBoatId = event.id
@@ -71,15 +73,16 @@ class FanoutConsumer(
     }
 
     private fun sendHello() {
-        rabbit.sendEvent(sentinelProperties.run { SentinelHello(
+        val message = sentinelProperties.run {  SentinelHello(
                 shardStart,
                 shardEnd,
                 shardCount,
                 key.key
-        )})
+        )}
+        template.convertAndSend(SentinelExchanges.JDA, message)
     }
 
-    @FanoutRequest
+    @RabbitHandler
     fun consume(request: SyncSessionQueueRequest) {
         sessionController.syncSessionQueue()
     }

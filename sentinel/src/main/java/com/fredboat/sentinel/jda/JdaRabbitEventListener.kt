@@ -7,9 +7,9 @@
 
 package com.fredboat.sentinel.jda
 
+import com.fredboat.sentinel.SentinelExchanges
 import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.metrics.Counters
-import com.fredboat.sentinel.util.Rabbit
 import com.fredboat.sentinel.util.toEntity
 import com.neovisionaries.ws.client.WebSocketFrame
 import net.dv8tion.jda.api.JDA
@@ -55,13 +55,14 @@ import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.io.File
 
 @Component
 class JdaRabbitEventListener(
-        private val rabbit: Rabbit,
+        private val rabbitTemplate: RabbitTemplate,
         @param:Qualifier("guildSubscriptions")
         private val subscriptions: MutableSet<Long>,
         private val voiceServerUpdateCache: VoiceServerUpdateCache
@@ -342,12 +343,12 @@ class JdaRabbitEventListener(
     /* Util */
 
     private fun dispatch(event: Any, print: Boolean = false) {
-        rabbit.sendEvent(event)
+        rabbitTemplate.convertAndSend(SentinelExchanges.JDA, rabbitTemplate.routingKey, event)
         if (print) log.info("Sent $event")
     }
 
     override fun onHttpRequest(event: HttpRequestEvent) {
-        if (event.response?.code ?: -2 >= 300) {
+        if (event.response!!.code >= 300) {
             log.warn("Unsuccessful JDA HTTP Request:\n{}\nResponse:{}\n",
                     event.requestRaw, event.responseRaw)
         }

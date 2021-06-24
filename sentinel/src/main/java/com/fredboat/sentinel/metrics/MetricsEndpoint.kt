@@ -14,8 +14,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.io.StringWriter
-import java.util.Arrays
-import kotlin.collections.HashSet
 
 /**
  * Created by napster on 27.07.18.
@@ -36,7 +34,7 @@ class MetricsEndpoint {
                 if (includedParam == null) {
                     emptySet()
                 } else {
-                    HashSet(Arrays.asList(*includedParam))
+                    HashSet(listOf(*includedParam))
                 }
 
         val writer = StringWriter()

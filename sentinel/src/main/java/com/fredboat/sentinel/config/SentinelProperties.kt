@@ -18,11 +18,11 @@ import java.io.FileInputStream
 @Component
 @ConfigurationProperties(prefix = "sentinel")
 class SentinelProperties(
-    discordToken: String = "",
-    var shardStart: Int = 0,
-    var shardEnd: Int = 0,
-    var shardCount: Int = 1,
-    var instance: String = "unknown"
+        discordToken: String = "",
+        var shardStart: Int = 0,
+        var shardEnd: Int = 0,
+        var shardCount: Int = 1,
+        var instance: String = "unknown"
 ) {
 
     companion object {
