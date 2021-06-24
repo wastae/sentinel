@@ -79,8 +79,7 @@ data class MessageReceivedEvent (
         val author: Long,
         val fromBot: Boolean,
         val attachments: List<String>,
-        val member: Member,
-        val mentionedMembers: List<Member>
+        val member: Member
 )
 
 data class PrivateMessageReceivedEvent (
@@ -95,13 +94,13 @@ data class MessageDeleteEvent (
 )
 
 data class MessageReactionAddEvent (
+        val member: Member,
         val messageId: Long,
         val guild: Long,
         val channel: Long,
         val channelPermissions: Long,
         val memberPermissions: Long,
         val author: Long,
-        val reaction: String,
-        val isEmoji: Boolean,
-        val member: Member
+        val emoteId: Long,
+        val emoteName: String
 )

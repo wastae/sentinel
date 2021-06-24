@@ -20,7 +20,7 @@ import java.util.*
 @Service
 class ShardStatusCollector(private val shardManager: ShardManager) : Collector() {
 
-    override fun collect(): List<Collector.MetricFamilySamples> {
+    override fun collect(): List<MetricFamilySamples> {
 
         val mfs = ArrayList<MetricFamilySamples>()
         val noLabels = emptyList<String>()
@@ -33,10 +33,15 @@ class ShardStatusCollector(private val shardManager: ShardManager) : Collector()
                 "Total shards managed by this instance that are connected", noLabels)
         mfs.add(shardsConnected)
 
+        val averagePing = GaugeMetricFamily("sentinel_gateway_ping_average",
+            "The average ping of all shards", noLabels)
+        mfs.add(averagePing)
+
         totalShards.addMetric(noLabels, shardManager.shards.size.toDouble())
         shardsConnected.addMetric(noLabels, shardManager.shards.stream()
                 .filter { shard -> shard.status == JDA.Status.CONNECTED }
                 .count().toDouble())
+        averagePing.addMetric(noLabels, shardManager.averageGatewayPing)
 
         return mfs
     }

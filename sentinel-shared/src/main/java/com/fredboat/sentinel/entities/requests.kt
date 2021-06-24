@@ -14,7 +14,7 @@ data class GuildsRequest(
 )
 
 data class GuildsResponse(
-        val guilds: List<Long>) {
+        val guilds: List<Guild>) {
 
     override fun toString() = "GuildsResponse(guilds.size=${guilds.size})"
 }
@@ -40,10 +40,6 @@ data class SendEmbedRequest(
 data class SendPrivateMessageRequest(
         val recipient: Long,
         val message: String
-)
-
-data class SendMessageResponse(
-        val messageId: Long
 )
 
 /** Returns [Unit]*/
@@ -85,6 +81,10 @@ data class RemoveReactionRequest(
 /** Returns [Unit]*/
 data class RemoveReactionsRequest(
         val channel: Long,
+        val messageId: Long
+)
+
+data class SendMessageResponse(
         val messageId: Long
 )
 

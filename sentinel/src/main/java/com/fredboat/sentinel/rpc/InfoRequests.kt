@@ -8,49 +8,46 @@
 package com.fredboat.sentinel.rpc
 
 import com.fredboat.sentinel.entities.*
-import com.fredboat.sentinel.util.complete
+import com.fredboat.sentinel.rpc.meta.SentinelRequest
+import com.fredboat.sentinel.util.mono
 import com.fredboat.sentinel.util.toEntity
 import net.dv8tion.jda.api.sharding.ShardManager
-import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import net.dv8tion.jda.api.requests.ErrorResponse
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import reactor.core.publisher.Mono
 
 @Service
+@SentinelRequest
 class InfoRequests(private val shardManager: ShardManager) {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(InfoRequests::class.java)
     }
 
+    @SentinelRequest
     fun consume(request: MemberInfoRequest): MemberInfo {
-        val member = shardManager.getGuildById(request.guildId)!!.retrieveMemberById(request.id).complete()
+        val member = shardManager.getGuildById(request.guildId)?.getMemberById(request.id)
+            ?: throw IllegalStateException("Member ${request.id} not found in ${request.guildId} guild")
         return member.run {
             MemberInfo (
                 user.idLong,
-                user.name,
-                this.nickname,
-                user.discriminator,
                 guild.idLong,
-                user.avatarUrl!!,
+                user.avatarUrl,
                 color?.rgb,
-                timeJoined.toInstant().toEpochMilli(),
-                user.isBot,
-                listOf(),
-                listOf(),
-                0L,
-                this.voiceState!!.sessionId!!.toLong()
+                timeJoined.toInstant().toEpochMilli()
             )
         }
     }
 
+    @SentinelRequest
     fun consume(request: GuildInfoRequest): GuildInfo {
         val guild = shardManager.getGuildById(request.id)
-        if (guild == null) { log.error("Received null on guild request for ${request.id}") }
-        return guild!!.run {
+            ?: throw IllegalStateException("Guild ${request.id} not found")
+        return guild.run {
             GuildInfo (
                 idLong,
                 guild.iconUrl,
@@ -60,10 +57,11 @@ class InfoRequests(private val shardManager: ShardManager) {
         }
     }
 
+    @SentinelRequest
     fun consume(request: RoleInfoRequest): RoleInfo {
         val role = shardManager.getRoleById(request.id)
-        if (role == null) { log.error("Received null on role request for ${request.id}") }
-        return role!!.run {
+            ?: throw IllegalStateException("Role ${request.id} not found")
+        return role.run {
             RoleInfo (
                 idLong,
                 position,
@@ -75,21 +73,11 @@ class InfoRequests(private val shardManager: ShardManager) {
         }
     }
 
-    fun consume(request: GetUserRequest): User? {
-        val user = shardManager.getUserById(request.id)
-        if (user != null) return user.toEntity()
-
-        for (shard in shardManager.shards) {
-            if (shard.status != JDA.Status.CONNECTED) continue
-            return try {
-                shard.retrieveUserById(request.id).complete("fetchUser").toEntity()
-            } catch (e: ErrorResponseException) {
-                if (e.errorResponse == ErrorResponse.UNKNOWN_USER) return null
-                throw e
-            }
-        }
-
-        throw RuntimeException("No shards connected")
-    }
-
+    @SentinelRequest
+    fun consume(request: GetUserRequest): Mono<User> = shardManager.retrieveUserById(request.id)
+        .mono("fetchUser")
+        .onErrorContinue { t, _ ->
+            // Just drop the user if it was not found. Fail otherwise.
+            t is ErrorResponseException && t.errorResponse == ErrorResponse.UNKNOWN_USER
+        }.map { it.toEntity() }
 }

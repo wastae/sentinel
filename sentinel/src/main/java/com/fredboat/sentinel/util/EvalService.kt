@@ -59,7 +59,7 @@ class EvalService(
         val out = engine.eval(source)
 
         val outputS = when {
-            out == null -> ":ok_hand:"
+            out == null -> ":ok_hand::skin-tone-3:"
             out.toString().contains("\n") -> "Eval: ```\n$out```"
             else -> "Eval: `$out`"
         }

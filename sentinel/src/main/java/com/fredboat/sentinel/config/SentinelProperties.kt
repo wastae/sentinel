@@ -19,10 +19,10 @@ import java.io.FileInputStream
 @ConfigurationProperties(prefix = "sentinel")
 class SentinelProperties(
         discordToken: String = "",
-        var shardStart: Int = 0,
-        var shardEnd: Int = 0,
+        var sentinelId: Int = 0,
+        var sentinelCount: Int = 1,
         var shardCount: Int = 1,
-        var instance: String = "unknown"
+        var instance: String = "unknow"
 ) {
 
     companion object {
@@ -58,5 +58,9 @@ class SentinelProperties(
         }
         set(value) { _discordToken = value }
 
-    override fun toString() = "$instance: [$shardStart..$shardEnd/$shardCount]"
+    fun getShards() = (0 until shardCount)
+        .filter { it % sentinelCount == sentinelId }
+        .toSet()
+
+    override fun toString() = "$instance: [$sentinelId/$sentinelCount]"
 }

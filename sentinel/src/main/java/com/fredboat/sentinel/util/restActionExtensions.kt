@@ -10,16 +10,15 @@ package com.fredboat.sentinel.util
 import com.fredboat.sentinel.metrics.Counters
 import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import net.dv8tion.jda.api.requests.RestAction
-import java.util.concurrent.TimeUnit
+import reactor.core.publisher.Mono
 
-fun <T> RestAction<T>.queue(name: String) { toFuture(name) }
-fun <T> RestAction<T>.complete(name: String): T = toFuture(name).get(30, TimeUnit.SECONDS)
-
-private fun <T> RestAction<T>.toFuture(name: String) = submit().whenComplete { _, t ->
-    if (t == null) {
+fun <T> RestAction<T>.mono(name: String): Mono<T> = Mono.create<T> { sink ->
+    this.queue({ result ->
         Counters.successfulRestActions.labels(name).inc()
-        return@whenComplete
-    }
-    val errCode = (t as? ErrorResponseException)?.errorCode?.toString() ?: "none"
-    Counters.failedRestActions.labels(name, errCode).inc()
-}.toCompletableFuture()!!
+        sink.success(result)
+    }, { t ->
+        val errCode = (t as? ErrorResponseException)?.errorCode?.toString() ?: "none"
+        Counters.failedRestActions.labels(name, errCode).inc()
+        sink.error(t)
+    })
+}
