@@ -12,11 +12,12 @@ import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.metrics.Counters
 import com.fredboat.sentinel.util.toEntity
 import com.neovisionaries.ws.client.WebSocketFrame
+import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.entities.ChannelType
-import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.GuildChannel
+import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.MessageType
+import net.dv8tion.jda.internal.JDAImpl
 import net.dv8tion.jda.api.events.*
 import net.dv8tion.jda.api.events.channel.category.CategoryCreateEvent
 import net.dv8tion.jda.api.events.channel.category.CategoryDeleteEvent
@@ -29,21 +30,21 @@ import net.dv8tion.jda.api.events.channel.voice.GenericVoiceChannelEvent
 import net.dv8tion.jda.api.events.channel.voice.VoiceChannelCreateEvent
 import net.dv8tion.jda.api.events.channel.voice.VoiceChannelDeleteEvent
 import net.dv8tion.jda.api.events.channel.voice.update.VoiceChannelUpdatePositionEvent
+import net.dv8tion.jda.api.events.guild.override.GenericPermissionOverrideEvent
 import net.dv8tion.jda.api.events.guild.GenericGuildEvent
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.api.events.guild.member.*
-import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
-import net.dv8tion.jda.api.events.guild.override.GenericPermissionOverrideEvent
-import net.dv8tion.jda.api.events.guild.update.GuildUpdateNameEvent
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.guild.update.GuildUpdateOwnerEvent
+import net.dv8tion.jda.api.events.guild.update.GuildUpdateNameEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent
 import net.dv8tion.jda.api.events.http.HttpRequestEvent
+import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent
 import net.dv8tion.jda.api.events.message.guild.GuildMessageDeleteEvent
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
-import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent
 import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent
 import net.dv8tion.jda.api.events.role.GenericRoleEvent
 import net.dv8tion.jda.api.events.role.RoleCreateEvent
@@ -51,7 +52,6 @@ import net.dv8tion.jda.api.events.role.RoleDeleteEvent
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePermissionsEvent
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePositionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
-import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -83,6 +83,10 @@ class JdaRabbitEventListener(
 
     override fun onReady(event: ReadyEvent) {
         dispatch(ShardLifecycleEvent(event.jda.toEntity(), LifecycleEventEnum.READIED))
+
+        val handlers = (event.jda as JDAImpl).client.handlers
+        handlers["VOICE_SERVER_UPDATE"] = VoiceServerUpdateInterceptor(event.jda as JDAImpl, rabbitTemplate, voiceServerUpdateCache)
+        handlers["VOICE_STATE_UPDATE"] = VoiceStateUpdateInterceptor(event.jda as JDAImpl)
 
         if (shardManager.shards.all { it.status == JDA.Status.CONNECTED }) {
             // This file can be used by Ansible playbooks
@@ -127,24 +131,20 @@ class JdaRabbitEventListener(
 
     override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) = onMemberChange(event.member)
     override fun onGuildMemberRoleRemove(event: GuildMemberRoleRemoveEvent) = onMemberChange(event.member)
-    override fun onGuildMemberJoin(event: GuildMemberJoinEvent) = onMemberChange(event.member)
-    override fun onGuildMemberRemove(event: GuildMemberRemoveEvent) = onMemberChange(event.member!!)
+    // override fun onGenericUserPresence(event: GenericUserPresenceEvent<*>) = onMemberChange(event.member)
+    // override fun onGuildMemberUpdateNickname(event: GuildMemberUpdateNicknameEvent) = onMemberChange(event.member)
 
     private fun onMemberChange(member: net.dv8tion.jda.api.entities.Member) {
         if (!subscriptions.contains(member.guild.idLong)) return
         dispatch(GuildMemberUpdate(
                 member.guild.idLong,
                 member.toEntity()
-        ))
+        ), print = false)
     }
 
     /* Voice jda */
     override fun onGuildVoiceJoin(event: GuildVoiceJoinEvent) {
         if (!subscriptions.contains(event.guild.idLong)) return
-        updateGuild(event.guild)
-        if (event.channelJoined.type == ChannelType.STAGE && event.member.user.idLong == event.guild.selfMember.user.idLong) {
-            event.guild.requestToSpeak().queue()
-        }
         dispatch(VoiceJoinEvent(
                 event.guild.idLong,
                 event.channelJoined.idLong,
@@ -156,8 +156,8 @@ class JdaRabbitEventListener(
         if (event.member.user.idLong == event.guild.selfMember.user.idLong) {
             voiceServerUpdateCache.onVoiceLeave(event.guild.idLong)
         }
+
         if (!subscriptions.contains(event.guild.idLong)) return
-        updateGuild(event.guild)
         dispatch(VoiceLeaveEvent(
                 event.guild.idLong,
                 event.channelLeft.idLong,
@@ -167,10 +167,6 @@ class JdaRabbitEventListener(
 
     override fun onGuildVoiceMove(event: GuildVoiceMoveEvent) {
         if (!subscriptions.contains(event.guild.idLong)) return
-        updateGuild(event.guild)
-        if (event.channelJoined.type == ChannelType.STAGE && event.member.user.idLong == event.guild.selfMember.user.idLong) {
-            event.guild.requestToSpeak().queue()
-        }
         dispatch(VoiceMoveEvent(
                 event.guild.idLong,
                 event.channelLeft.idLong,
@@ -182,13 +178,8 @@ class JdaRabbitEventListener(
     /* Message jda */
     override fun onGuildMessageReceived(event: GuildMessageReceivedEvent) = event.run {
         if (message.type != MessageType.DEFAULT) return
-        if (message.isWebhookMessage) return
 
-        if (subscriptions.contains(event.guild.idLong)) {
-			updateGuild(event.guild)
-		}
-
-		dispatch(MessageReceivedEvent(
+        dispatch(MessageReceivedEvent(
                 message.idLong,
                 message.guild.idLong,
                 channel.idLong,
@@ -220,10 +211,7 @@ class JdaRabbitEventListener(
 
     override fun onGuildMessageReactionAdd(event: GuildMessageReactionAddEvent) {
         if (!subscriptions.contains(event.guild.idLong)) return
-
-        if (subscriptions.contains(event.guild.idLong)) {
-            updateGuild(event.guild)
-        }
+        if (!event.reactionEmote.isEmote) return
 
         dispatch(MessageReactionAddEvent(
                 event.messageIdLong,
@@ -255,14 +243,14 @@ class JdaRabbitEventListener(
     override fun onGenericGuild(event: GenericGuildEvent) {
         if (!subscriptions.contains(event.guild.idLong)) return
         if (event is GuildUpdateNameEvent || event is GuildUpdateOwnerEvent) {
-            updateGuild(event.guild)
+            updateGuild(event, event.guild)
         }
     }
 
     override fun onGenericTextChannel(event: GenericTextChannelEvent) {
         if (!subscriptions.contains(event.guild.idLong)) return
         if (event is TextChannelDeleteEvent || event is TextChannelCreateEvent) {
-            updateGuild(event.guild)
+            updateGuild(event, event.guild)
             return
 		} else if (event is RoleUpdatePositionEvent || event is RoleUpdatePermissionsEvent) {
             updateChannelPermissions(event.guild)
@@ -277,7 +265,7 @@ class JdaRabbitEventListener(
     override fun onGenericVoiceChannel(event: GenericVoiceChannelEvent) {
         if (!subscriptions.contains(event.guild.idLong)) return
         if (event is VoiceChannelDeleteEvent || event is VoiceChannelCreateEvent) {
-            updateGuild(event.guild)
+            updateGuild(event, event.guild)
             return
         } else if (event is VoiceChannelUpdatePositionEvent || event is RoleUpdatePermissionsEvent) {
             updateChannelPermissions(event.guild)
@@ -291,7 +279,7 @@ class JdaRabbitEventListener(
     override fun onGenericCategory(event: GenericCategoryEvent) {
         if (!subscriptions.contains(event.guild.idLong)) return
         if (event is CategoryDeleteEvent || event is CategoryCreateEvent) {
-            updateGuild(event.guild)
+            updateGuild(event, event.guild)
             return
         } else if (event is CategoryUpdatePositionEvent || event is GenericPermissionOverrideEvent) {
             updateChannelPermissions(event.guild)
@@ -301,7 +289,7 @@ class JdaRabbitEventListener(
     override fun onGenericRole(event: GenericRoleEvent) {
         if (!subscriptions.contains(event.guild.idLong)) return
         if (event is RoleDeleteEvent || event is RoleCreateEvent) {
-            updateGuild(event.guild)
+            updateGuild(event, event.guild)
             return
         } else if (event is RoleUpdatePositionEvent || event is RoleUpdatePermissionsEvent) {
             updateChannelPermissions(event.guild)
@@ -315,12 +303,13 @@ class JdaRabbitEventListener(
     override fun onGenericGuildMember(event: GenericGuildMemberEvent) {
         if (!subscriptions.contains(event.guild.idLong)) return
         if (event is GuildMemberRoleAddEvent || event is GuildMemberRoleRemoveEvent) {
-            updateGuild(event.guild)
+            updateGuild(event, event.guild)
             return 
         }
     }
 
-    private fun updateGuild(guild: Guild) {
+    private fun updateGuild(event: Event, guild: net.dv8tion.jda.api.entities.Guild) {
+        log.info("Updated ${guild.id} because of ${event.javaClass.simpleName}")
         dispatch(GuildUpdateEvent(guild.toEntity(voiceServerUpdateCache)))
     }
 
@@ -352,5 +341,9 @@ class JdaRabbitEventListener(
             log.warn("Unsuccessful JDA HTTP Request:\n{}\nResponse:{}\n",
                     event.requestRaw, event.responseRaw)
         }
+    }
+
+    fun onGenericEvent(event: Event) {
+        Counters.jdaEvents.labels(event.javaClass.simpleName).inc()
     }
 }

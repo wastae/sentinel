@@ -11,8 +11,8 @@ import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.entities.ModRequestType.*
 import com.fredboat.sentinel.jda.RemoteSessionController
 import com.fredboat.sentinel.util.*
-import net.dv8tion.jda.api.entities.Icon
 import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.api.entities.Icon
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -20,26 +20,26 @@ import java.util.*
 class ManagementRequests(
         private val shardManager: ShardManager,
         private val eval: EvalService,
-        private val sessionsController: RemoteSessionController
+        private val sessionController: RemoteSessionController
 ) {
 
-    fun consume(modRequest: ModRequest) = modRequest.run {
+    fun consume(modRequest: ModRequest): String = modRequest.run {
         val guild = shardManager.getGuildById(guildId)
                 ?: throw RuntimeException("Guild $guildId not found")
+        val control = guild
 
-        val action = when (type) {
-            KICK -> guild.kick(userId.toString(), reason)
-            BAN -> guild.ban(userId.toString(), banDeleteDays, reason)
-            UNBAN -> guild.unban(userId.toString())
+        val action = when(type) {
+            KICK -> control.kick(userId.toString(), reason)
+            BAN -> control.ban(userId.toString(), banDeleteDays, reason)
+            UNBAN -> control.unban(userId.toString())
         }
-
-        action.toFuture(type.name.toLowerCase())
+        action.complete(type.name.toLowerCase())
+        return ""
     }
 
     fun consume(request: SetAvatarRequest) {
         val decoded = Base64.getDecoder().decode(request.base64)
-        shardManager.shards[0].selfUser.manager.setAvatar(Icon.from(decoded))
-            .toFuture("setAvatar")
+        shardManager.shards[0].selfUser.manager.setAvatar(Icon.from(decoded)).queue("setAvatar")
     }
 
     fun consume(request: ReviveShardRequest): String {
@@ -50,7 +50,7 @@ class ManagementRequests(
     fun consume(request: LeaveGuildRequest) {
         val guild = shardManager.getGuildById(request.guildId)
                 ?: throw RuntimeException("Guild ${request.guildId} not found")
-        guild.leave().toFuture("leaveGuild")
+        guild.leave().queue("leaveGuild")
     }
 
     fun consume(request: GetPingRequest): GetPingResponse {
@@ -58,29 +58,29 @@ class ManagementRequests(
         return GetPingResponse(shard?.gatewayPing ?: -1, shardManager.averageGatewayPing)
     }
 
-    fun consume(request: SentinelInfoRequest) = shardManager.run {
-        SentinelInfoResponse(
+//    fun consume(request: GetMemberRequest): GetMemberResponse {
+//        val member = shardManager.getGuildById(request.guildId)!!.retrieveMemberById(request.authorId).complete()
+//        return GetMemberResponse(member.toString())
+//    }
+
+    fun consume(request: SentinelInfoRequest) = shardManager.run { SentinelInfoResponse(
             guildCache.size(),
-            userCache.size(),
             roleCache.size(),
             categoryCache.size(),
             textChannelCache.size(),
             voiceChannelCache.size(),
+            emoteCache.size(),
             if (request.includeShards) shards.map { it.toEntityExtended() } else null
-        )
-    }
-
-    fun consume(request: RunSessionRequest) = sessionsController.onRunRequest(request.shardId)
+    )}
 
     fun consume(request: UserListRequest) = shardManager.userCache.map { it.idLong }
 
     fun consume(request: BanListRequest): Array<Ban> {
         val guild = shardManager.getGuildById(request.guildId)
                 ?: throw RuntimeException("Guild ${request.guildId} not found")
-        return guild.retrieveBanList().complete("getBanList")
-            .map {
-                Ban(it.user.toEntity(), it.reason)
-            }.toTypedArray()
+        return guild.retrieveBanList().complete("getBanList").map {
+            Ban(it.user.toEntity(), it.reason)
+        }.toTypedArray()
     }
 
     @Volatile
@@ -103,4 +103,5 @@ class ManagementRequests(
             }
         }
     }
+
 }

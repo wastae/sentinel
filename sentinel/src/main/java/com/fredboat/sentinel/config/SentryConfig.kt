@@ -33,7 +33,7 @@ class SentryConfig(sentryProperties: SentryProperties) {
 
     init {
         val dsn = sentryProperties.dsn
-        if (dsn.isNotEmpty()) {
+        if (!dsn.isEmpty()) {
             log.info("DSN {}", dsn)
             turnOn(dsn, sentryProperties.tags)
         } else {
@@ -41,11 +41,11 @@ class SentryConfig(sentryProperties: SentryProperties) {
         }
     }
 
-    private fun turnOn(dsn: String, tags: Map<String, String>) {
+    private final fun turnOn(dsn: String, tags: Map<String, String>) {
         log.info("Turning on sentry")
         val sentryClient = Sentry.init(dsn)
 
-        tags.forEach { (name, value) ->
+        tags.forEach { name, value ->
             run {
                 log.info("Adding MDC: {} = {}", name, value)
                 sentryClient.addTag(name, value)
@@ -63,7 +63,7 @@ class SentryConfig(sentryProperties: SentryProperties) {
         }
 
         val commitHash = gitProps.getProperty("git.commit.id")
-        if (commitHash != null && commitHash.isNotEmpty()) {
+        if (commitHash != null && !commitHash.isEmpty()) {
             log.info("Setting sentry release to commit hash {}", commitHash)
             sentryClient.release = commitHash
         } else {
@@ -73,7 +73,7 @@ class SentryConfig(sentryProperties: SentryProperties) {
         getSentryLogbackAppender().start()
     }
 
-    private fun turnOff() {
+    private final fun turnOff() {
         log.warn("Turning off sentry")
         Sentry.close()
         getSentryLogbackAppender().stop()

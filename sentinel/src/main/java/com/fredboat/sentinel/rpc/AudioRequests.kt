@@ -9,8 +9,8 @@ package com.fredboat.sentinel.rpc
 
 import com.fredboat.sentinel.entities.AudioQueueRequest
 import com.fredboat.sentinel.entities.AudioQueueRequestEnum.*
-import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.internal.JDAImpl
 import org.springframework.stereotype.Service
 

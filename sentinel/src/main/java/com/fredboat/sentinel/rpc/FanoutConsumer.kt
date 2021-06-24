@@ -44,11 +44,7 @@ class FanoutConsumer(
     var knownFredBoatId: String? = null
 
     init {
-        try {
-            sendHello()
-        } catch (e: Exception) {
-            log.error("Error sending hello", e)
-        }
+        sendHello()
     }
 
     @RabbitHandler
@@ -63,13 +59,6 @@ class FanoutConsumer(
         }
 
         sendHello()
-
-        val game = if (event.game.isBlank()) null else Activity.listening(event.game)
-        shardManager.shards.forEach {
-            if (it.presence.activity?.name != game?.name) {
-                it.presence.setPresence(OnlineStatus.ONLINE, game)
-            }
-        }
     }
 
     private fun sendHello() {
@@ -86,4 +75,5 @@ class FanoutConsumer(
     fun consume(request: SyncSessionQueueRequest) {
         sessionController.syncSessionQueue()
     }
+
 }

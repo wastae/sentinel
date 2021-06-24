@@ -8,6 +8,7 @@
 package com.fredboat.sentinel.rpc
 
 import com.fredboat.sentinel.entities.*
+import com.fredboat.sentinel.jda.RemoteSessionController
 import org.springframework.amqp.rabbit.annotation.RabbitHandler
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.stereotype.Service
@@ -15,24 +16,20 @@ import org.springframework.stereotype.Service
 @Service
 @RabbitListener(queues = ["#{requestQueue.name}"], errorHandler = "rabbitListenerErrorHandler", concurrency = "200")
 class DirectConsumer(
-    private val audio: AudioRequests,
-    private val info: InfoRequests,
-    private val management: ManagementRequests,
-    private val message: MessageRequests,
-    private val permission: PermissionRequests,
-    private val subscription: SubscriptionHandler
+        private val audio: AudioRequests,
+        private val info: InfoRequests,
+        private val management: ManagementRequests,
+        private val message: MessageRequests,
+        private val permission: PermissionRequests,
+        private val subscription: SubscriptionHandler,
+        private val sessionController: RemoteSessionController
 ) {
 
     @RabbitHandler fun consume(request: AudioQueueRequest) = audio.consume(request)
 
-    @RabbitHandler fun consume(request: GuildsRequest) = info.consume(request)
+    @RabbitHandler fun consume(request: MemberInfoRequest) = info.consume(request)
     @RabbitHandler fun consume(request: GuildInfoRequest) = info.consume(request)
     @RabbitHandler fun consume(request: RoleInfoRequest) = info.consume(request)
-    @RabbitHandler fun consume(request: GetMembersByPrefixRequest) = info.consume(request)
-    @RabbitHandler fun consume(request: GetMembersByIdsRequest) = info.consume(request)
-    @RabbitHandler fun consume(request: MemberInfoRequest) = info.consume(request)
-    @RabbitHandler fun consume(request: GetMemberRequest) = info.consume(request)
-    @RabbitHandler fun consume(request: UserInfoRequest) = info.consume(request)
     @RabbitHandler fun consume(request: GetUserRequest) = info.consume(request)
 
     @RabbitHandler fun consume(request: ModRequest) = management.consume(request)
@@ -41,7 +38,6 @@ class DirectConsumer(
     @RabbitHandler fun consume(request: LeaveGuildRequest) = management.consume(request)
     @RabbitHandler fun consume(request: GetPingRequest) = management.consume(request)
     @RabbitHandler fun consume(request: SentinelInfoRequest) = management.consume(request)
-    @RabbitHandler fun consume(request: RunSessionRequest) = management.consume(request)
     @RabbitHandler fun consume(request: UserListRequest) = management.consume(request)
     @RabbitHandler fun consume(request: BanListRequest) = management.consume(request)
     @RabbitHandler fun consume(request: EvalRequest) = management.consume(request)
@@ -50,11 +46,10 @@ class DirectConsumer(
     @RabbitHandler fun consume(request: SendEmbedRequest) = message.consume(request)
     @RabbitHandler fun consume(request: SendPrivateMessageRequest) = message.consume(request)
     @RabbitHandler fun consume(request: EditMessageRequest) = message.consume(request)
-    @RabbitHandler fun consume(request: EditEmbedRequest) = message.consume(request)
-    @RabbitHandler fun consume(request: AddReactionRequest) = message.consume(request)
-    @RabbitHandler fun consume(request: AddReactionsRequest) = message.consume(request)
-    @RabbitHandler fun consume(request: RemoveReactionRequest) = message.consume(request)
-    @RabbitHandler fun consume(request: RemoveReactionsRequest) = message.consume(request)
+	@RabbitHandler fun consume(request: EditEmbedRequest) = message.consume(request)
+	@RabbitHandler fun consume(request: AddReactionRequest) = message.consume(request)
+	@RabbitHandler fun consume(request: RemoveReactionRequest) = message.consume(request)
+	@RabbitHandler fun consume(request: RemoveReactionsRequest) = message.consume(request)
     @RabbitHandler fun consume(request: MessageDeleteRequest) = message.consume(request)
     @RabbitHandler fun consume(request: SendTypingRequest) = message.consume(request)
 
@@ -64,4 +59,7 @@ class DirectConsumer(
 
     @RabbitHandler fun consume(request: GuildSubscribeRequest) = subscription.consume(request)
     @RabbitHandler fun consume(request: GuildUnsubscribeRequest) = subscription.consume(request)
+
+    @RabbitHandler fun consume(request: RunSessionRequest) = sessionController.onRunRequest(request.shardId)
+
 }

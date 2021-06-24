@@ -8,8 +8,8 @@
 package com.fredboat.sentinel.rpc
 
 import com.fredboat.sentinel.entities.*
-import net.dv8tion.jda.api.entities.GuildChannel
 import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.api.entities.GuildChannel
 import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.springframework.stereotype.Service
 
@@ -71,7 +71,7 @@ class PermissionRequests(private val shardManager: ShardManager) {
         })
     }
 
-    /** Performs converse non implication */
+    /** Performs converse nonimplication */
     private fun getMissing(expected: Long, actual: Long) = (expected.inv() or actual).inv()
 
 }

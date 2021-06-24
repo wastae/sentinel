@@ -9,11 +9,11 @@ package com.fredboat.sentinel.rpc
 
 import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.util.complete
-import com.fredboat.sentinel.util.toFuture
+import com.fredboat.sentinel.util.queue
 import com.fredboat.sentinel.util.toJda
+import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.TextChannel
-import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.JDAImpl
 import net.dv8tion.jda.internal.entities.UserImpl
 import org.slf4j.Logger
@@ -35,10 +35,9 @@ class MessageRequests(private val shardManager: ShardManager) {
             return null
         }
 
-        return channel.sendMessage(request.message).complete("sendMessage")
-            .let {
-                SendMessageResponse(it.idLong)
-            }
+        return channel.sendMessage(request.message)
+                .complete("sendMessage")
+                .let { SendMessageResponse(it.idLong) }
     }
 
     fun consume(request: SendEmbedRequest): SendMessageResponse? {
@@ -49,21 +48,19 @@ class MessageRequests(private val shardManager: ShardManager) {
             return null
         }
 
-        return channel.sendMessage(request.embed.toJda()).complete("sendMessage")
-            .let {
-                SendMessageResponse(it.idLong)
-            }
+        return SendMessageResponse(
+                channel.sendMessage(request.embed.toJda()).complete("sendEmbed").idLong
+        )
     }
 
     fun consume(request: SendPrivateMessageRequest): SendMessageResponse? {
         val shard = shardManager.shards.find { it.status == JDA.Status.CONNECTED } as JDAImpl
         val user = UserImpl(request.recipient, shard)
+        val channel = user.openPrivateChannel().complete(true)!!
 
-        return user.openPrivateChannel().complete("openPrivateChannel").sendMessage(request.message)
-            .complete("sendPrivateMessage")
-            .let {
-                SendMessageResponse(it.idLong)
-            }
+        return SendMessageResponse(
+                channel.sendMessage(request.message).complete("sendPrivate").idLong
+        )
     }
 
     fun consume(request: EditMessageRequest) {
@@ -74,7 +71,7 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        channel.editMessageById(request.messageId, request.message).toFuture("editMessage")
+        channel.editMessageById(request.messageId, request.message).queue("editMessage")
     }
 
     fun consume(request: EditEmbedRequest) {
@@ -85,7 +82,7 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        channel.editMessageById(request.messageId, request.embed.toJda()).toFuture("editEmbedMessage")
+        channel.editMessageById(request.messageId, request.embed.toJda()).queue()
     }
 
     fun consume(request: AddReactionRequest) {
@@ -95,21 +92,8 @@ class MessageRequests(private val shardManager: ShardManager) {
             log.error("Received AddReactionRequest for channel ${request.channel} which was not found")
             return
         }
-
-        channel.addReactionById(request.messageId, request.emote).toFuture("addReaction")
-    }
-
-    fun consume(request: AddReactionsRequest) {
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
-
-        if (channel == null) {
-            log.error("Received AddReactionsRequest for channel ${request.channel} which was not found")
-            return
-        }
-
-        for (emote in request.emote) {
-            channel.addReactionById(request.messageId, emote).toFuture("addReactions")
-        }
+        
+        channel.addReactionById(request.messageId, request.emote).queue()
     }
 
     fun consume(request: RemoveReactionRequest) {
@@ -119,11 +103,8 @@ class MessageRequests(private val shardManager: ShardManager) {
             log.error("Received RemoveReactionRequest for channel ${request.channel} which was not found")
             return
         }
-
-        shardManager.retrieveUserById(request.userId).toFuture("retrieveUser")
-            .thenCompose {
-                channel.removeReactionById(request.messageId, request.emote, it).toFuture("removeReaction")
-            }
+        
+        channel.removeReactionById(request.messageId, request.emote).queue()
     }
 
     fun consume(request: RemoveReactionsRequest) {
@@ -133,8 +114,8 @@ class MessageRequests(private val shardManager: ShardManager) {
             log.error("Received RemoveReactionsRequest for channel ${request.channel} which was not found")
             return
         }
-
-        channel.clearReactionsById(request.messageId).toFuture("clearReactions")
+        
+        channel.clearReactionsById(request.messageId).queue()
     }
 
     fun consume(request: MessageDeleteRequest) {
@@ -146,12 +127,12 @@ class MessageRequests(private val shardManager: ShardManager) {
         }
 
         if (request.messages.size < 2) {
-            channel.deleteMessageById(request.messages[0].toString()).toFuture("deleteMessage")
+            channel.deleteMessageById(request.messages[0].toString()).queue("deleteMessage")
             return
         }
 
         val list = request.messages.map { toString() }
-        channel.deleteMessagesByIds(list).toFuture("deleteMessages")
+        channel.deleteMessagesByIds(list).queue("deleteMessages")
     }
 
     fun consume(request: SendTypingRequest) {
@@ -162,6 +143,6 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        channel.sendTyping().toFuture("sendTyping")
+        channel.sendTyping().queue("sendTyping")
     }
 }

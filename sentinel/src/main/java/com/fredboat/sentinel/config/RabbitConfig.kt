@@ -14,7 +14,6 @@ import com.fredboat.sentinel.metrics.Counters
 import org.aopalliance.aop.Advice
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.amqp.core.AcknowledgeMode
 import org.springframework.amqp.rabbit.AsyncRabbitTemplate
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory
 import org.springframework.amqp.rabbit.connection.ConnectionFactory
@@ -49,8 +48,8 @@ class RabbitConfig {
     fun jsonMessageConverter(): MessageConverter {
         // We must register this Kotlin module to get deserialization to work with data classes
         val mapper = ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .registerKotlinModule()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                .registerKotlinModule()
         return Jackson2JsonMessageConverter(mapper)
     }
 
@@ -65,21 +64,20 @@ class RabbitConfig {
         null
     }
 
-    /* Don't retry ad infinite */
+    /* Don't retry ad infinitum */
     @Bean
     fun retryOperationsInterceptor() = RetryInterceptorBuilder
-        .stateless()
-        .maxAttempts(1)
-        .build()!!
+            .stateless()
+            .maxAttempts(1)
+            .build()!!
 
     @Bean
     fun rabbitListenerContainerFactory(
-        configurer: SimpleRabbitListenerContainerFactoryConfigurer,
-        connectionFactory: ConnectionFactory,
-        retryOperationsInterceptor: RetryOperationsInterceptor
+            configurer: SimpleRabbitListenerContainerFactoryConfigurer,
+            connectionFactory: ConnectionFactory,
+            retryOperationsInterceptor: RetryOperationsInterceptor
     ): SimpleRabbitListenerContainerFactory {
         val factory = SimpleRabbitListenerContainerFactory()
-        factory.setAcknowledgeMode(AcknowledgeMode.AUTO)
         configurer.configure(factory, connectionFactory)
         val chain = factory.adviceChain?.toMutableList() ?: mutableListOf<Advice>()
         chain.add(retryOperationsInterceptor)

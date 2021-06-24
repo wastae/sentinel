@@ -34,9 +34,9 @@ class RabbitQueuesConfig {
 
     @Bean
     fun requestBinding(
-        @Qualifier("requestExchange") requestExchange: DirectExchange,
-        @Qualifier("requestQueue") requestQueue: Queue,
-        key: RoutingKey
+            @Qualifier("requestExchange") requestExchange: DirectExchange,
+            @Qualifier("requestQueue") requestQueue: Queue,
+            key: RoutingKey
     ): Binding {
         return BindingBuilder.bind(requestQueue).to(requestExchange).with(key.key)
     }
@@ -55,8 +55,8 @@ class RabbitQueuesConfig {
     /** Receive messages from [fanout] to [fanoutQueue] */
     @Bean
     fun fanoutBinding(
-        @Qualifier("fanoutQueue") fanoutQueue: Queue,
-        @Qualifier("fanoutExchange") fanout: FanoutExchange
+            @Qualifier("fanoutQueue") fanoutQueue: Queue,
+            @Qualifier("fanoutExchange") fanout: FanoutExchange
     ): Binding {
         return BindingBuilder.bind(fanoutQueue).to(fanout)
     }
@@ -75,8 +75,8 @@ class RabbitQueuesConfig {
     /** Receive messages from [sessionsFanout] to [sessionsQueue] */
     @Bean
     fun sessionsBinding(
-        @Qualifier("sessionsQueue") sessionsQueue: Queue,
-        @Qualifier("sessionsExchange") sessionsFanout: FanoutExchange
+            @Qualifier("sessionsQueue") sessionsQueue: Queue,
+            @Qualifier("sessionsExchange") sessionsFanout: FanoutExchange
     ): Binding {
         return BindingBuilder.bind(sessionsQueue).to(sessionsFanout)
     }

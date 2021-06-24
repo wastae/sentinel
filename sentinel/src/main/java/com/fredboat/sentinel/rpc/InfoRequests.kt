@@ -10,28 +10,48 @@ package com.fredboat.sentinel.rpc
 import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.util.complete
 import com.fredboat.sentinel.util.toEntity
-import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.sharding.ShardManager
-import net.dv8tion.jda.internal.utils.PermissionUtil
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.OnlineStatus
+import net.dv8tion.jda.api.exceptions.ErrorResponseException
+import net.dv8tion.jda.api.requests.ErrorResponse
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
 class InfoRequests(private val shardManager: ShardManager) {
 
-    fun consume(request: GuildsRequest): GuildsResponse {
-        val guilds = shardManager.guilds
-        return guilds.run {
-            GuildsResponse(
-                this.map { it.idLong }.toList()
+    companion object {
+        private val log: Logger = LoggerFactory.getLogger(InfoRequests::class.java)
+    }
+
+    fun consume(request: MemberInfoRequest): MemberInfo {
+        val member = shardManager.getGuildById(request.guildId)!!.retrieveMemberById(request.id).complete()
+        return member.run {
+            MemberInfo (
+                user.idLong,
+                user.name,
+                this.nickname,
+                user.discriminator,
+                guild.idLong,
+                user.avatarUrl!!,
+                color?.rgb,
+                timeJoined.toInstant().toEpochMilli(),
+                user.isBot,
+                listOf(),
+                listOf(),
+                0L,
+                this.voiceState!!.sessionId!!.toLong()
             )
         }
     }
 
     fun consume(request: GuildInfoRequest): GuildInfo {
         val guild = shardManager.getGuildById(request.id)
-            ?: throw IllegalStateException("Guild ${request.id} not found")
-        return guild.run {
-            GuildInfo(
+        if (guild == null) { log.error("Received null on guild request for ${request.id}") }
+        return guild!!.run {
+            GuildInfo (
                 idLong,
                 guild.iconUrl,
                 guild.memberCache.count { it.onlineStatus != OnlineStatus.OFFLINE },
@@ -42,9 +62,9 @@ class InfoRequests(private val shardManager: ShardManager) {
 
     fun consume(request: RoleInfoRequest): RoleInfo {
         val role = shardManager.getRoleById(request.id)
-            ?: throw IllegalStateException("Role ${request.id} not found")
-        return role.run {
-            RoleInfo(
+        if (role == null) { log.error("Received null on role request for ${request.id}") }
+        return role!!.run {
+            RoleInfo (
                 idLong,
                 position,
                 color?.rgb,
@@ -55,61 +75,21 @@ class InfoRequests(private val shardManager: ShardManager) {
         }
     }
 
-    fun consume(request: GetMembersByPrefixRequest): MembersByPrefixResponse {
-        val members = shardManager.getGuildById(request.guildId)!!.retrieveMembersByPrefix(request.prefix, request.limit)
-        return MembersByPrefixResponse(members.get().map { it.toEntity() })
-    }
+    fun consume(request: GetUserRequest): User? {
+        val user = shardManager.getUserById(request.id)
+        if (user != null) return user.toEntity()
 
-    fun consume(request: GetMembersByIdsRequest): MembersByIdsResponse {
-        val members = shardManager.getGuildById(request.guildId)!!.retrieveMembersByIds(request.ids)
-        return MembersByIdsResponse(members.get().map { it.toEntity() })
-    }
-
-    fun consume(request: MemberInfoRequest): MemberInfo? {
-        return shardManager.getGuildById(request.guildId)!!.retrieveMemberById(request.id)
-            .complete("fetchMemberInfo")
-            .let { it ->
-                MemberInfo(
-                    it.user.idLong,
-                    it.user.name,
-                    it.nickname,
-                    it.user.discriminator,
-                    it.guild.idLong,
-                    it.user.effectiveAvatarUrl,
-                    it.color?.rgb,
-                    it.timeJoined.toInstant().toEpochMilli(),
-                    it.user.isBot,
-                    it.user.mutualGuilds.map { it.idLong },
-                    it.roles.map { it.idLong },
-                    PermissionUtil.getEffectivePermission(it),
-                    it.voiceState?.channel?.idLong
-                )
+        for (shard in shardManager.shards) {
+            if (shard.status != JDA.Status.CONNECTED) continue
+            return try {
+                shard.retrieveUserById(request.id).complete("fetchUser").toEntity()
+            } catch (e: ErrorResponseException) {
+                if (e.errorResponse == ErrorResponse.UNKNOWN_USER) return null
+                throw e
             }
+        }
 
+        throw RuntimeException("No shards connected")
     }
 
-    fun consume(request: GetMemberRequest): Member {
-        return shardManager.getGuildById(request.guildId)!!.retrieveMemberById(request.id)
-            .complete("fetchMember").toEntity()
-    }
-
-    fun consume(request: UserInfoRequest): UserInfo {
-        return shardManager.retrieveUserById(request.id)
-            .complete("fetchUserInfo")
-            .let { it ->
-                UserInfo(
-                    it.idLong,
-                    it.name,
-                    it.discriminator,
-                    it.effectiveAvatarUrl,
-                    it.isBot,
-                    it.mutualGuilds.map { it.idLong }
-                )
-            }
-    }
-
-    fun consume(request: GetUserRequest): User {
-        return shardManager.retrieveUserById(request.id)
-            .complete("fetchUser").toEntity()
-    }
 }
