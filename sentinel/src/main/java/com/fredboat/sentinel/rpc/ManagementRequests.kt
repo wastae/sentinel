@@ -9,29 +9,26 @@ package com.fredboat.sentinel.rpc
 
 import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.entities.ModRequestType.*
-import com.fredboat.sentinel.jda.RemoteSessionController
 import com.fredboat.sentinel.util.*
-import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.entities.Icon
+import net.dv8tion.jda.api.sharding.ShardManager
 import org.springframework.stereotype.Service
 import java.util.*
 
 @Service
 class ManagementRequests(
         private val shardManager: ShardManager,
-        private val eval: EvalService,
-        private val sessionController: RemoteSessionController
+        private val eval: EvalService
 ) {
 
     fun consume(modRequest: ModRequest): String = modRequest.run {
         val guild = shardManager.getGuildById(guildId)
                 ?: throw RuntimeException("Guild $guildId not found")
-        val control = guild
 
-        val action = when(type) {
-            KICK -> control.kick(userId.toString(), reason)
-            BAN -> control.ban(userId.toString(), banDeleteDays, reason)
-            UNBAN -> control.unban(userId.toString())
+        val action = when (type) {
+            KICK -> guild.kick(userId.toString(), reason)
+            BAN -> guild.ban(userId.toString(), banDeleteDays, reason)
+            UNBAN -> guild.unban(userId.toString())
         }
         action.complete(type.name.toLowerCase())
         return ""

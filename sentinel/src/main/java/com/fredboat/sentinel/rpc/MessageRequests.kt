@@ -48,9 +48,9 @@ class MessageRequests(private val shardManager: ShardManager) {
             return null
         }
 
-        return SendMessageResponse(
-                channel.sendMessage(request.embed.toJda()).complete("sendEmbed").idLong
-        )
+        return channel.sendMessage(request.embed.toJda())
+                .complete("sendEmbed")
+                .let { SendMessageResponse(it.idLong) }
     }
 
     fun consume(request: SendPrivateMessageRequest): SendMessageResponse? {
@@ -58,9 +58,9 @@ class MessageRequests(private val shardManager: ShardManager) {
         val user = UserImpl(request.recipient, shard)
         val channel = user.openPrivateChannel().complete(true)!!
 
-        return SendMessageResponse(
-                channel.sendMessage(request.message).complete("sendPrivate").idLong
-        )
+        return channel.sendMessage(request.message)
+                .complete("sendPrivate")
+                .let { SendMessageResponse(it.idLong) }
     }
 
     fun consume(request: EditMessageRequest) {
@@ -82,7 +82,7 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        channel.editMessageById(request.messageId, request.embed.toJda()).queue()
+        channel.editMessageById(request.messageId, request.embed.toJda()).queue("editEmbedMessage")
     }
 
     fun consume(request: AddReactionRequest) {
@@ -93,7 +93,7 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        channel.addReactionById(request.messageId, request.emote).submit()
+        channel.addReactionById(request.messageId, request.emote).queue("addReaction")
     }
 
     fun consume(request: AddReactionsRequest) {
@@ -105,20 +105,23 @@ class MessageRequests(private val shardManager: ShardManager) {
         }
 
         for (emote in request.emote) {
-            channel.addReactionById(request.messageId, emote).submit()
+            channel.addReactionById(request.messageId, emote).queue("addReactions")
         }
     }
 
     fun consume(request: RemoveReactionRequest) {
-        shardManager.retrieveUserById(request.userId).queue {
-            val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
-            if (channel == null) {
-                log.error("Received RemoveReactionRequest for channel ${request.channel} which was not found")
-                return@queue
-            }
+        shardManager.retrieveUserById(request.userId)
+                .complete("retrieveUser")
+                .let {
+                    val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
-            channel.removeReactionById(request.messageId, request.emote, it).queue()
-        }
+                    if (channel == null) {
+                        log.error("Received RemoveReactionRequest for channel ${request.channel} which was not found")
+                        return
+                    }
+
+                    channel.removeReactionById(request.messageId, request.emote, it).queue("removeReaction")
+                }
     }
 
     fun consume(request: RemoveReactionsRequest) {
@@ -129,7 +132,7 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        channel.clearReactionsById(request.messageId).queue()
+        channel.clearReactionsById(request.messageId).queue("removeReactions")
     }
 
     fun consume(request: MessageDeleteRequest) {

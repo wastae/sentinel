@@ -27,9 +27,14 @@ class DirectConsumer(
 
     @RabbitHandler fun consume(request: AudioQueueRequest) = audio.consume(request)
 
-    @RabbitHandler fun consume(request: MemberInfoRequest) = info.consume(request)
+    @RabbitHandler fun consume(request: GuildsRequest) = info.consume(request)
     @RabbitHandler fun consume(request: GuildInfoRequest) = info.consume(request)
     @RabbitHandler fun consume(request: RoleInfoRequest) = info.consume(request)
+    @RabbitHandler fun consume(request: GetMembersByPrefixRequest) = info.consume(request)
+    @RabbitHandler fun consume(request: GetMembersByIdsRequest) = info.consume(request)
+    @RabbitHandler fun consume(request: MemberInfoRequest) = info.consume(request)
+    @RabbitHandler fun consume(request: GetMemberRequest) = info.consume(request)
+    @RabbitHandler fun consume(request: UserInfoRequest) = info.consume(request)
     @RabbitHandler fun consume(request: GetUserRequest) = info.consume(request)
 
     @RabbitHandler fun consume(request: ModRequest) = management.consume(request)

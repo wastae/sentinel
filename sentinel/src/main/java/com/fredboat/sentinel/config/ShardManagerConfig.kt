@@ -10,6 +10,7 @@ package com.fredboat.sentinel.config
 import com.fredboat.sentinel.ApplicationState
 import com.fredboat.sentinel.jda.JdaRabbitEventListener
 import com.fredboat.sentinel.jda.RemoteSessionController
+import com.fredboat.sentinel.jda.VoiceInterceptor
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.SessionController
@@ -35,26 +36,27 @@ class ShardManagerConfig {
     @Bean
     fun buildShardManager(sentinelProperties: SentinelProperties,
                           rabbitEventListener: JdaRabbitEventListener,
-                          sessionController: RemoteSessionController
+                          sessionController: RemoteSessionController,
+                          voiceInterceptor: VoiceInterceptor
     ): ShardManager {
 
-        val INTENTS = listOf(
+        val intents = listOf(
             GatewayIntent.DIRECT_MESSAGES,
             GatewayIntent.GUILD_MESSAGES,
             GatewayIntent.GUILD_MESSAGE_REACTIONS,
             GatewayIntent.GUILD_VOICE_STATES
         )
 
-        val builder = DefaultShardManagerBuilder.create(sentinelProperties.discordToken, INTENTS)
+        val builder = DefaultShardManagerBuilder.create(sentinelProperties.discordToken, intents)
                 .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE)
-                .disableCache(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE)
+                .disableCache(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE, CacheFlag.ROLE_TAGS)
                 .setBulkDeleteSplittingEnabled(false)
-                .setEnableShutdownHook(false)
                 .setAutoReconnect(true)
                 .setShardsTotal(sentinelProperties.shardCount)
                 .setShards(sentinelProperties.shardStart, sentinelProperties.shardEnd)
                 .setSessionController(sessionController)
                 .setChunkingFilter(ChunkingFilter.NONE)
+                .setVoiceDispatchInterceptor(voiceInterceptor)
                 .addEventListeners(rabbitEventListener)
 
         val shardManager: ShardManager
