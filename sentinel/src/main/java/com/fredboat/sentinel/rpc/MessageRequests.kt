@@ -8,6 +8,7 @@
 package com.fredboat.sentinel.rpc
 
 import com.fredboat.sentinel.entities.*
+import com.fredboat.sentinel.entities.SendMessageResponse
 import com.fredboat.sentinel.rpc.meta.SentinelRequest
 import com.fredboat.sentinel.util.mono
 import com.fredboat.sentinel.util.toJda
@@ -73,109 +74,110 @@ class MessageRequests(private val shardManager: ShardManager) {
     }
 
     @SentinelRequest
-    fun consume(request: EditMessageRequest) {
+    fun consume(request: EditMessageRequest): Mono<Void> {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
             log.error("Received EditMessageRequest for channel ${request.channel} which was not found")
-            return
+            return Mono.empty()
         }
 
-        channel.editMessageById(request.messageId, request.message).mono("editMessage")
+        return channel.editMessageById(request.messageId, request.message).mono("editMessage").then()
     }
 
     @SentinelRequest
-    fun consume(request: EditEmbedRequest) {
+    fun consume(request: EditEmbedRequest): Mono<Void> {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
             log.error("Received EditEmbedRequest for channel ${request.channel} which was not found")
-            return
+            return Mono.empty()
         }
 
-        channel.editMessageById(request.messageId, request.embed.toJda()).mono("editEmbedMessage")
+        return channel.editMessageById(request.messageId, request.embed.toJda()).mono("editEmbedMessage").then()
     }
 
     @SentinelRequest
-    fun consume(request: AddReactionRequest) {
+    fun consume(request: AddReactionRequest): Mono<Void> {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
             log.error("Received AddReactionRequest for channel ${request.channel} which was not found")
-            return
+            return Mono.empty()
         }
 
-        channel.addReactionById(request.messageId, request.emote).mono("addReaction")
+        return channel.addReactionById(request.messageId, request.emote).mono("addReaction").then()
     }
 
     @SentinelRequest
-    fun consume(request: AddReactionsRequest) {
+    fun consume(request: AddReactionsRequest): Mono<Void> {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
             log.error("Received AddReactionsRequest for channel ${request.channel} which was not found")
-            return
+            return Mono.empty()
         }
 
         for (emote in request.emote) {
-            channel.addReactionById(request.messageId, emote).mono("addReactions")
+            channel.addReactionById(request.messageId, emote).queue()
         }
+
+        return Mono.empty()
     }
 
     @SentinelRequest
-    fun consume(request: RemoveReactionRequest) {
+    fun consume(request: RemoveReactionRequest): Mono<Void> {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
             log.error("Received RemoveReactionRequest for channel ${request.channel} which was not found")
-            return
+            return Mono.empty()
         }
 
-        shardManager.retrieveUserById(request.userId).mono("retrieveUser")
-            .subscribe {
-                channel.removeReactionById(request.messageId, request.emote, it).mono("removeReaction")
+        return shardManager.retrieveUserById(request.userId).mono("retrieveUser")
+            .flatMap {
+                channel.removeReactionById(request.messageId, request.emote, it).mono("removeReaction").then()
             }
     }
 
     @SentinelRequest
-    fun consume(request: RemoveReactionsRequest) {
+    fun consume(request: RemoveReactionsRequest): Mono<Void> {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
             log.error("Received RemoveReactionsRequest for channel ${request.channel} which was not found")
-            return
+            return Mono.empty()
         }
 
-        channel.clearReactionsById(request.messageId).mono("clearReactions")
+        return channel.clearReactionsById(request.messageId).mono("clearReactions").then()
     }
 
     @SentinelRequest
-    fun consume(request: MessageDeleteRequest) {
+    fun consume(request: MessageDeleteRequest): Mono<Void> {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
             log.error("Received MessageDeleteRequest for channel ${request.channel} which was not found")
-            return
+            return Mono.empty()
         }
 
         if (request.messages.size < 2) {
-            channel.deleteMessageById(request.messages[0].toString()).mono("deleteMessage")
-            return
+            return channel.deleteMessageById(request.messages[0].toString()).mono("deleteMessage").then()
         }
 
         val list = request.messages.map { toString() }
-        channel.deleteMessagesByIds(list).mono("deleteMessages")
+        return channel.deleteMessagesByIds(list).mono("deleteMessages").then()
     }
 
     @SentinelRequest
-    fun consume(request: SendTypingRequest) {
+    fun consume(request: SendTypingRequest): Mono<Void> {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
             log.error("Received SendTypingRequest for channel ${request.channel} which was not found")
-            return
+            return Mono.empty()
         }
 
-        channel.sendTyping().mono("sendTyping")
+        return channel.sendTyping().mono("sendTyping").then()
     }
 }
