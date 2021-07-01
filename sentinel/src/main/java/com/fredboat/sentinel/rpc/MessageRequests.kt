@@ -13,6 +13,7 @@ import com.fredboat.sentinel.rpc.meta.SentinelRequest
 import com.fredboat.sentinel.util.mono
 import com.fredboat.sentinel.util.toJda
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.JDAImpl
@@ -86,7 +87,7 @@ class MessageRequests(private val shardManager: ShardManager) {
     }
 
     @SentinelRequest
-    fun consume(request: EditEmbedRequest): Mono<Void> {
+    fun consume(request: EditEmbedRequest): Mono<EditEmbedResponse> {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
@@ -94,7 +95,17 @@ class MessageRequests(private val shardManager: ShardManager) {
             return Mono.empty()
         }
 
-        return channel.editMessageById(request.messageId, request.embed.toJda()).mono("editEmbedMessage").then()
+        var successful = false
+        return channel.editMessageById(request.messageId, request.embed.toJda()).mono("editEmbedMessage")
+                .doOnSuccess {
+                    successful = true
+                }.map {
+                    EditEmbedResponse(
+                        it.idLong,
+                        it.guild.idLong,
+                        successful
+                    )
+                }
     }
 
     @SentinelRequest

@@ -53,11 +53,17 @@ data class EditMessageRequest(
         val message: String
 )
 
-/** Returns [Unit]*/
+/** Returns [EditEmbedResponse]*/
 data class EditEmbedRequest(
         val channel: Long,
         val messageId: Long,
         val embed: Embed
+)
+
+data class EditEmbedResponse(
+        val messageId: Long,
+        val guildId: Long,
+        val successful: Boolean
 )
 
 /** Returns [Unit]*/
