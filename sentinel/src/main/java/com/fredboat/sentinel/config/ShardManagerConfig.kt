@@ -11,11 +11,12 @@ import com.fredboat.sentinel.ApplicationState
 import com.fredboat.sentinel.jda.JdaRabbitEventListener
 import com.fredboat.sentinel.jda.RemoteSessionController
 import com.fredboat.sentinel.jda.VoiceInterceptor
+import net.dv8tion.jda.api.entities.Message.MentionType
 import net.dv8tion.jda.api.requests.GatewayIntent
+import net.dv8tion.jda.api.requests.restaction.MessageAction
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.ChunkingFilter
-import net.dv8tion.jda.api.utils.MemberCachePolicy
 import net.dv8tion.jda.api.utils.cache.CacheFlag
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -59,6 +60,11 @@ class ShardManagerConfig {
 
         val shardManager: ShardManager
         try {
+            MessageAction.setDefaultMentions(EnumSet.complementOf(EnumSet.of(
+                    MentionType.EVERYONE,
+                    MentionType.HERE,
+                    MentionType.ROLE
+            )))
             shardManager = builder.build()
             sessionController.shardManager = shardManager
             rabbitEventListener.shardManager = shardManager
