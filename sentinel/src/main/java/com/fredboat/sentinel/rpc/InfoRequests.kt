@@ -64,6 +64,15 @@ class InfoRequests(private val shardManager: ShardManager) {
     }
 
     @SentinelRequest
+    fun consume(request: FindMembersByRoleRequest): MembersByRoleResponse {
+        val role = shardManager.getRoleById(request.id)
+            ?: throw IllegalStateException("Role ${request.id} not found")
+        return MembersByRoleResponse(
+                shardManager.getGuildById(request.guildId)!!.findMembersWithRoles(role).get().map { it.toEntity() }
+        )
+    }
+
+    @SentinelRequest
     fun consume(request: GetMembersByPrefixRequest): MembersByPrefixResponse {
         val members = shardManager.getGuildById(request.guildId)!!.retrieveMembersByPrefix(request.prefix, request.limit)
         return MembersByPrefixResponse(members.get().map { it.toEntity() })
