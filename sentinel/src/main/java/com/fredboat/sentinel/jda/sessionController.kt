@@ -57,14 +57,14 @@ class RemoteSessionController(
     fun syncSessionQueue() {
         localQueue.values.forEach { it.send(false) }
     }
-    
+
     fun onRunRequest(id: Int): String {
         val status = shardManager.getShardById(id)?.status
         log.info("Received request to run shard $id, which has status $status")
         val node = localQueue[id]
-        if(node == null) {
+        if (node == null) {
             val msg = RemoveSessionEvent(id, sentinelProps.shardCount, routingKey.key)
-            rabbit.convertAndSend(SentinelExchanges.EVENTS, "", msg)
+            rabbit.convertAndSend(SentinelExchanges.JDA, "", msg)
             throw IllegalStateException("Node $id is not queued")
         }
 
@@ -87,7 +87,7 @@ class RemoteSessionController(
         } else {
             AppendSessionEvent(shardInfo.shardId, shardInfo.shardTotal, routingKey.key)
         }
-        rabbit.convertAndSend(SentinelExchanges.EVENTS, "", msg)
+        rabbit.convertAndSend(SentinelExchanges.JDA, "", msg)
     }
 
     /* Handle gateway and global ratelimit */

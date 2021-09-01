@@ -30,6 +30,7 @@ class DirectConsumer(
     @RabbitHandler fun consume(request: GuildsRequest) = info.consume(request)
     @RabbitHandler fun consume(request: GuildInfoRequest) = info.consume(request)
     @RabbitHandler fun consume(request: RoleInfoRequest) = info.consume(request)
+    @RabbitHandler fun consume(request: FindMembersByRoleRequest) = info.consume(request)
     @RabbitHandler fun consume(request: GetMembersByPrefixRequest) = info.consume(request)
     @RabbitHandler fun consume(request: GetMembersByIdsRequest) = info.consume(request)
     @RabbitHandler fun consume(request: MemberInfoRequest) = info.consume(request)

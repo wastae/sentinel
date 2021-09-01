@@ -75,7 +75,7 @@ class FanoutConsumer(
                 shardCount,
                 key.key
         )}
-        template.convertAndSend(SentinelExchanges.EVENTS, message)
+        template.convertAndSend(SentinelExchanges.JDA, message)
     }
 
     @RabbitHandler

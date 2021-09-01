@@ -67,5 +67,3 @@ data class Role(
         val name: String,
         val permissions: Long
 )
-
-

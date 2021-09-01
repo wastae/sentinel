@@ -12,7 +12,6 @@ import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.metrics.Counters
 import com.fredboat.sentinel.util.toEntity
 import com.neovisionaries.ws.client.WebSocketFrame
-import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.GuildChannel
@@ -32,10 +31,7 @@ import net.dv8tion.jda.api.events.channel.voice.update.VoiceChannelUpdatePositio
 import net.dv8tion.jda.api.events.guild.GenericGuildEvent
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
-import net.dv8tion.jda.api.events.guild.member.GenericGuildMemberEvent
-import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent
-import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
-import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
+import net.dv8tion.jda.api.events.guild.member.*
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.api.events.guild.override.GenericPermissionOverrideEvent
 import net.dv8tion.jda.api.events.guild.update.GuildUpdateNameEvent
@@ -61,7 +57,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
-import java.io.File
 
 @Component
 class JdaRabbitEventListener(
@@ -86,11 +81,6 @@ class JdaRabbitEventListener(
 
     override fun onReady(event: ReadyEvent) {
         dispatch(ShardLifecycleEvent(event.jda.toEntity(), LifecycleEventEnum.READIED))
-
-        if (shardManager.shards.all { it.status == JDA.Status.CONNECTED }) {
-            // This file can be used by Ansible playbooks
-            File("readyfile").createNewFile()
-        }
     }
 
     override fun onDisconnect(event: DisconnectEvent) {
@@ -101,7 +91,7 @@ class JdaRabbitEventListener(
 
         val prefix = if (event.isClosedByServer) "s" else "c"
         val code = "$prefix${frame?.closeCode}"
-        
+
         log.warn("Shard ${event.jda.shardInfo} closed. {} {}", code, frame?.closeReason)
         Counters.shardDisconnects.labels(code).inc()
     }
@@ -118,8 +108,8 @@ class JdaRabbitEventListener(
     /* Guild jda */
     override fun onGuildJoin(event: GuildJoinEvent) =
             dispatch(GuildJoinEvent(
-                event.guild.idLong,
-                event.guild.regionRaw
+                    event.guild.idLong,
+                    event.guild.regionRaw
             ))
 
     override fun onGuildLeave(event: GuildLeaveEvent) =
@@ -188,10 +178,10 @@ class JdaRabbitEventListener(
         if (message.isWebhookMessage) return
 
         if (subscriptions.contains(event.guild.idLong)) {
-			updateGuild(event.guild)
-		}
+            updateGuild(event.guild)
+        }
 
-		dispatch(MessageReceivedEvent(
+        dispatch(MessageReceivedEvent(
                 message.idLong,
                 message.guild.idLong,
                 channel.idLong,
@@ -265,7 +255,7 @@ class JdaRabbitEventListener(
         if (event is TextChannelDeleteEvent || event is TextChannelCreateEvent) {
             updateGuild(event.guild)
             return
-		} else if (event is RoleUpdatePositionEvent || event is RoleUpdatePermissionsEvent) {
+        } else if (event is RoleUpdatePositionEvent || event is RoleUpdatePermissionsEvent) {
             updateChannelPermissions(event.guild)
         }
         dispatch(TextChannelUpdate(
@@ -274,7 +264,7 @@ class JdaRabbitEventListener(
         ))
     }
 
-    /** Note: voice state updates (join, move, leave, etc) are not handled as [GenericVoiceChannelEvent] */
+    /** Note: voice state updates (join, move, leave, etc.) are not handled as [GenericVoiceChannelEvent] */
     override fun onGenericVoiceChannel(event: GenericVoiceChannelEvent) {
         if (!subscriptions.contains(event.guild.idLong)) return
         if (event is VoiceChannelDeleteEvent || event is VoiceChannelCreateEvent) {
@@ -317,7 +307,7 @@ class JdaRabbitEventListener(
         if (!subscriptions.contains(event.guild.idLong)) return
         if (event is GuildMemberRoleAddEvent || event is GuildMemberRoleRemoveEvent) {
             updateGuild(event.guild)
-            return 
+            return
         }
     }
 
@@ -344,7 +334,7 @@ class JdaRabbitEventListener(
     /* Util */
 
     private fun dispatch(event: Any, print: Boolean = false) {
-        rabbitTemplate.convertAndSend(SentinelExchanges.EVENTS, rabbitTemplate.routingKey, event)
+        rabbitTemplate.convertAndSend(SentinelExchanges.JDA, rabbitTemplate.routingKey, event)
         if (print) log.info("Sent $event")
     }
 
@@ -352,9 +342,5 @@ class JdaRabbitEventListener(
         if (event.response!!.code >= 300) {
             log.warn("Unsuccessful JDA HTTP Request:\n{}\nResponse:{}\n", event.requestRaw, event.responseRaw)
         }
-    }
-
-    fun onGenericEvent(event: Event) {
-        Counters.jdaEvents.labels(event.javaClass.simpleName).inc()
     }
 }

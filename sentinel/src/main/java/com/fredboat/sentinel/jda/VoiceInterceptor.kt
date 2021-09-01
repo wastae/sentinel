@@ -23,7 +23,7 @@ class VoiceInterceptor(private val rabbit: RabbitTemplate, val cache: VoiceServe
         val event = VoiceServerUpdate(update.sessionId, json)
         cache[update.guildIdLong] = event
 
-        rabbit.convertAndSend(SentinelExchanges.EVENTS, event)
+        rabbit.convertAndSend(SentinelExchanges.JDA, event)
     }
 
     override fun onVoiceStateUpdate(update: VoiceDispatchInterceptor.VoiceStateUpdate) = false

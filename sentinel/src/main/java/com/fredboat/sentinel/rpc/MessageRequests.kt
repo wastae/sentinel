@@ -74,15 +74,17 @@ class MessageRequests(private val shardManager: ShardManager) {
         channel.editMessageById(request.messageId, request.message).queue("editMessage")
     }
 
-    fun consume(request: EditEmbedRequest) {
+    fun consume(request: EditEmbedRequest): EditEmbedResponse? {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
             log.error("Received EditEmbedRequest for channel ${request.channel} which was not found")
-            return
+            return null
         }
 
-        channel.editMessageById(request.messageId, request.embed.toJda()).queue("editEmbedMessage")
+        return channel.editMessageById(request.messageId, request.embed.toJda())
+                .complete("editEmbedMessage")
+                .let { EditEmbedResponse(it.idLong, it.guild.idLong) }
     }
 
     fun consume(request: AddReactionRequest) {

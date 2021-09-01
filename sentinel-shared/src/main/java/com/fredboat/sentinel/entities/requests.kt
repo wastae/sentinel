@@ -42,6 +42,10 @@ data class SendPrivateMessageRequest(
         val message: String
 )
 
+data class SendMessageResponse(
+        val messageId: Long
+)
+
 /** Returns [Unit]*/
 data class EditMessageRequest(
         val channel: Long,
@@ -49,11 +53,16 @@ data class EditMessageRequest(
         val message: String
 )
 
-/** Returns [Unit]*/
+/** Returns [EditEmbedResponse]*/
 data class EditEmbedRequest(
         val channel: Long,
         val messageId: Long,
         val embed: Embed
+)
+
+data class EditEmbedResponse(
+        val messageId: Long,
+        val guildId: Long
 )
 
 /** Returns [Unit]*/
@@ -81,10 +90,6 @@ data class RemoveReactionRequest(
 /** Returns [Unit]*/
 data class RemoveReactionsRequest(
         val channel: Long,
-        val messageId: Long
-)
-
-data class SendMessageResponse(
         val messageId: Long
 )
 
@@ -167,4 +172,3 @@ data class ExtendedShardInfo(
 
 /** Dump all user IDs to a [List] with [Long]s */
 class UserListRequest
-
