@@ -11,21 +11,19 @@ import com.fredboat.sentinel.ApplicationState
 import com.fredboat.sentinel.jda.JdaRabbitEventListener
 import com.fredboat.sentinel.jda.RemoteSessionController
 import com.fredboat.sentinel.jda.VoiceInterceptor
+import net.dv8tion.jda.api.entities.Message.MentionType
+import net.dv8tion.jda.api.requests.GatewayIntent
+import net.dv8tion.jda.api.requests.restaction.MessageAction
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder
 import net.dv8tion.jda.api.sharding.ShardManager
-import net.dv8tion.jda.api.utils.SessionController
 import net.dv8tion.jda.api.utils.ChunkingFilter
 import net.dv8tion.jda.api.utils.cache.CacheFlag
-import net.dv8tion.jda.api.requests.GatewayIntent
-import net.dv8tion.jda.api.entities.Activity
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.util.*
-import java.util.Arrays
 import javax.security.auth.login.LoginException
-import kotlin.collections.HashSet
 
 @Configuration
 class ShardManagerConfig {
@@ -33,6 +31,7 @@ class ShardManagerConfig {
     companion object {
         private val log: Logger = LoggerFactory.getLogger(ShardManagerConfig::class.java)
     }
+
     @Bean
     fun buildShardManager(sentinelProperties: SentinelProperties,
                           rabbitEventListener: JdaRabbitEventListener,
@@ -51,6 +50,7 @@ class ShardManagerConfig {
                 .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE)
                 .disableCache(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE, CacheFlag.ROLE_TAGS)
                 .setBulkDeleteSplittingEnabled(false)
+                .setEnableShutdownHook(true)
                 .setAutoReconnect(true)
                 .setShardsTotal(sentinelProperties.shardCount)
                 .setShards(sentinelProperties.shardStart, sentinelProperties.shardEnd)
@@ -61,6 +61,11 @@ class ShardManagerConfig {
 
         val shardManager: ShardManager
         try {
+            MessageAction.setDefaultMentions(EnumSet.complementOf(EnumSet.of(
+                    MentionType.EVERYONE,
+                    MentionType.HERE,
+                    MentionType.ROLE
+            )))
             shardManager = builder.build()
             sessionController.shardManager = shardManager
             rabbitEventListener.shardManager = shardManager
@@ -82,6 +87,5 @@ class ShardManagerConfig {
     }
 
     @Bean
-    fun guildSubscriptions(): MutableSet<Long> = Collections.synchronizedSet(HashSet<Long>())
-
+    fun guildSubscriptions(): MutableSet<Long> = Collections.synchronizedSet(HashSet())
 }
