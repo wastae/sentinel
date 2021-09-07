@@ -54,6 +54,8 @@ data class Option(
         var value: String = ""
 )
 
+inline fun menu(block: SelectOpt.() -> Unit): SelectOpt = SelectOpt().apply(block)
+
 inline fun embed(block: Embed.() -> Unit): Embed = Embed().apply(block)
 
 val FREDBOAT_COLOR = Color(28, 191, 226).rgb //#1CBFE2
