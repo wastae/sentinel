@@ -13,6 +13,7 @@ import com.fredboat.sentinel.util.queue
 import com.fredboat.sentinel.util.toJda
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.interactions.components.ActionRow
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.JDAImpl
 import net.dv8tion.jda.internal.entities.UserImpl
@@ -72,6 +73,17 @@ class MessageRequests(private val shardManager: ShardManager) {
         }
 
         channel.editMessageById(request.messageId, request.message).queue("editMessage")
+    }
+
+    fun consume(request: EditMessageComponentRequest) {
+        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+
+        if (channel == null) {
+            log.error("Received EditMessageComponentRequest for channel ${request.channel} which was not found")
+            return
+        }
+
+        channel.editMessageComponentsById(request.messageId, ActionRow.of(request.component.toJda())).queue("editMessage")
     }
 
     fun consume(request: EditEmbedRequest): EditEmbedResponse? {

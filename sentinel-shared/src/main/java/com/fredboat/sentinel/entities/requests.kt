@@ -53,6 +53,13 @@ data class EditMessageRequest(
         val message: String
 )
 
+/** Returns [Unit]*/
+data class EditMessageComponentRequest(
+        val channel: Long,
+        val messageId: Long,
+        val component: SelectOpt
+)
+
 /** Returns [EditEmbedResponse]*/
 data class EditEmbedRequest(
         val channel: Long,
