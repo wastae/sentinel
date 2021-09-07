@@ -67,7 +67,7 @@ inline fun coloredEmbed(block: Embed.() -> Unit): Embed {
     return embed.apply(block)
 }
 
-inline fun Embed.footer(block: Footer.()->Unit) {
+inline fun Embed.footer(block: Footer.() -> Unit) {
     footer = Footer().apply(block)
 }
 
@@ -75,9 +75,16 @@ inline fun Embed.author(block: Author.() -> Unit) {
     author = Author().apply(block)
 }
 
-inline fun Embed.field(block: Field.()->Unit) {
+inline fun Embed.field(block: Field.() -> Unit) {
     fields.add(Field().apply(block))
 }
-fun Embed.field(title: String = "", body: String, inline: Boolean = false) {
+fun Embed.field(title: String, body: String, inline: Boolean = false) {
     fields.add(Field(title, body, inline))
+}
+
+inline fun SelectOpt.option(block: Option.() -> Unit) {
+    selectOpt.add(Option().apply(block))
+}
+fun SelectOpt.option(label: String, value: String) {
+    selectOpt.add(Option(label, value))
 }
