@@ -107,6 +107,7 @@ data class SendTypingRequest(
 /** Returns [Unit]*/
 data class SelectMenuRequest(
         val channel: Long,
+        val message: String,
         val options: SelectOpt
 )
 

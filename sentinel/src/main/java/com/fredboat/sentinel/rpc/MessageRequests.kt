@@ -173,6 +173,6 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        channel.sendMessage("").setActionRow(request.options.toJda())
+        channel.sendMessage(request.message).setActionRow(request.options.toJda())
     }
 }
