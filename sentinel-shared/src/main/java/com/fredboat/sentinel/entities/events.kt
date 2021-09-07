@@ -105,3 +105,12 @@ data class MessageReactionAddEvent (
         val isEmoji: Boolean,
         val member: Member
 )
+
+data class SelectionMenuEvent (
+        val componentId: String,
+        val messageId: Long,
+        val guild: Long,
+        val channel: Long,
+        val author: Long,
+        val member: Member
+)

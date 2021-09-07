@@ -10,6 +10,7 @@ package com.fredboat.sentinel.jda
 import com.fredboat.sentinel.SentinelExchanges
 import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.metrics.Counters
+import com.fredboat.sentinel.util.complete
 import com.fredboat.sentinel.util.toEntity
 import com.neovisionaries.ws.client.WebSocketFrame
 import net.dv8tion.jda.api.entities.ChannelType
@@ -40,6 +41,7 @@ import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent
 import net.dv8tion.jda.api.events.http.HttpRequestEvent
+import net.dv8tion.jda.api.events.interaction.SelectionMenuEvent
 import net.dv8tion.jda.api.events.message.guild.GuildMessageDeleteEvent
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent
@@ -226,6 +228,27 @@ class JdaRabbitEventListener(
                 event.reactionEmote.asReactionCode,
                 event.reactionEmote.isEmoji,
                 event.member.toEntity()
+        ))
+    }
+
+    override fun onSelectionMenu(event: SelectionMenuEvent) {
+        if (event.guild == null) return
+        if (event.member == null) return
+        if (!subscriptions.contains(event.guild!!.idLong)) return
+
+        updateGuild(event.guild!!)
+
+        event.deferReply().queue {
+            it.interaction.reply("Selected")
+        }
+
+        dispatch(SelectionMenuEvent(
+                event.componentId,
+                event.messageIdLong,
+                event.guild!!.idLong,
+                event.channel.idLong,
+                event.member!!.idLong,
+                event.member!!.toEntity()
         ))
     }
 

@@ -38,5 +38,6 @@ fun SelectOpt.toJda(): SelectionMenu {
     selectOpt.forEach {
         menu.addOption(it.label, it.value)
     }
+
     return menu.build()
 }
