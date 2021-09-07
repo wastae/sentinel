@@ -104,6 +104,14 @@ data class SendTypingRequest(
         val channel: Long
 )
 
+/** Returns [Unit]*/
+data class SelectMenuRequest(
+        val channel: Long,
+        val customId: String,
+        val placeholder: String,
+        val options: SelectOpt
+)
+
 /** Returns [PermissionCheckResponse]*/
 data class GuildPermissionRequest(
         val guild: Long,

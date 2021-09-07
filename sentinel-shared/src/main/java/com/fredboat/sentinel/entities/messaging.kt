@@ -43,6 +43,17 @@ data class Author(
         var iconUrl: String? = null
 )
 
+data class SelectOpt(
+        var customId: String = "",
+        var placeholder: String = "",
+        var selectOpt: MutableList<Option> = mutableListOf()
+)
+
+data class Option(
+        var label: String = "",
+        var value: String = ""
+)
+
 inline fun embed(block: Embed.() -> Unit): Embed = Embed().apply(block)
 
 val FREDBOAT_COLOR = Color(28, 191, 226).rgb //#1CBFE2

@@ -11,9 +11,9 @@ import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.util.complete
 import com.fredboat.sentinel.util.queue
 import com.fredboat.sentinel.util.toJda
-import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.JDAImpl
 import net.dv8tion.jda.internal.entities.UserImpl
 import org.slf4j.Logger
@@ -48,7 +48,7 @@ class MessageRequests(private val shardManager: ShardManager) {
             return null
         }
 
-        return channel.sendMessage(request.embed.toJda())
+        return channel.sendMessageEmbeds(request.embed.toJda())
                 .complete("sendEmbed")
                 .let { SendMessageResponse(it.idLong) }
     }
@@ -82,7 +82,7 @@ class MessageRequests(private val shardManager: ShardManager) {
             return null
         }
 
-        return channel.editMessageById(request.messageId, request.embed.toJda())
+        return channel.editMessageEmbedsById(request.messageId, request.embed.toJda())
                 .complete("editEmbedMessage")
                 .let { EditEmbedResponse(it.idLong, it.guild.idLong) }
     }
@@ -163,5 +163,16 @@ class MessageRequests(private val shardManager: ShardManager) {
         }
 
         channel.sendTyping().queue("sendTyping")
+    }
+
+    fun consume(request: SelectMenuRequest) {
+        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+
+        if (channel == null) {
+            log.error("Received SelectMenu for channel ${request.channel} which was not found")
+            return
+        }
+
+        channel.sendMessage("").setActionRow(request.options.toJda())
     }
 }

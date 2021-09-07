@@ -8,8 +8,10 @@
 package com.fredboat.sentinel.util
 
 import com.fredboat.sentinel.entities.Embed
+import com.fredboat.sentinel.entities.SelectOpt
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.interactions.components.selections.SelectionMenu
 import java.time.Instant
 
 private val threadLocal: ThreadLocal<EmbedBuilder> = ThreadLocal.withInitial { EmbedBuilder() }
@@ -29,4 +31,12 @@ fun Embed.toJda(): MessageEmbed {
     }
 
     return builder.build()
+}
+
+fun SelectOpt.toJda(): SelectionMenu {
+    val menu = SelectionMenu.create(customId).setPlaceholder(placeholder)
+    selectOpt.forEach {
+        menu.addOption(it.label, it.value)
+    }
+    return menu.build()
 }

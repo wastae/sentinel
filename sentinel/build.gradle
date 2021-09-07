@@ -31,8 +31,8 @@ compileTestKotlin {
 
 dependencies {
     compile project(":sentinel-shared")
-    //compile "net.dv8tion:JDA:$jdaVersion"
-    compile "com.github.DV8FromTheWorld:JDA:5492d1d2eb"
+    compile "net.dv8tion:JDA:$jdaVersion"
+    //compile "com.github.DV8FromTheWorld:JDA:5492d1d2eb"
     compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-script-runtime:$kotlin_version"      // For kotlin eval
     compile "org.jetbrains.kotlin:kotlin-script-util:$kotlin_version"         // For kotlin eval

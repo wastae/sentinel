@@ -136,7 +136,7 @@ class JdaRabbitEventListener(
         if (!subscriptions.contains(event.guild.idLong)) return
         updateGuild(event.guild)
         if (event.channelJoined.type == ChannelType.STAGE && event.member.user.idLong == event.guild.selfMember.user.idLong) {
-            event.guild.requestToSpeak().queue()
+            event.guild.requestToSpeak()
         }
         dispatch(VoiceJoinEvent(
                 event.guild.idLong,
@@ -162,7 +162,7 @@ class JdaRabbitEventListener(
         if (!subscriptions.contains(event.guild.idLong)) return
         updateGuild(event.guild)
         if (event.channelJoined.type == ChannelType.STAGE && event.member.user.idLong == event.guild.selfMember.user.idLong) {
-            event.guild.requestToSpeak().queue()
+            event.guild.requestToSpeak()
         }
         dispatch(VoiceMoveEvent(
                 event.guild.idLong,
