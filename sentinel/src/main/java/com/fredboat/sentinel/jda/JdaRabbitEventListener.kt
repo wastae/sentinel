@@ -243,6 +243,7 @@ class JdaRabbitEventListener(
         }
 
         dispatch(SelectionMenuEvent(
+                event.values,
                 event.componentId,
                 event.messageIdLong,
                 event.guild!!.idLong,
