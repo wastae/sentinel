@@ -236,7 +236,7 @@ class JdaRabbitEventListener(
         if (!subscriptions.contains(event.guild!!.idLong)) return
 
         updateGuild(event.guild!!)
-        event.editSelectionMenu(null).queue()
+        event.hook.interaction.deferReply()
 
         dispatch(SelectionMenuEvent(
                 event.values,

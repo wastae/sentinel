@@ -53,13 +53,6 @@ data class EditMessageRequest(
         val message: String
 )
 
-/** Returns [Unit]*/
-data class EditMessageComponentRequest(
-        val channel: Long,
-        val messageId: Long,
-        val component: SelectOpt
-)
-
 /** Returns [EditEmbedResponse]*/
 data class EditEmbedRequest(
         val channel: Long,
@@ -112,17 +105,24 @@ data class SendTypingRequest(
 )
 
 /** Returns [Unit]*/
-data class SendSelectionMenuRequest(
+data class SendMessageSelectionMenuRequest(
         val channel: Long,
         val message: String,
-        val options: SelectOpt
+        val component: SelectOpt
 )
 
 /** Returns [Unit]*/
-data class EditSelectionMenuRequest(
+data class EditMessageComponentRequest(
         val channel: Long,
-        val message: String,
-        val options: SelectOpt
+        val messageId: Long,
+        val component: SelectOpt
+)
+
+/** Returns [Unit]*/
+data class MessageDeleteComponentsRequest(
+        val channel: Long,
+        val messageId: Long,
+        val component: SelectOpt
 )
 
 /** Returns [PermissionCheckResponse]*/

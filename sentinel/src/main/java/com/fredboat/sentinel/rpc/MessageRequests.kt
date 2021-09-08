@@ -75,17 +75,6 @@ class MessageRequests(private val shardManager: ShardManager) {
         channel.editMessageById(request.messageId, request.message).queue("editMessage")
     }
 
-    fun consume(request: EditMessageComponentRequest) {
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
-
-        if (channel == null) {
-            log.error("Received EditMessageComponentRequest for channel ${request.channel} which was not found")
-            return
-        }
-
-        channel.editMessageComponentsById(request.messageId, ActionRow.of(request.component.toJda())).queue("editMessage")
-    }
-
     fun consume(request: EditEmbedRequest): EditEmbedResponse? {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
@@ -177,14 +166,40 @@ class MessageRequests(private val shardManager: ShardManager) {
         channel.sendTyping().queue("sendTyping")
     }
 
-    fun consume(request: SendSelectionMenuRequest) {
+    /**
+     * Components
+     */
+
+    fun consume(request: SendMessageSelectionMenuRequest) {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
-            log.error("Received SendSelectionMenuRequest for channel ${request.channel} which was not found")
+            log.error("Received SendMessageSelectionMenuRequest for channel ${request.channel} which was not found")
             return
         }
 
-        channel.sendMessage(request.message).setActionRow(request.options.toJda())
+        channel.sendMessage(request.message).setActionRow(request.component.toJda()).queue("sendSelectionMenu")
+    }
+
+    fun consume(request: EditMessageComponentRequest) {
+        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+
+        if (channel == null) {
+            log.error("Received EditMessageComponentRequest for channel ${request.channel} which was not found")
+            return
+        }
+
+        channel.editMessageComponentsById(request.messageId, ActionRow.of(request.component.toJda()))
+    }
+
+    fun consume(request: MessageDeleteComponentsRequest) {
+        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+
+        if (channel == null) {
+            log.error("Received MessageDeleteComponentsRequest for channel ${request.channel} which was not found")
+            return
+        }
+
+        channel.editMessageComponentsById(request.messageId, ActionRow.of(request.component.toJda())).map { null }.queue("editMessageComponent")
     }
 }
