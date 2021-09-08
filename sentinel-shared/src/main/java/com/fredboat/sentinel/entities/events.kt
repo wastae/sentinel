@@ -107,7 +107,6 @@ data class MessageReactionAddEvent (
 )
 
 data class SelectionMenuEvent (
-        val hook: Any,
         val selected: List<String>,
         val componentId: String,
         val messageId: Long,

@@ -239,7 +239,6 @@ class JdaRabbitEventListener(
         event.deferEdit().queue()
 
         dispatch(SelectionMenuEvent(
-                event.hook,
                 event.values,
                 event.componentId,
                 event.messageIdLong,
