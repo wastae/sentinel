@@ -60,7 +60,7 @@ class DirectConsumer(
     @RabbitHandler fun consume(request: RemoveReactionsRequest) = message.consume(request)
     @RabbitHandler fun consume(request: MessageDeleteRequest) = message.consume(request)
     @RabbitHandler fun consume(request: SendTypingRequest) = message.consume(request)
-    @RabbitHandler fun consume(request: SelectMenuRequest) = message.consume(request)
+    @RabbitHandler fun consume(request: SendSelectionMenuRequest) = message.consume(request)
 
     @RabbitHandler fun consume(request: GuildPermissionRequest) = permission.consume(request)
     @RabbitHandler fun consume(request: ChannelPermissionRequest) = permission.consume(request)

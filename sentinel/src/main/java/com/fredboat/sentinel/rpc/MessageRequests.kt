@@ -177,11 +177,11 @@ class MessageRequests(private val shardManager: ShardManager) {
         channel.sendTyping().queue("sendTyping")
     }
 
-    fun consume(request: SelectMenuRequest) {
+    fun consume(request: SendSelectionMenuRequest) {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
-            log.error("Received SelectMenu for channel ${request.channel} which was not found")
+            log.error("Received SendSelectionMenuRequest for channel ${request.channel} which was not found")
             return
         }
 
