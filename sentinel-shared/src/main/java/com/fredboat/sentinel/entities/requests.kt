@@ -121,8 +121,7 @@ data class EditMessageComponentRequest(
 /** Returns [Unit]*/
 data class MessageDeleteComponentsRequest(
         val channel: Long,
-        val messageId: Long,
-        val component: SelectOpt
+        val messageId: Long
 )
 
 /** Returns [PermissionCheckResponse]*/

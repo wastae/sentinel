@@ -203,7 +203,7 @@ class MessageRequests(private val shardManager: ShardManager) {
 
         channel.retrieveMessageById(request.messageId).complete("retrieveMessage").let {
             val components: List<ActionRow> = ArrayList<ActionRow>(it.actionRows)
-            ComponentLayout.updateComponent(components, "G:${channel.guild.id}", null)
+            ComponentLayout.updateComponent(components, "G:${channel.guild.id}:M:${request.messageId}", null)
             channel.editMessageComponentsById(request.messageId, components).queue("messageDeleteComponents")
         }
     }
