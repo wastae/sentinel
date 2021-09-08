@@ -14,6 +14,7 @@ import com.fredboat.sentinel.util.toJda
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.interactions.components.ActionRow
+import net.dv8tion.jda.api.interactions.components.ComponentLayout
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.JDAImpl
 import net.dv8tion.jda.internal.entities.UserImpl
@@ -178,7 +179,7 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        channel.sendMessage(request.message).setActionRow(request.component.toJda()).queue("sendSelectionMenu")
+        channel.sendMessage(request.message).setActionRow(request.component.toJda()).queue("sendMessageSelectionMenu")
     }
 
     fun consume(request: EditMessageComponentRequest) {
@@ -189,7 +190,7 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        channel.editMessageComponentsById(request.messageId, ActionRow.of(request.component.toJda()))
+        channel.editMessageComponentsById(request.messageId, ActionRow.of(request.component.toJda())).queue("editMessageComponent")
     }
 
     fun consume(request: MessageDeleteComponentsRequest) {
@@ -200,6 +201,10 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        channel.editMessageComponentsById(request.messageId, ActionRow.of(request.component.toJda())).map { null }.queue("editMessageComponent")
+        channel.retrieveMessageById(request.messageId).complete("retrieveMessage").let {
+            val components: List<ActionRow> = ArrayList<ActionRow>(it.actionRows)
+            ComponentLayout.updateComponent(components, "G:${channel.guild.id}", null)
+            channel.editMessageComponentsById(request.messageId, components).map { null }.queue("messageDeleteComponents")
+        }
     }
 }
