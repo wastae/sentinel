@@ -12,10 +12,8 @@ import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.metrics.Counters
 import com.fredboat.sentinel.util.toEntity
 import com.neovisionaries.ws.client.WebSocketFrame
-import net.dv8tion.jda.api.entities.ChannelType
+import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.GuildChannel
-import net.dv8tion.jda.api.entities.MessageType
 import net.dv8tion.jda.api.events.*
 import net.dv8tion.jda.api.events.channel.category.CategoryCreateEvent
 import net.dv8tion.jda.api.events.channel.category.CategoryDeleteEvent
@@ -40,6 +38,7 @@ import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent
 import net.dv8tion.jda.api.events.http.HttpRequestEvent
+import net.dv8tion.jda.api.events.interaction.ButtonClickEvent
 import net.dv8tion.jda.api.events.interaction.SelectionMenuEvent
 import net.dv8tion.jda.api.events.message.guild.GuildMessageDeleteEvent
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
@@ -51,6 +50,7 @@ import net.dv8tion.jda.api.events.role.RoleDeleteEvent
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePermissionsEvent
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePositionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.interactions.components.Button
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.slf4j.Logger
@@ -227,6 +227,24 @@ class JdaRabbitEventListener(
                 event.reactionEmote.asReactionCode,
                 event.reactionEmote.isEmoji,
                 event.member.toEntity()
+        ))
+    }
+
+    override fun onButtonClick(event: ButtonClickEvent) {
+        if (event.guild == null) return
+        if (event.member == null) return
+        if (!subscriptions.contains(event.guild!!.idLong)) return
+
+        updateGuild(event.guild!!)
+        event.deferEdit().queue()
+
+        dispatch(ButtonEvent(
+                event.componentId,
+                event.messageIdLong,
+                event.guild!!.idLong,
+                event.channel.idLong,
+                event.member!!.idLong,
+                event.member!!.toEntity()
         ))
     }
 

@@ -106,6 +106,15 @@ data class MessageReactionAddEvent (
         val member: Member
 )
 
+data class ButtonEvent(
+        val componentId: String,
+        val messageId: Long,
+        val guild: Long,
+        val channel: Long,
+        val author: Long,
+        val member: Member
+)
+
 data class SelectionMenuEvent (
         val selected: List<String>,
         val componentId: String,

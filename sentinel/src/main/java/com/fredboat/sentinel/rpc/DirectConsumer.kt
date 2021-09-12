@@ -63,9 +63,11 @@ class DirectConsumer(
     /**
      * Components
      */
+    @RabbitHandler fun consume(request: SendMessageButtonsRequest) = message.consume(request)
     @RabbitHandler fun consume(request: SendMessageSelectionMenuRequest) = message.consume(request)
-    @RabbitHandler fun consume(request: EditMessageComponentRequest) = message.consume(request)
-    @RabbitHandler fun consume(request: MessageDeleteComponentsRequest) = message.consume(request)
+    @RabbitHandler fun consume(request: EditButtonsRequest) = message.consume(request)
+    @RabbitHandler fun consume(request: EditSelectionMenuRequest) = message.consume(request)
+    @RabbitHandler fun consume(request: RemoveComponentsRequest) = message.consume(request)
 
     @RabbitHandler fun consume(request: GuildPermissionRequest) = permission.consume(request)
     @RabbitHandler fun consume(request: ChannelPermissionRequest) = permission.consume(request)

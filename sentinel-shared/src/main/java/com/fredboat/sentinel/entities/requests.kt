@@ -104,22 +104,39 @@ data class SendTypingRequest(
         val channel: Long
 )
 
+/**
+ * Components
+ */
+
+/** Returns [Unit]*/
+data class SendMessageButtonsRequest(
+        val channel: Long,
+        val message: String,
+        val buttons: Buttons
+)
+
 /** Returns [Unit]*/
 data class SendMessageSelectionMenuRequest(
         val channel: Long,
         val message: String,
-        val component: SelectOpt
+        val menu: SelectMenu
 )
 
-/** Returns [Unit]*/
-data class EditMessageComponentRequest(
+data class EditButtonsRequest(
         val channel: Long,
         val messageId: Long,
-        val component: SelectOpt
+        val buttons: Buttons
 )
 
 /** Returns [Unit]*/
-data class MessageDeleteComponentsRequest(
+data class EditSelectionMenuRequest(
+        val channel: Long,
+        val messageId: Long,
+        val menu: SelectMenu
+)
+
+/** Returns [Unit]*/
+data class RemoveComponentsRequest(
         val channel: Long,
         val messageId: Long
 )

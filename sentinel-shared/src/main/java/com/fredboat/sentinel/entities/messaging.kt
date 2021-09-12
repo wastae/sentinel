@@ -43,10 +43,24 @@ data class Author(
         var iconUrl: String? = null
 )
 
-data class SelectOpt(
+/**
+ * Components
+ */
+
+data class Buttons(
+        var buttons: MutableList<Button> = mutableListOf()
+)
+
+data class Button(
+        var id: String = "",
+        var label: String = "",
+        var emoji: String = ""
+)
+
+data class SelectMenu(
         var customId: String = "",
         var placeholder: String = "",
-        var selectOpt: MutableList<Option> = mutableListOf()
+        var selectOptions: MutableList<Option> = mutableListOf()
 )
 
 data class Option(
@@ -54,7 +68,9 @@ data class Option(
         var value: String = ""
 )
 
-inline fun menu(block: SelectOpt.() -> Unit): SelectOpt = SelectOpt().apply(block)
+inline fun buttons(block: Buttons.() -> Unit): Buttons = Buttons().apply(block)
+
+inline fun menu(block: SelectMenu.() -> Unit): SelectMenu = SelectMenu().apply(block)
 
 inline fun embed(block: Embed.() -> Unit): Embed = Embed().apply(block)
 
@@ -82,9 +98,16 @@ fun Embed.field(title: String, body: String, inline: Boolean = false) {
     fields.add(Field(title, body, inline))
 }
 
-inline fun SelectOpt.option(block: Option.() -> Unit) {
-    selectOpt.add(Option().apply(block))
+inline fun SelectMenu.option(block: Option.() -> Unit) {
+    selectOptions.add(Option().apply(block))
 }
-fun SelectOpt.option(label: String, value: String) {
-    selectOpt.add(Option(label, value))
+fun SelectMenu.option(label: String, value: String) {
+    selectOptions.add(Option(label, value))
+}
+
+inline fun Buttons.option(block: Button.() -> Unit) {
+    buttons.add(Button().apply(block))
+}
+fun Buttons.option(label: String, value: String) {
+    buttons.add(Button(label, value))
 }
