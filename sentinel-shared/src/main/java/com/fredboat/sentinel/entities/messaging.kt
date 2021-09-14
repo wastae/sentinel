@@ -105,9 +105,9 @@ fun SelectMenu.option(label: String, value: String) {
     selectOptions.add(Option(label, value))
 }
 
-inline fun Buttons.option(block: Button.() -> Unit) {
+inline fun Buttons.button(block: Button.() -> Unit) {
     buttons.add(Button().apply(block))
 }
-fun Buttons.option(label: String, value: String) {
+fun Buttons.button(label: String, value: String) {
     buttons.add(Button(label, value))
 }

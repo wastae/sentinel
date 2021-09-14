@@ -106,6 +106,10 @@ data class MessageReactionAddEvent (
         val member: Member
 )
 
+/**
+ * Components
+ */
+
 data class ButtonEvent(
         val componentId: String,
         val messageId: Long,
