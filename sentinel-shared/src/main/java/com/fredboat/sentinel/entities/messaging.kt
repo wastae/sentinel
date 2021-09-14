@@ -98,16 +98,20 @@ fun Embed.field(title: String, body: String, inline: Boolean = false) {
     fields.add(Field(title, body, inline))
 }
 
-inline fun SelectMenu.option(block: Option.() -> Unit) {
-    selectOptions.add(Option().apply(block))
-}
-fun SelectMenu.option(label: String, value: String) {
-    selectOptions.add(Option(label, value))
-}
+/**
+ * Components
+ */
 
 inline fun Buttons.button(block: Button.() -> Unit) {
     buttons.add(Button().apply(block))
 }
 fun Buttons.button(label: String, value: String) {
     buttons.add(Button(label, value))
+}
+
+inline fun SelectMenu.option(block: Option.() -> Unit) {
+    selectOptions.add(Option().apply(block))
+}
+fun SelectMenu.option(label: String, value: String) {
+    selectOptions.add(Option(label, value))
 }
