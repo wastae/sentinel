@@ -13,7 +13,9 @@ import com.fredboat.sentinel.entities.SelectMenu
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Emoji
 import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.interactions.components.ActionRow
 import net.dv8tion.jda.api.interactions.components.Button
+import net.dv8tion.jda.api.interactions.components.Component
 import net.dv8tion.jda.api.interactions.components.selections.SelectionMenu
 import java.time.Instant
 
@@ -45,11 +47,22 @@ fun SelectMenu.toJda(): SelectionMenu {
     return menu.build()
 }
 
-fun Buttons.toJda(): MutableList<Button> {
-    val buttonList = mutableListOf<Button>()
+fun Buttons.toJda(): ArrayList<ActionRow> {
+    val actionRows = ArrayList<ActionRow>()
+    val buttonsList = ArrayList<Component>()
     buttons.forEach {
-        buttonList.add(Button.secondary(it.id, it.label).withEmoji(Emoji.fromMarkdown(it.emoji)))
+        if (it.label.isEmpty()) buttonsList.add(Button.secondary(it.id, Emoji.fromMarkdown(it.emoji)))
+        else buttonsList.add(Button.secondary(it.id, it.label).withEmoji(Emoji.fromMarkdown(it.emoji)))
+        when {
+            buttonsList.size == 5 -> {
+                actionRows.add(ActionRow.of(buttonsList))
+                buttonsList.clear()
+            }
+            buttons.last() == it -> {
+                actionRows.add(ActionRow.of(buttonsList))
+            }
+        }
     }
 
-    return buttonList
+    return actionRows
 }
