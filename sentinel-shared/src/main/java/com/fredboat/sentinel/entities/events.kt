@@ -8,11 +8,11 @@
 package com.fredboat.sentinel.entities
 
 /* Shard lifecycle */
-data class ShardStatusChange (
+data class ShardStatusChange(
         val shard: Shard
 )
 
-data class ShardLifecycleEvent (
+data class ShardLifecycleEvent(
         val shard: Shard,
         val change: LifecycleEventEnum
 )
@@ -26,42 +26,42 @@ enum class LifecycleEventEnum {
 }
 
 /* Guild leave/join */
-data class GuildJoinEvent (
+data class GuildJoinEvent(
         val guild: Long,
         val region: String
 )
 
-data class GuildLeaveEvent (
+data class GuildLeaveEvent(
         val guild: Long,
         /** Millis */
         val joinTime: Long
 )
 
 /* Guild member jda  */
-data class GuildMemberJoinEvent (
+data class GuildMemberJoinEvent(
         val guild: Long,
         val member: Member
 )
 
-data class GuildMemberLeaveEvent (
+data class GuildMemberLeaveEvent(
         val guild: Long,
         val member: Long
 )
 
 /* Voice jda */
-data class VoiceJoinEvent (
+data class VoiceJoinEvent(
         val guild: Long,
         val channel: Long,
         val member: Member
 )
 
-data class VoiceLeaveEvent (
+data class VoiceLeaveEvent(
         val guild: Long,
         val channel: Long,
         val member: Member
 )
 
-data class VoiceMoveEvent (
+data class VoiceMoveEvent(
         val guild: Long,
         val oldChannel: Long,
         val newChannel: Long,
@@ -69,7 +69,7 @@ data class VoiceMoveEvent (
 )
 
 /* Messages */
-data class MessageReceivedEvent (
+data class MessageReceivedEvent(
         val id: Long,
         val guild: Long,
         val channel: Long,
@@ -83,18 +83,18 @@ data class MessageReceivedEvent (
         val mentionedMembers: List<Member>
 )
 
-data class PrivateMessageReceivedEvent (
+data class PrivateMessageReceivedEvent(
         val content: String,
         val author: User
 )
 
-data class MessageDeleteEvent (
+data class MessageDeleteEvent(
         val id: Long,
         val guild: Long,
         val channel: Long
 )
 
-data class MessageReactionAddEvent (
+data class MessageReactionAddEvent(
         val messageId: Long,
         val guild: Long,
         val channel: Long,
@@ -103,6 +103,18 @@ data class MessageReactionAddEvent (
         val author: Long,
         val reaction: String,
         val isEmoji: Boolean,
+        val member: Member
+)
+
+data class SlashCommandsEvent(
+        val interactionId: Long,
+        val interactionToken: String,
+        val interactionType: Int,
+        val guild: Long,
+        val channel: Long,
+        val channelPermissions: Long,
+        val memberPermissions: Long,
+        val command: String,
         val member: Member
 )
 
@@ -119,7 +131,7 @@ data class ButtonEvent(
         val member: Member
 )
 
-data class SelectionMenuEvent (
+data class SelectionMenuEvent(
         val selected: List<String>,
         val componentId: String,
         val messageId: Long,

@@ -7,7 +7,7 @@
 
 package com.fredboat.sentinel.entities
 
-/* This file contains requests for managing either Sentinel or Guilds (banning, reviving, etc) */
+/* This file contains requests for managing either Sentinel or Guilds (banning, reviving, etc.) */
 
 data class ModRequest(
         val guildId: Long,
@@ -32,6 +32,13 @@ data class GetPingResponse(val shardPing: Long, val average: Double)
 /** Responds with [List] of [Ban]*/
 data class BanListRequest(val guildId: Long)
 data class Ban(val user: User, val reason: String?)
+
+data class RegisterSlashCommandRequest(
+        val commandName: String,
+        val description: String,
+        val optionName: String?,
+        val optionDescription: String?
+)
 
 /**
  * @param script the script to run.

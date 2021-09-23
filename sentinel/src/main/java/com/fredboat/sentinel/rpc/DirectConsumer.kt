@@ -61,6 +61,12 @@ class DirectConsumer(
     @RabbitHandler fun consume(request: SendTypingRequest) = message.consume(request)
 
     /**
+     * Slash commands
+     */
+    @RabbitHandler fun consume(request: SendSlashCommandRequest) = message.consume(request)
+    @RabbitHandler fun consume(request: RegisterSlashCommandRequest) = management.consume(request)
+
+    /**
      * Components
      */
     @RabbitHandler fun consume(request: SendMessageButtonsRequest) = message.consume(request)

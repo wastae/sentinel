@@ -104,6 +104,17 @@ data class SendTypingRequest(
         val channel: Long
 )
 
+/** Returns [Unit]*/
+data class SendSlashCommandRequest(
+        val interactionId: Long,
+        val interactionToken: String,
+        val interactionType: Int,
+        val guildId: Long,
+        val channelId: Long,
+        val userId: Long,
+        val message: String
+)
+
 /**
  * Components
  */
@@ -122,6 +133,7 @@ data class SendMessageSelectionMenuRequest(
         val menu: SelectMenu
 )
 
+/** Returns [Unit]*/
 data class EditButtonsRequest(
         val channel: Long,
         val messageId: Long,

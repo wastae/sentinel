@@ -12,8 +12,10 @@ import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.metrics.Counters
 import com.fredboat.sentinel.util.toEntity
 import com.neovisionaries.ws.client.WebSocketFrame
-import net.dv8tion.jda.api.entities.*
+import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.GuildChannel
+import net.dv8tion.jda.api.entities.MessageType
 import net.dv8tion.jda.api.events.*
 import net.dv8tion.jda.api.events.channel.category.CategoryCreateEvent
 import net.dv8tion.jda.api.events.channel.category.CategoryDeleteEvent
@@ -40,6 +42,7 @@ import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent
 import net.dv8tion.jda.api.events.http.HttpRequestEvent
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent
 import net.dv8tion.jda.api.events.interaction.SelectionMenuEvent
+import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
 import net.dv8tion.jda.api.events.message.guild.GuildMessageDeleteEvent
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent
@@ -50,7 +53,6 @@ import net.dv8tion.jda.api.events.role.RoleDeleteEvent
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePermissionsEvent
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePositionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
-import net.dv8tion.jda.api.interactions.components.Button
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.slf4j.Logger
@@ -129,7 +131,7 @@ class JdaRabbitEventListener(
         dispatch(GuildMemberUpdate(
                 member.guild.idLong,
                 member.toEntity()
-        ), print = false)
+        ))
     }
 
     /* Voice jda */
@@ -194,7 +196,7 @@ class JdaRabbitEventListener(
                 message.attachments.map { if (it.isImage) it.proxyUrl else it.url },
                 event.message.member!!.toEntity(),
                 event.message.mentionedMembers.map { it.toEntity() }
-        ), print = false)
+        ))
     }
 
     override fun onPrivateMessageReceived(event: PrivateMessageReceivedEvent) {
@@ -227,6 +229,30 @@ class JdaRabbitEventListener(
                 event.reactionEmote.asReactionCode,
                 event.reactionEmote.isEmoji,
                 event.member.toEntity()
+        ))
+    }
+
+    override fun onSlashCommand(event: SlashCommandEvent) {
+        if (event.guild == null) return
+        if (event.member == null) return
+
+        if (subscriptions.contains(event.guild!!.idLong)) {
+            updateGuild(event.guild!!)
+        }
+
+        event.deferReply().queue()
+        val channel = event.jda.getGuildChannelById(event.channel.id)
+
+        dispatch(SlashCommandsEvent(
+                event.interaction.idLong,
+                event.interaction.token,
+                event.interaction.type.ordinal,
+                event.guild!!.idLong,
+                event.channel.idLong,
+                PermissionUtil.getEffectivePermission(channel, event.guild!!.selfMember),
+                PermissionUtil.getEffectivePermission(channel, event.member),
+                event.commandPath,
+                event.member!!.toEntity()
         ))
     }
 

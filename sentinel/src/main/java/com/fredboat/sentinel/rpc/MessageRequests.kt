@@ -12,12 +12,16 @@ import com.fredboat.sentinel.util.complete
 import com.fredboat.sentinel.util.queue
 import com.fredboat.sentinel.util.toJda
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.interactions.components.ActionRow
 import net.dv8tion.jda.api.interactions.components.ComponentLayout
 import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.api.utils.data.DataObject
 import net.dv8tion.jda.internal.JDAImpl
 import net.dv8tion.jda.internal.entities.UserImpl
+import net.dv8tion.jda.internal.interactions.InteractionImpl
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -167,6 +171,32 @@ class MessageRequests(private val shardManager: ShardManager) {
         channel.sendTyping().queue("sendTyping")
     }
 
+    fun consume(request: SendSlashCommandRequest) {
+        val guild: Guild? = shardManager.getGuildById(request.guildId)
+
+        if (guild == null) {
+            log.error("Received SendSlashCommandRequest for guild ${request.guildId} which was not found")
+            return
+        }
+
+        val member: Member? = guild.getMemberById(request.userId)
+
+        if (member == null) {
+            log.error("Can't find member in guild ${request.guildId} with ${request.userId} id")
+            return
+        }
+
+        val data = DataObject.empty()
+                .put("id", request.interactionId)
+                .put("token", request.interactionToken)
+                .put("type", request.interactionType)
+                .put("guild_id", guild.idLong)
+                .put("member", member)
+                .put("channel_id", request.channelId)
+        val hook = InteractionImpl(guild.jda as JDAImpl, data).hook
+        hook.editOriginal(request.message).queue("sendSlashCommand")
+    }
+
     /**
      * Components
      */
@@ -179,7 +209,7 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        channel.sendMessage(request.message).setActionRow(request.buttons.toJda()).queue("sendMessageButtons")
+        channel.sendMessage(request.message).setActionRows(request.buttons.toJda()).queue("sendMessageButtons")
     }
 
     fun consume(request: SendMessageSelectionMenuRequest) {
@@ -201,7 +231,7 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        channel.editMessageComponentsById(request.messageId, ActionRow.of(request.buttons.toJda())).queue("editSelectionMenu")
+        channel.editMessageComponentsById(request.messageId, request.buttons.toJda()).queue("editSelectionMenu")
     }
 
     fun consume(request: EditSelectionMenuRequest) {
@@ -223,9 +253,15 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        channel.retrieveMessageById(request.messageId).complete("retrieveMessage").let {
-            val components: List<ActionRow> = ArrayList<ActionRow>(it.actionRows)
-            ComponentLayout.updateComponent(components, "G:${channel.guild.id}:M:${request.messageId}", null)
+        channel.retrieveMessageById(request.messageId).complete("retrieveMessage").let { message ->
+            val components: List<ActionRow> = ArrayList<ActionRow>(message.actionRows)
+            val ids = ArrayList<String>()
+            message.actionRows.forEach { actionRow ->
+                actionRow.components.forEach {
+                    ids.add(it.id!!)
+                }
+            }
+            ids.forEach { ComponentLayout.updateComponent(components, it, null) }
             channel.editMessageComponentsById(request.messageId, components).queue("removeComponents")
         }
     }

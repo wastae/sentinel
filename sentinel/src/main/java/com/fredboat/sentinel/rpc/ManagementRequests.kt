@@ -11,6 +11,8 @@ import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.entities.ModRequestType.*
 import com.fredboat.sentinel.util.*
 import net.dv8tion.jda.api.entities.Icon
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.sharding.ShardManager
 import org.springframework.stereotype.Service
 import java.util.*
@@ -73,6 +75,28 @@ class ManagementRequests(
         return guild.retrieveBanList().complete("getBanList").map {
             Ban(it.user.toEntity(), it.reason)
         }.toTypedArray()
+    }
+
+    fun consume(request: RegisterSlashCommandRequest) {
+        shardManager.shards.forEach {
+            if (request.optionName != null && request.optionDescription != null) {
+                it.upsertCommand(
+                    CommandData(
+                        request.commandName,
+                        request.description
+                    ).addOption(
+                        OptionType.STRING, request.optionName!!, request.optionDescription!!
+                    )
+                )
+            } else {
+                it.upsertCommand(
+                    CommandData(
+                        request.commandName,
+                        request.description
+                    )
+                )
+            }
+        }
     }
 
     @Volatile
