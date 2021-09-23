@@ -37,7 +37,8 @@ data class RegisterSlashCommandRequest(
         val commandName: String,
         val description: String,
         val optionName: String?,
-        val optionDescription: String?
+        val optionDescription: String?,
+        val guildId: String?
 )
 
 /**

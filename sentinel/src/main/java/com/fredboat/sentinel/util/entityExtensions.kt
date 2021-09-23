@@ -72,3 +72,8 @@ fun net.dv8tion.jda.api.entities.Role.toEntity() = Role(
 )
 
 fun JDA.Status.toEntity() = ShardStatus.valueOf(this.toString())
+
+fun net.dv8tion.jda.api.interactions.commands.OptionMapping.toEntity() = Option(
+        name,
+        asString
+)

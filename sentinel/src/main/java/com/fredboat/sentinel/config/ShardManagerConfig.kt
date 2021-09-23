@@ -33,10 +33,11 @@ class ShardManagerConfig {
     }
 
     @Bean
-    fun buildShardManager(sentinelProperties: SentinelProperties,
-                          rabbitEventListener: JdaRabbitEventListener,
-                          sessionController: RemoteSessionController,
-                          voiceInterceptor: VoiceInterceptor
+    fun buildShardManager(
+            sentinelProperties: SentinelProperties,
+            rabbitEventListener: JdaRabbitEventListener,
+            sessionController: RemoteSessionController,
+            voiceInterceptor: VoiceInterceptor
     ): ShardManager {
 
         val intents = listOf(
@@ -49,7 +50,7 @@ class ShardManagerConfig {
 
         val builder = DefaultShardManagerBuilder.create(sentinelProperties.discordToken, intents)
                 .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE)
-                .disableCache(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE, CacheFlag.ROLE_TAGS)
+                .disableCache(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE, CacheFlag.ROLE_TAGS, CacheFlag.ONLINE_STATUS)
                 .setBulkDeleteSplittingEnabled(false)
                 .setEnableShutdownHook(true)
                 .setAutoReconnect(true)

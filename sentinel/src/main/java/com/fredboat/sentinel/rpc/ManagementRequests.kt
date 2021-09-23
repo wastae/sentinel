@@ -78,23 +78,46 @@ class ManagementRequests(
     }
 
     fun consume(request: RegisterSlashCommandRequest) {
-        shardManager.shards.forEach {
-            if (request.optionName != null && request.optionDescription != null) {
-                it.upsertCommand(
-                    CommandData(
-                        request.commandName,
-                        request.description
-                    ).addOption(
-                        OptionType.STRING, request.optionName!!, request.optionDescription!!
-                    )
-                )
+        if (request.guildId != null) {
+            val guild = shardManager.getGuildById(request.guildId!!)!!
+            if (optionIsNotNull(request)) {
+                guild.upsertCommand(
+                        CommandData(
+                                request.commandName,
+                                request.description
+                        ).addOption(
+                                OptionType.STRING,
+                                request.optionName!!,
+                                request.optionDescription!!
+                        )
+                ).queue("registerSlashCommand")
             } else {
-                it.upsertCommand(
-                    CommandData(
-                        request.commandName,
-                        request.description
-                    )
-                )
+                guild.upsertCommand(
+                        CommandData(
+                                request.commandName,
+                                request.description
+                        )
+                ).queue("registerSlashCommand")
+            }
+        } else {
+            shardManager.shards.forEach {
+                if (optionIsNotNull(request)) {
+                    it.upsertCommand(
+                            CommandData(
+                                    request.commandName,
+                                    request.description
+                            ).addOption(
+                                    OptionType.STRING, request.optionName!!, request.optionDescription!!
+                            )
+                    ).queue("registerSlashCommand")
+                } else {
+                    it.upsertCommand(
+                            CommandData(
+                                    request.commandName,
+                                    request.description
+                            )
+                    ).queue("registerSlashCommand")
+                }
             }
         }
     }
@@ -120,4 +143,7 @@ class ManagementRequests(
         }
     }
 
+    fun optionIsNotNull(request: RegisterSlashCommandRequest): Boolean {
+        return request.optionName != null && request.optionDescription != null
+    }
 }

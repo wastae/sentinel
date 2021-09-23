@@ -252,6 +252,7 @@ class JdaRabbitEventListener(
                 PermissionUtil.getEffectivePermission(channel, event.guild!!.selfMember),
                 PermissionUtil.getEffectivePermission(channel, event.member),
                 event.commandPath,
+                event.options.map { it.toEntity() },
                 event.member!!.toEntity()
         ))
     }

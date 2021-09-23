@@ -115,6 +115,7 @@ data class SlashCommandsEvent(
         val channelPermissions: Long,
         val memberPermissions: Long,
         val command: String,
+        val options: List<Option>,
         val member: Member
 )
 
