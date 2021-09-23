@@ -104,7 +104,7 @@ data class SendTypingRequest(
         val channel: Long
 )
 
-/** Returns [Unit]*/
+/** Returns [SendMessageResponse]*/
 data class SendSlashCommandRequest(
         val interactionId: Long,
         val interactionToken: String,

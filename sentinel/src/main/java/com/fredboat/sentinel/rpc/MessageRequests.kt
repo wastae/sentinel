@@ -171,19 +171,19 @@ class MessageRequests(private val shardManager: ShardManager) {
         channel.sendTyping().queue("sendTyping")
     }
 
-    fun consume(request: SendSlashCommandRequest) {
+    fun consume(request: SendSlashCommandRequest): SendMessageResponse? {
         val guild: Guild? = shardManager.getGuildById(request.guildId)
 
         if (guild == null) {
             log.error("Received SendSlashCommandRequest for guild ${request.guildId} which was not found")
-            return
+            return null
         }
 
         val member: Member? = guild.getMemberById(request.userId)
 
         if (member == null) {
             log.error("Can't find member in guild ${request.guildId} with ${request.userId} id")
-            return
+            return null
         }
 
         val data = DataObject.empty()
@@ -193,8 +193,9 @@ class MessageRequests(private val shardManager: ShardManager) {
                 .put("guild_id", guild.idLong)
                 .put("member", member)
                 .put("channel_id", request.channelId)
-        val hook = InteractionImpl(guild.jda as JDAImpl, data).hook
-        hook.editOriginal(request.message).queue("sendSlashCommand")
+        InteractionImpl(guild.jda as JDAImpl, data).hook.editOriginal(request.message)
+                .complete("sendSlashCommand")
+                .let { SendMessageResponse(it.idLong) }
     }
 
     /**
