@@ -193,7 +193,7 @@ class MessageRequests(private val shardManager: ShardManager) {
                 .put("guild_id", guild.idLong)
                 .put("member", member)
                 .put("channel_id", request.channelId)
-        InteractionImpl(guild.jda as JDAImpl, data).hook.editOriginal(request.message)
+        return InteractionImpl(guild.jda as JDAImpl, data).hook.editOriginal(request.message)
                 .complete("sendSlashCommand")
                 .let { SendMessageResponse(it.idLong) }
     }
