@@ -88,7 +88,8 @@ class ManagementRequests(
                         ).addOption(
                                 OptionType.STRING,
                                 request.optionName!!,
-                                request.optionDescription!!
+                                request.optionDescription!!,
+                                request.required!!
                         )
                 ).queue("registerSlashCommand")
             } else {
@@ -107,7 +108,10 @@ class ManagementRequests(
                                     request.commandName,
                                     request.description
                             ).addOption(
-                                    OptionType.STRING, request.optionName!!, request.optionDescription!!
+                                    OptionType.STRING,
+                                    request.optionName!!,
+                                    request.optionDescription!!,
+                                    request.required!!
                             )
                     ).queue("registerSlashCommand")
                 } else {
@@ -144,6 +148,6 @@ class ManagementRequests(
     }
 
     fun optionIsNotNull(request: RegisterSlashCommandRequest): Boolean {
-        return request.optionName != null && request.optionDescription != null
+        return request.optionName != null && request.optionDescription != null && request.required != null
     }
 }
