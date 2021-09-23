@@ -18,7 +18,6 @@ import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.interactions.components.ActionRow
 import net.dv8tion.jda.api.interactions.components.ComponentLayout
 import net.dv8tion.jda.api.sharding.ShardManager
-import net.dv8tion.jda.api.utils.data.DataObject
 import net.dv8tion.jda.internal.JDAImpl
 import net.dv8tion.jda.internal.entities.UserImpl
 import net.dv8tion.jda.internal.interactions.InteractionImpl
@@ -179,6 +178,13 @@ class MessageRequests(private val shardManager: ShardManager) {
             return null
         }
 
+        val channel: TextChannel? = shardManager.getTextChannelById(request.channelId)
+
+        if (channel == null) {
+            log.error("Can't find channel in guild ${request.guildId} with ${request.channelId} id")
+            return null
+        }
+
         val member: Member? = guild.getMemberById(request.userId)
 
         if (member == null) {
@@ -186,14 +192,19 @@ class MessageRequests(private val shardManager: ShardManager) {
             return null
         }
 
-        val data = DataObject.empty()
-                .put("id", request.interactionId)
-                .put("token", request.interactionToken)
-                .put("type", request.interactionType)
-                .put("guild_id", guild.idLong)
-                .put("member", member)
-                .put("channel_id", request.channelId)
-        return InteractionImpl(guild.jda as JDAImpl, data).hook.editOriginal(request.message)
+        val hook = InteractionImpl(
+                request.interactionId,
+                request.interactionType,
+                request.interactionToken,
+                guild,
+                member,
+                member.user,
+                channel
+        ).hook
+        if (!hook.interaction.isAcknowledged) {
+            hook.interaction.deferReply().queue("deferReply")
+        }
+        return hook.editOriginal(request.message)
                 .complete("sendSlashCommand")
                 .let { SendMessageResponse(it.idLong) }
     }

@@ -10,6 +10,7 @@ package com.fredboat.sentinel.jda
 import com.fredboat.sentinel.SentinelExchanges
 import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.metrics.Counters
+import com.fredboat.sentinel.rpc.MessageRequests
 import com.fredboat.sentinel.util.toEntity
 import com.neovisionaries.ws.client.WebSocketFrame
 import net.dv8tion.jda.api.entities.ChannelType
@@ -240,9 +241,7 @@ class JdaRabbitEventListener(
             updateGuild(event.guild!!)
         }
 
-        event.deferReply().queue()
         val channel = event.jda.getGuildChannelById(event.channel.id)
-
         dispatch(SlashCommandsEvent(
                 event.interaction.idLong,
                 event.interaction.token,
