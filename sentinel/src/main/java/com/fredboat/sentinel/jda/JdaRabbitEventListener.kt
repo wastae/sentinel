@@ -240,6 +240,7 @@ class JdaRabbitEventListener(
             updateGuild(event.guild!!)
         }
 
+        event.deferReply().queue()
         val channel = event.jda.getGuildChannelById(event.channel.id)
         dispatch(SlashCommandsEvent(
                 event.interaction.idLong,

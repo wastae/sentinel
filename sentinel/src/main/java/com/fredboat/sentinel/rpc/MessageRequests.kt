@@ -20,6 +20,7 @@ import net.dv8tion.jda.api.interactions.components.ComponentLayout
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.JDAImpl
 import net.dv8tion.jda.internal.entities.UserImpl
+import net.dv8tion.jda.internal.interactions.InteractionHookImpl
 import net.dv8tion.jda.internal.interactions.InteractionImpl
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -192,7 +193,7 @@ class MessageRequests(private val shardManager: ShardManager) {
             return null
         }
 
-        val hook = InteractionImpl(
+        val interaction = InteractionImpl(
                 request.interactionId,
                 request.interactionType,
                 request.interactionToken,
@@ -200,10 +201,10 @@ class MessageRequests(private val shardManager: ShardManager) {
                 member,
                 member.user,
                 channel
-        ).hook
-        if (!hook.interaction.isAcknowledged) {
-            hook.interaction.deferReply().queue("deferReply")
-        }
+        )
+        val hook = InteractionHookImpl(interaction, guild.jda)
+        hook.ack()
+        hook.ready()
         return hook.editOriginal(request.message)
                 .complete("sendSlashCommand")
                 .let { SendMessageResponse(it.idLong) }
