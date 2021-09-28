@@ -205,9 +205,15 @@ class MessageRequests(private val shardManager: ShardManager) {
         val hook = InteractionHookImpl(interaction, guild.jda)
         hook.ack()
         hook.ready()
-        return hook.editOriginal(request.message)
-                .complete("sendSlashCommand")
-                .let { SendMessageResponse(it.idLong) }
+        return if (request.ephemeral) {
+            hook.setEphemeral(request.ephemeral).sendMessage(request.message)
+                    .complete("sendSlashEphemeralCommand")
+                    .let { SendMessageResponse(it.idLong) }
+        } else {
+            hook.editOriginal(request.message)
+                    .complete("sendSlashCommand")
+                    .let { SendMessageResponse(it.idLong) }
+        }
     }
 
     /**

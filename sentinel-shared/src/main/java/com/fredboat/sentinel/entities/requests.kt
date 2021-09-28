@@ -112,7 +112,8 @@ data class SendSlashCommandRequest(
         val guildId: Long,
         val channelId: Long,
         val userId: Long,
-        val message: String
+        val message: String,
+        val ephemeral: Boolean
 )
 
 /**
