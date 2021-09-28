@@ -124,6 +124,9 @@ data class SlashCommandsEvent(
  */
 
 data class ButtonEvent(
+        val interactionId: Long,
+        val interactionToken: String,
+        val interactionType: Int,
         val componentId: String,
         val messageId: Long,
         val guild: Long,
@@ -133,6 +136,9 @@ data class ButtonEvent(
 )
 
 data class SelectionMenuEvent(
+        val interactionId: Long,
+        val interactionToken: String,
+        val interactionType: Int,
         val selected: List<String>,
         val componentId: String,
         val messageId: Long,

@@ -265,6 +265,9 @@ class JdaRabbitEventListener(
         event.deferEdit().queue()
 
         dispatch(ButtonEvent(
+                event.interaction.idLong,
+                event.interaction.token,
+                event.interaction.type.ordinal,
                 event.componentId,
                 event.messageIdLong,
                 event.guild!!.idLong,
@@ -283,6 +286,9 @@ class JdaRabbitEventListener(
         event.deferEdit().queue()
 
         dispatch(SelectionMenuEvent(
+                event.interaction.idLong,
+                event.interaction.token,
+                event.interaction.type.ordinal,
                 event.values,
                 event.componentId,
                 event.messageIdLong,
