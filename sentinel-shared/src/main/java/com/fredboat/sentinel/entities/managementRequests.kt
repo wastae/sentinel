@@ -35,10 +35,8 @@ data class Ban(val user: User, val reason: String?)
 
 data class RegisterSlashCommandRequest(
         val commandName: String,
-        val description: String,
-        val optionName: String?,
-        val optionDescription: String?,
-        val required: Boolean?,
+        val commandDescription: String,
+        val options: SlashOptions?,
         val guildId: String?
 )
 

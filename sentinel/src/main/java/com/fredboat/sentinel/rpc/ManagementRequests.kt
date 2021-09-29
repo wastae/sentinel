@@ -11,7 +11,6 @@ import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.entities.ModRequestType.*
 import com.fredboat.sentinel.util.*
 import net.dv8tion.jda.api.entities.Icon
-import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.sharding.ShardManager
 import org.springframework.stereotype.Service
@@ -57,15 +56,17 @@ class ManagementRequests(
         return GetPingResponse(shard?.gatewayPing ?: -1, shardManager.averageGatewayPing)
     }
 
-    fun consume(request: SentinelInfoRequest) = shardManager.run { SentinelInfoResponse(
-            guildCache.size(),
-            roleCache.size(),
-            categoryCache.size(),
-            textChannelCache.size(),
-            voiceChannelCache.size(),
-            emoteCache.size(),
-            if (request.includeShards) shards.map { it.toEntityExtended() } else null
-    )}
+    fun consume(request: SentinelInfoRequest) = shardManager.run {
+        SentinelInfoResponse(
+                guildCache.size(),
+                roleCache.size(),
+                categoryCache.size(),
+                textChannelCache.size(),
+                voiceChannelCache.size(),
+                emoteCache.size(),
+                if (request.includeShards) shards.map { it.toEntityExtended() } else null
+        )
+    }
 
     fun consume(request: UserListRequest) = shardManager.userCache.map { it.idLong }
 
@@ -80,45 +81,35 @@ class ManagementRequests(
     fun consume(request: RegisterSlashCommandRequest) {
         if (request.guildId != null) {
             val guild = shardManager.getGuildById(request.guildId!!)!!
-            if (optionIsNotNull(request)) {
+            if (request.options != null) {
                 guild.upsertCommand(
                         CommandData(
                                 request.commandName,
-                                request.description
-                        ).addOption(
-                                OptionType.STRING,
-                                request.optionName!!,
-                                request.optionDescription!!,
-                                request.required!!
-                        )
+                                request.commandDescription
+                        ).addOptions(request.options!!.toJda())
                 ).queue("registerSlashCommand")
             } else {
                 guild.upsertCommand(
                         CommandData(
                                 request.commandName,
-                                request.description
+                                request.commandDescription
                         )
                 ).queue("registerSlashCommand")
             }
         } else {
             shardManager.shards.forEach {
-                if (optionIsNotNull(request)) {
+                if (request.options != null) {
                     it.upsertCommand(
                             CommandData(
                                     request.commandName,
-                                    request.description
-                            ).addOption(
-                                    OptionType.STRING,
-                                    request.optionName!!,
-                                    request.optionDescription!!,
-                                    request.required!!
-                            )
+                                    request.commandDescription
+                            ).addOptions(request.options!!.toJda())
                     ).queue("registerSlashCommand")
                 } else {
                     it.upsertCommand(
                             CommandData(
                                     request.commandName,
-                                    request.description
+                                    request.commandDescription
                             )
                     ).queue("registerSlashCommand")
                 }
@@ -145,9 +136,5 @@ class ManagementRequests(
                 blockingEvalThread = null
             }
         }
-    }
-
-    fun optionIsNotNull(request: RegisterSlashCommandRequest): Boolean {
-        return request.optionName != null && request.optionDescription != null && request.required != null
     }
 }

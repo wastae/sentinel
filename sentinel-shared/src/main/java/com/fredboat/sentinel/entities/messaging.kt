@@ -43,6 +43,17 @@ data class Author(
         var iconUrl: String? = null
 )
 
+data class SlashOptions(
+        var slashOptions: MutableList<SlashOption> = mutableListOf()
+)
+
+data class SlashOption(
+        var optionType: Int = 0,
+        var optionName: String = "",
+        var optionDescription: String = "",
+        var required: Boolean = false
+)
+
 /**
  * Components
  */
@@ -67,6 +78,8 @@ data class Option(
         var label: String = "",
         var value: String = ""
 )
+
+inline fun slashOptions(block: SlashOptions.() -> Unit): SlashOptions = SlashOptions().apply(block)
 
 inline fun buttons(block: Buttons.() -> Unit): Buttons = Buttons().apply(block)
 
@@ -96,6 +109,13 @@ inline fun Embed.field(block: Field.() -> Unit) {
 }
 fun Embed.field(title: String, body: String, inline: Boolean = false) {
     fields.add(Field(title, body, inline))
+}
+
+inline fun SlashOptions.option(block: SlashOption.() -> Unit) {
+    slashOptions.add(SlashOption().apply(block))
+}
+fun SlashOptions.option(optionType: Int, optionName: String, optionDescription: String, required: Boolean) {
+    slashOptions.add(SlashOption(optionType, optionName, optionDescription, required))
 }
 
 /**

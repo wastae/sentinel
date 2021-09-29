@@ -10,9 +10,12 @@ package com.fredboat.sentinel.util
 import com.fredboat.sentinel.entities.Buttons
 import com.fredboat.sentinel.entities.Embed
 import com.fredboat.sentinel.entities.SelectMenu
+import com.fredboat.sentinel.entities.SlashOptions
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Emoji
 import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.components.ActionRow
 import net.dv8tion.jda.api.interactions.components.Button
 import net.dv8tion.jda.api.interactions.components.Component
@@ -38,6 +41,15 @@ fun Embed.toJda(): MessageEmbed {
     return builder.build()
 }
 
+fun SlashOptions.toJda(): ArrayList<OptionData> {
+    val optionsData = ArrayList<OptionData>()
+    slashOptions.forEach {
+        optionsData.add(OptionData(OptionType.fromKey(it.optionType), it.optionName, it.optionDescription, it.required))
+    }
+
+    return optionsData
+}
+
 fun SelectMenu.toJda(): SelectionMenu {
     val menu = SelectionMenu.create(customId).setPlaceholder(placeholder)
     selectOptions.forEach {
@@ -53,15 +65,10 @@ fun Buttons.toJda(): ArrayList<ActionRow> {
     buttons.forEach {
         if (it.label.isEmpty()) buttonsList.add(Button.secondary(it.id, Emoji.fromMarkdown(it.emoji)))
         else buttonsList.add(Button.secondary(it.id, it.label).withEmoji(Emoji.fromMarkdown(it.emoji)))
-        when {
-            buttonsList.size == 5 -> {
-                actionRows.add(ActionRow.of(buttonsList))
-                buttonsList.clear()
-            }
-            buttons.last() == it -> {
-                actionRows.add(ActionRow.of(buttonsList))
-            }
-        }
+        if (buttonsList.size == 5) {
+            actionRows.add(ActionRow.of(buttonsList))
+            buttonsList.clear()
+        } else if (buttons.last() == it) actionRows.add(ActionRow.of(buttonsList))
     }
 
     return actionRows

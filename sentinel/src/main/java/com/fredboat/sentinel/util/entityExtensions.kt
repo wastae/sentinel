@@ -32,38 +32,41 @@ fun net.dv8tion.jda.api.entities.Guild.toEntity(updateCache: VoiceServerUpdateCa
         textChannels.map { it.toEntity() },
         voiceChannels.map { it.toEntity() },
         roles.map { it.toEntity() },
-        updateCache[idLong])
+        updateCache[idLong]
+)
 
 fun net.dv8tion.jda.api.entities.User.toEntity() = User(
         idLong,
         name,
         discriminator,
-        isBot)
+        isBot
+)
 
-fun net.dv8tion.jda.api.entities.Member.toEntity(): Member {
-    return Member(
-            user.idLong,
-            user.name,
-            nickname,
-            user.discriminator,
-            guild.idLong,
-            user.isBot,
-            roles.map { it.idLong },
-            PermissionUtil.getEffectivePermission(this),
-            voiceState?.channel?.idLong)
-}
+fun net.dv8tion.jda.api.entities.Member.toEntity() = Member(
+        user.idLong,
+        user.name,
+        nickname,
+        user.discriminator,
+        guild.idLong,
+        user.isBot,
+        roles.map { it.idLong },
+        PermissionUtil.getEffectivePermission(this),
+        voiceState?.channel?.idLong
+)
 
 fun net.dv8tion.jda.api.entities.VoiceChannel.toEntity() = VoiceChannel(
         idLong,
         name,
         members.map { it.user.idLong },
         userLimit,
-        PermissionUtil.getExplicitPermission(this, guild.selfMember))
+        PermissionUtil.getExplicitPermission(this, guild.selfMember)
+)
 
 fun net.dv8tion.jda.api.entities.TextChannel.toEntity() = TextChannel(
         idLong,
         name,
-        PermissionUtil.getExplicitPermission(this, guild.selfMember))
+        PermissionUtil.getExplicitPermission(this, guild.selfMember)
+)
 
 fun net.dv8tion.jda.api.entities.Role.toEntity() = Role(
         idLong,
