@@ -82,19 +82,13 @@ class ManagementRequests(
         if (request.guildId != null) {
             val guild = shardManager.getGuildById(request.guildId!!)!!
             if (request.options != null) {
-                guild.upsertCommand(
-                        CommandData(
-                                request.commandName,
-                                request.commandDescription
-                        ).addOptions(request.options!!.toJda()).addSubcommandGroups(request.group!!.toJda())
-                ).queue("registerSlashCommand")
-            } else {
-                guild.upsertCommand(
-                        CommandData(
-                                request.commandName,
-                                request.commandDescription
-                        )
-                ).queue("registerSlashCommand")
+                val cmd = CommandData(request.commandName, request.commandDescription)
+                if (request.group != null) {
+                    cmd.addSubcommandGroups(request.group!!.toJda())
+                } else if (request.subcommands != null) {
+                    cmd.addSubcommands(request.subcommands!!.toJda())
+                }
+                guild.upsertCommand(cmd).queue("registerSlashCommand")
             }
         } else {
             shardManager.shards.forEach {

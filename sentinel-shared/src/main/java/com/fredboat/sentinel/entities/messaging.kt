@@ -91,6 +91,8 @@ data class Option(
         var value: String = ""
 )
 
+inline fun subCommand(block: SlashSubcommand.() -> Unit): SlashSubcommand = SlashSubcommand().apply(block)
+
 inline fun subGroup(block: SlashGroup.() -> Unit): SlashGroup = SlashGroup().apply(block)
 
 inline fun slashOptions(block: SlashOptions.() -> Unit): SlashOptions = SlashOptions().apply(block)
