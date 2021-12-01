@@ -54,6 +54,18 @@ data class SlashOption(
         var required: Boolean = false
 )
 
+data class SlashGroup(
+        var name: String = "",
+        var description: String = "",
+        var subCommands: MutableList<SlashSubcommand> = mutableListOf()
+)
+
+data class SlashSubcommand(
+        var name: String = "",
+        var description: String = "",
+        var slashOptions: SlashOptions = SlashOptions()
+)
+
 /**
  * Components
  */
@@ -78,6 +90,8 @@ data class Option(
         var label: String = "",
         var value: String = ""
 )
+
+inline fun subGroup(block: SlashGroup.() -> Unit): SlashGroup = SlashGroup().apply(block)
 
 inline fun slashOptions(block: SlashOptions.() -> Unit): SlashOptions = SlashOptions().apply(block)
 
@@ -109,6 +123,13 @@ inline fun Embed.field(block: Field.() -> Unit) {
 }
 fun Embed.field(title: String, body: String, inline: Boolean = false) {
     fields.add(Field(title, body, inline))
+}
+
+inline fun SlashGroup.groupSubCommand(block: SlashSubcommand.() -> Unit) {
+    subCommands.add(SlashSubcommand().apply(block))
+}
+fun SlashGroup.groupSubCommand(name: String, description: String, slashOptions: SlashOptions) {
+    subCommands.add(SlashSubcommand(name, description, slashOptions))
 }
 
 inline fun SlashOptions.option(block: SlashOption.() -> Unit) {

@@ -59,11 +59,11 @@ class ManagementRequests(
     fun consume(request: SentinelInfoRequest) = shardManager.run {
         SentinelInfoResponse(
                 guildCache.size(),
+                userCache.size(),
                 roleCache.size(),
                 categoryCache.size(),
                 textChannelCache.size(),
                 voiceChannelCache.size(),
-                emoteCache.size(),
                 if (request.includeShards) shards.map { it.toEntityExtended() } else null
         )
     }
@@ -86,7 +86,7 @@ class ManagementRequests(
                         CommandData(
                                 request.commandName,
                                 request.commandDescription
-                        ).addOptions(request.options!!.toJda())
+                        ).addOptions(request.options!!.toJda()).addSubcommandGroups(request.group!!.toJda())
                 ).queue("registerSlashCommand")
             } else {
                 guild.upsertCommand(
@@ -103,7 +103,7 @@ class ManagementRequests(
                             CommandData(
                                     request.commandName,
                                     request.commandDescription
-                            ).addOptions(request.options!!.toJda())
+                            ).addOptions(request.options!!.toJda()).addSubcommandGroups()
                     ).queue("registerSlashCommand")
                 } else {
                     it.upsertCommand(

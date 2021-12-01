@@ -7,15 +7,14 @@
 
 package com.fredboat.sentinel.util
 
-import com.fredboat.sentinel.entities.Buttons
-import com.fredboat.sentinel.entities.Embed
-import com.fredboat.sentinel.entities.SelectMenu
-import com.fredboat.sentinel.entities.SlashOptions
+import com.fredboat.sentinel.entities.*
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Emoji
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
+import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
+import net.dv8tion.jda.api.interactions.commands.build.SubcommandGroupData
 import net.dv8tion.jda.api.interactions.components.ActionRow
 import net.dv8tion.jda.api.interactions.components.Button
 import net.dv8tion.jda.api.interactions.components.Component
@@ -48,6 +47,29 @@ fun SlashOptions.toJda(): ArrayList<OptionData> {
     }
 
     return optionsData
+}
+
+fun SlashGroup.toJda(): SubcommandGroupData {
+    val subCmds = ArrayList<SubcommandData>()
+    subCommands.forEach { it ->
+        val subCmdOptions = ArrayList<OptionData>()
+        it.slashOptions.slashOptions.forEach {
+            subCmdOptions.add(OptionData(OptionType.fromKey(it.optionType), it.optionName, it.optionDescription, it.required))
+        }
+        subCmds.add(SubcommandData(it.name, it.description).addOptions(subCmdOptions))
+        subCmdOptions.clear()
+    }
+
+    return SubcommandGroupData(name, description).addSubcommands(subCmds)
+}
+
+fun SlashSubcommand.toJda(): SubcommandData {
+    val optionsData = ArrayList<OptionData>()
+    slashOptions.slashOptions.forEach {
+        optionsData.add(OptionData(OptionType.fromKey(it.optionType), it.optionName, it.optionDescription, it.required))
+    }
+
+    return SubcommandData(name, description).addOptions(optionsData)
 }
 
 fun SelectMenu.toJda(): SelectionMenu {

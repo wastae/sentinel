@@ -57,7 +57,7 @@ class ShardManagerConfig {
                 .setShardsTotal(sentinelProperties.shardCount)
                 .setShards(sentinelProperties.shardStart, sentinelProperties.shardEnd)
                 .setSessionController(sessionController)
-                .setChunkingFilter(ChunkingFilter.ALL)
+                .setChunkingFilter(ChunkingFilter.include(400652543723569153L))
                 .setVoiceDispatchInterceptor(voiceInterceptor)
                 .addEventListeners(rabbitEventListener)
 
@@ -66,7 +66,8 @@ class ShardManagerConfig {
             MessageAction.setDefaultMentions(EnumSet.complementOf(EnumSet.of(
                     MentionType.EVERYONE,
                     MentionType.HERE,
-                    MentionType.ROLE
+                    MentionType.ROLE,
+                    MentionType.USER
             )))
             shardManager = builder.build()
             sessionController.shardManager = shardManager

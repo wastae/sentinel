@@ -18,11 +18,20 @@ class RabbitQueuesConfig {
 
     /* Events */
 
-    //@Bean
-    //fun eventExchange() = DirectExchange(SentinelExchanges.EVENTS)
+    @Bean
+    fun eventExchange() = DirectExchange(SentinelExchanges.JDA)
 
-    //@Bean
-    //fun eventQueue() = Queue(SentinelExchanges.EVENTS, false)
+    @Bean
+    fun eventQueue() = Queue(SentinelExchanges.JDA, false)
+
+    @Bean
+    fun eventBinding(
+            @Qualifier("eventExchange") eventExchange: DirectExchange,
+            @Qualifier("eventQueue") eventQueue: Queue,
+            key: RoutingKey
+    ): Binding {
+        return BindingBuilder.bind(eventQueue).to(eventExchange).with(key.key)
+    }
 
     /* Requests */
 
