@@ -11,7 +11,7 @@ package com.fredboat.sentinel.entities
 
 import java.awt.Color
 
-// Embed builder originally by Frostbyte, but is heavily modified
+// Embed builder originally by Frostbyte, but is heavily modified.
 data class Embed(
         var content: String = "",
         var title: String? = null,
