@@ -55,8 +55,8 @@ data class SlashOption(
 )
 
 data class SlashGroup(
-        var name: String = "",
-        var description: String = "",
+        var name: String? = null,
+        var description: String? = null,
         var subCommands: MutableList<SlashSubcommand> = mutableListOf()
 )
 
