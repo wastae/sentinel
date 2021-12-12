@@ -13,6 +13,8 @@ import com.fredboat.sentinel.util.*
 import net.dv8tion.jda.api.entities.Icon
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.sharding.ShardManager
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -21,6 +23,10 @@ class ManagementRequests(
         private val shardManager: ShardManager,
         private val eval: EvalService
 ) {
+
+    companion object {
+        private val log: Logger = LoggerFactory.getLogger(ManagementRequests::class.java)
+    }
 
     fun consume(modRequest: ModRequest): String = modRequest.run {
         val guild = shardManager.getGuildById(guildId)
@@ -81,15 +87,17 @@ class ManagementRequests(
     fun consume(request: RegisterSlashCommandRequest) {
         if (request.guildId != null) {
             val guild = shardManager.getGuildById(request.guildId!!)!!
-            if (request.options != null) {
-                val cmd = CommandData(request.commandName, request.commandDescription)
-                if (request.group != null) {
-                    cmd.addSubcommandGroups(request.group!!.toJda())
-                } else if (request.subcommands != null) {
-                    cmd.addSubcommands(request.subcommands!!.toJda())
+            val cmd = CommandData(request.commandName, request.commandDescription)
+            when {
+                request.group != null -> {
+                    if (request.group!!.name != null && request.group!!.description != null) cmd.addSubcommandGroups(request.group!!.toJdaExt())
+                    else cmd.addSubcommands(request.group!!.toJda())
                 }
-                guild.upsertCommand(cmd).queue("registerSlashCommand")
+                request.options != null -> {
+                    cmd.addOptions(request.options!!.toJda())
+                }
             }
+            guild.upsertCommand(cmd).queue("registerSlashCommand")
         } else {
             shardManager.shards.forEach {
                 if (request.options != null) {

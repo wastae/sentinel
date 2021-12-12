@@ -49,10 +49,18 @@ fun SlashOptions.toJda(): ArrayList<OptionData> {
     return optionsData
 }
 
-fun SlashGroup.toJda(): SubcommandGroupData {
+fun SlashGroup.toJdaExt(): SubcommandGroupData {
+    return SubcommandGroupData(name!!, description!!).addSubcommands(buildSubCmds(subCommands))
+}
+
+fun SlashGroup.toJda(): ArrayList<SubcommandData> {
+    return buildSubCmds(subCommands)
+}
+
+private fun buildSubCmds(subCommands: MutableList<SlashSubcommand>): ArrayList<SubcommandData> {
     val subCmds = ArrayList<SubcommandData>()
+    val subCmdOptions = ArrayList<OptionData>()
     subCommands.forEach { it ->
-        val subCmdOptions = ArrayList<OptionData>()
         it.slashOptions.slashOptions.forEach {
             subCmdOptions.add(OptionData(OptionType.fromKey(it.optionType), it.optionName, it.optionDescription, it.required))
         }
@@ -60,7 +68,7 @@ fun SlashGroup.toJda(): SubcommandGroupData {
         subCmdOptions.clear()
     }
 
-    return SubcommandGroupData(name, description).addSubcommands(subCmds)
+    return subCmds
 }
 
 fun SlashSubcommand.toJda(): SubcommandData {
