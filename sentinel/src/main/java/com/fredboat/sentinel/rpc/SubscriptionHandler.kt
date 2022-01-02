@@ -7,68 +7,60 @@
 
 package com.fredboat.sentinel.rpc
 
-import com.fredboat.sentinel.entities.Guild
+import com.corundumstudio.socketio.SocketIOClient
+import com.fredboat.sentinel.SocketServer
 import com.fredboat.sentinel.entities.GuildSubscribeRequest
 import com.fredboat.sentinel.entities.GuildUnsubscribeRequest
-import com.fredboat.sentinel.jda.VoiceServerUpdateCache
-import com.fredboat.sentinel.rpc.meta.SentinelRequest
 import com.fredboat.sentinel.util.toEntity
 import net.dv8tion.jda.api.sharding.ShardManager
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 
 @Service
-@SentinelRequest
 class SubscriptionHandler(
-        @param:Qualifier("guildSubscriptions")
-        private val subscriptions: MutableSet<Long>,
-        private val shardManager: ShardManager,
-        private val voiceServerUpdateCache: VoiceServerUpdateCache
+    private val shardManager: ShardManager
 ) {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(SubscriptionHandler::class.java)
     }
 
-    @SentinelRequest
-    fun consume(request: GuildSubscribeRequest): Guild? {
+    fun consume(request: GuildSubscribeRequest, client: SocketIOClient) {
         val guild = shardManager.getGuildById(request.id)
         log.info(
-                "Request to subscribe to {} received after {}ms",
-                guild,
-                System.currentTimeMillis() - request.requestTime
+            "Request to subscribe to {} received after {}ms",
+            guild,
+            System.currentTimeMillis() - request.requestTime.toLong()
         )
 
         if (guild == null) {
             log.warn("Attempt to subscribe to unknown guild ${request.id}")
-            return null
+            return
         }
 
-        val added = subscriptions.add(request.id)
+        val added = SocketServer.subscriptionsCache.add(request.id.toLong())
         if (!added) {
-            if (subscriptions.contains(request.id)) {
+            if (SocketServer.subscriptionsCache.contains(request.id.toLong())) {
                 log.warn("Attempt to subscribe ${request.id} while we are already subscribed")
             } else {
                 log.error("Failed to subscribe to ${request.id}")
             }
         }
 
-        val entity = guild.toEntity(voiceServerUpdateCache)
+        val entity = guild.toEntity(SocketServer.voiceServerUpdateCache)
         log.info(
-                "Request to subscribe to {} processed after {}ms",
-                guild,
-                System.currentTimeMillis() - request.requestTime
+            "Request to subscribe to {} processed after {}ms",
+            guild,
+            System.currentTimeMillis() - request.requestTime.toLong()
         )
-        return entity
+        client.sendEvent("guild-${request.responseId}", entity)
     }
 
-    @SentinelRequest
     fun consume(request: GuildUnsubscribeRequest) {
-        val removed = subscriptions.remove(request.id)
+        val removed = SocketServer.subscriptionsCache.remove(request.id.toLong())
         if (!removed) {
-            if (!subscriptions.contains(request.id)) {
+            if (!SocketServer.subscriptionsCache.contains(request.id.toLong())) {
                 log.warn("Attempt to unsubscribe ${request.id} while we are not subscribed")
             } else {
                 log.error("Failed to unsubscribe from ${request.id}")

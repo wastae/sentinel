@@ -10,107 +10,163 @@
 package com.fredboat.sentinel.entities
 
 data class GuildsRequest(
-        val shard: Int
+        val shard: Int,
+        val responseId: String
 )
 
 data class GuildsResponse(
-        val guilds: List<Long>) {
+        val guilds: List<String>) {
 
     override fun toString() = "GuildsResponse(guilds.size=${guilds.size})"
 }
 
 /** Returns [Guild]*/
 data class GuildRequest(
-        val id: Long
+        val id: String
 )
 
 /** Returns [SendMessageResponse]*/
 data class SendMessageRequest(
-        val channel: Long,
-        val message: String
+        val channel: String,
+        val message: String,
+        val responseId: String
 )
 
 /** Returns [SendMessageResponse]*/
 data class SendEmbedRequest(
-        val channel: Long,
-        val embed: Embed
+        val channel: String,
+        val embed: Embed,
+        val responseId: String
 )
 
 /** Returns [SendMessageResponse]*/
 data class SendPrivateMessageRequest(
-        val recipient: Long,
-        val message: String
+        val recipient: String,
+        val message: String,
+        val responseId: String
 )
 
 data class SendMessageResponse(
-        val messageId: Long
+        val messageId: String
 )
 
 /** Returns [Unit]*/
 data class EditMessageRequest(
-        val channel: Long,
-        val messageId: Long,
+        val channel: String,
+        val messageId: String,
         val message: String
 )
 
 /** Returns [EditEmbedResponse]*/
 data class EditEmbedRequest(
-        val channel: Long,
-        val messageId: Long,
-        val embed: Embed
+        val channel: String,
+        val messageId: String,
+        val embed: Embed,
+        val responseId: String
 )
 
 data class EditEmbedResponse(
-        val messageId: Long,
-        val guildId: Long,
-        val successful: Boolean
+        val messageId: String,
+        val guildId: String
 )
 
 /** Returns [Unit]*/
 data class AddReactionRequest(
-        val channel: Long,
-        val messageId: Long,
+        val channel: String,
+        val messageId: String,
         val emote: String
 )
 
 /** Returns [Unit]*/
 data class AddReactionsRequest(
-        val channel: Long,
-        val messageId: Long,
+        val channel: String,
+        val messageId: String,
         val emote: ArrayList<String>
 )
 
 /** Returns [Unit]*/
 data class RemoveReactionRequest(
-        val channel: Long,
-        val messageId: Long,
-        val userId: Long,
+        val channel: String,
+        val messageId: String,
+        val userId: String,
         val emote: String
 )
 
 /** Returns [Unit]*/
 data class RemoveReactionsRequest(
-        val channel: Long,
-        val messageId: Long
+        val channel: String,
+        val messageId: String
 )
 
 /** Returns [Unit]*/
 data class MessageDeleteRequest(
-        val channel: Long,
-        val messages: List<Long>
+        val channel: String,
+        val messages: List<String>
 )
 
 /** Returns [Unit]*/
 data class SendTypingRequest(
-        val channel: Long
+        val channel: String
+)
+
+/** Returns [SendMessageResponse]*/
+data class SendSlashCommandRequest(
+        val interactionId: String,
+        val interactionToken: String,
+        val interactionType: Int,
+        val guildId: String,
+        val channelId: String,
+        val userId: String,
+        val message: String,
+        val ephemeral: Boolean,
+        val responseId: String
+)
+
+/**
+ * Components
+ */
+
+/** Returns [Unit]*/
+data class SendMessageButtonsRequest(
+        val channel: String,
+        val message: String,
+        val buttons: Buttons
+)
+
+/** Returns [Unit]*/
+data class SendMessageSelectionMenuRequest(
+        val channel: String,
+        val message: String,
+        val menu: SelectMenu
+)
+
+/** Returns [Unit]*/
+data class EditButtonsRequest(
+        val channel: String,
+        val messageId: String,
+        val buttons: Buttons
+)
+
+/** Returns [Unit]*/
+data class EditSelectionMenuRequest(
+        val channel: String,
+        val messageId: String,
+        val menu: SelectMenu
+)
+
+/** Returns [Unit]*/
+data class RemoveComponentsRequest(
+        val channel: String,
+        val messageId: String
 )
 
 /** Returns [PermissionCheckResponse]*/
 data class GuildPermissionRequest(
-        val guild: Long,
-        val role: Long? = null,  // If present, the role to check (mutually exclusive)
-        val member: Long? = null,// If present, the member to check (mutually exclusive)
-        val rawPermissions: Long
+        val guild: String,
+        val role: String? = null,  // If present, the role to check (mutually exclusive)
+        val member: String? = null,// If present, the member to check (mutually exclusive)
+        val rawPermissions: String,
+        val responseId: String
 ){
     init {
         if (role != null && member != null) throw RuntimeException("Role and member are mutually exclusive")
@@ -119,10 +175,11 @@ data class GuildPermissionRequest(
 
 /** Returns [PermissionCheckResponse]*/
 data class ChannelPermissionRequest(
-        val channel: Long, // The channel to check
-        val role: Long? = null,  // If present, the role to check (mutually exclusive)
-        val member: Long? = null,// If present, the member to check (mutually exclusive)
-        val rawPermissions: Long
+        val channel: String, // The channel to check
+        val role: String? = null,  // If present, the role to check (mutually exclusive)
+        val member: String? = null,// If present, the member to check (mutually exclusive)
+        val rawPermissions: String,
+        val responseId: String
 ){
     init {
         if (role != null && member != null) throw RuntimeException("Role and member are mutually exclusive")
@@ -130,37 +187,38 @@ data class ChannelPermissionRequest(
 }
 
 data class PermissionCheckResponse(
-        val effective: Long,
-        val missing: Long,
+        val effective: String,
+        val missing: String,
         val missingEntityFault: Boolean
 )
 
 /* Extension because of serialization problems */
 @Suppress("unused")
 val PermissionCheckResponse.passed: Boolean
-    get() = !missingEntityFault && missing == 0L
+    get() = !missingEntityFault && missing == "0"
 
 /** Returns [BulkGuildPermissionRequest]*/
 data class BulkGuildPermissionRequest(
-        val guild: Long,
-        val members: List<Long>
+        val guild: String,
+        val members: List<String>,
+        val responseId: String
 )
 
 data class BulkGuildPermissionResponse(
-        val effectivePermissions: List<Long?>
+        val effectivePermissions: List<String?>
 )
 
 /** Returns [SentinelInfoResponse] */
-data class SentinelInfoRequest(val includeShards: Boolean)
+data class SentinelInfoRequest(val includeShards: Boolean, val responseId: String)
 
 /** Data about all shards */
 data class SentinelInfoResponse(
-        val guilds: Long,
-        val users: Long,
-        val roles: Long,
-        val categories: Long,
-        val textChannels: Long,
-        val voiceChannels: Long,
+        val guilds: String,
+        val users: String,
+        val roles: String,
+        val categories: String,
+        val textChannels: String,
+        val voiceChannels: String,
         val shards: List<ExtendedShardInfo>?
 )
 
@@ -171,6 +229,5 @@ data class ExtendedShardInfo(
         val users: Int
 )
 
-/** Dump all user IDs to a [List] with [Long]s */
-class UserListRequest
-
+/** Dump all user IDs to a [List] with [String]s */
+class UserListRequest(val responseId: String)

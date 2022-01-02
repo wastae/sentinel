@@ -7,7 +7,7 @@
 
 buildscript {
     ext {
-        depCheckerVersion = "0.38.0"
+        gradleGitVersion = '2.1.0'
         kotlin_version = '1.4.32'
         bootVersion = '2.0.1.RELEASE'
         aptVersion = '0.17'
@@ -19,7 +19,6 @@ buildscript {
         maven { url "https://repo.spring.io/plugins-release" }
     }
     dependencies {
-        classpath "com.github.ben-manes:gradle-versions-plugin:${depCheckerVersion}"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "org.springframework.boot:spring-boot-gradle-plugin:$bootVersion"
         classpath "org.jetbrains.kotlin:kotlin-allopen:$kotlin_version"
@@ -57,17 +56,18 @@ compileTestKotlin {
 allprojects {
     repositories {
         mavenCentral()
+        maven { url 'https://jitpack.io' }
         jcenter()
         maven { url 'https://dl.bintray.com/palantir/releases' }
-        maven { url 'https://jitpack.io' }
     }
 }
 
 ext {
-    //jdaVersion = "4.2.0_211"
-    amqpVersion = "2.0.4.RELEASE"
+    serverSocketIOVersion = '1.7.19'
+    jdaVersion = "c2d16c83e2"
+    reactorVersion = "3.1.1.RELEASE"
     gsonVersion = '2.8.2'
-    jacksonKotlinVersion = "2.9.+"
+    jacksonKotlinVersion = "2.13.1"
     logbackVersion = "1.2.3"
     sentryVersion = '1.7.5'
     prometheusClientVersion = "0.4.0"
@@ -80,8 +80,8 @@ ext {
     //testing deps
     junitVersion                = '5.1.0'
     apiGuardianVersion          = '1.0.0'
-    dockerComposeRuleVersion    = '0.33.0'
-    mockitoVersion              = '2.+'
+    //dockerComposeRuleVersion    = '0.33.0'
+    //mockitoVersion              = '2.+'
 }
 
 wrapper {

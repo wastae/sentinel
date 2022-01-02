@@ -10,16 +10,16 @@ package com.fredboat.sentinel.entities
 // Additional info about entities, which may be useful in only a few places
 
 data class GuildInfo(
-        val id: Long,
+        val id: String,
         val iconUrl: String?,
         val onlineMembers: Int,
         val verificationLevel: String
 )
 
-data class GuildInfoRequest(val id: Long)
+data class GuildInfoRequest(val id: String, val responseId: String)
 
 data class RoleInfo(
-        val id: Long,
+        val id: String,
         val position: Int,
         val colorRgb: Int?,
         val isHoisted: Boolean,
@@ -27,49 +27,49 @@ data class RoleInfo(
         val isManaged: Boolean
 )
 
-data class RoleInfoRequest(val id: Long)
+data class RoleInfoRequest(val id: String, val responseId: String)
 
 data class MemberInfo(
-        val id: Long,
+        val id: String,
         val name: String,
         val nickname: String?,
         val discrim: String,
-        val guildId: Long,
+        val guildId: String,
         val avatarUrl: String,
         val colorRgb: Int?,
-        val joinDateMillis: Long,
+        val joinDateMillis: String,
         val bot: Boolean,
-        val mutualGuilds: List<Long>,
-        val roles: List<Long>,
-        val permissions: Long,
-        val voiceChannel: Long?
+        val mutualGuilds: List<String>,
+        val roles: List<String>,
+        val permissions: String,
+        val voiceChannel: String?
 )
 
-data class MemberInfoRequest(val id: Long, val guildId: Long)
+data class MemberInfoRequest(val id: String, val guildId: String, val responseId: String)
 
-data class GetMemberRequest(val id: Long, val guildId: Long)
+data class GetMemberRequest(val id: String, val guildId: String, val responseId: String)
 
 data class MembersByRoleResponse(val members: List<Member>)
 
-data class FindMembersByRoleRequest(val id: Long, val guildId: Long)
+data class FindMembersByRoleRequest(val id: String, val guildId: String, val responseId: String)
 
 data class MembersByPrefixResponse(val members: List<Member>)
 
-data class GetMembersByPrefixRequest(val prefix: String, val limit: Int, val guildId: Long)
+data class GetMembersByPrefixRequest(val prefix: String, val limit: Int, val guildId: String, val responseId: String)
 
 data class MembersByIdsResponse(val members: List<Member>)
 
-data class GetMembersByIdsRequest(val ids: List<Long>, val guildId: Long)
+data class GetMembersByIdsRequest(val ids: List<String>, val guildId: String, val responseId: String)
 
 data class UserInfo(
-        val id: Long,
+        val id: String,
         val name: String,
         val discrim: String,
         val avatarUrl: String,
         val bot: Boolean,
-        val mutualGuilds: List<Long>
+        val mutualGuilds: List<String>
 )
 
-data class UserInfoRequest(val id: Long)
+data class UserInfoRequest(val id: String, val responseId: String)
 
-data class GetUserRequest(val id: Long)
+data class GetUserRequest(val id: String, val responseId: String)

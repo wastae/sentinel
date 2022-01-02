@@ -7,32 +7,30 @@
 
 package com.fredboat.sentinel.rpc
 
+import com.corundumstudio.socketio.SocketIOClient
+import com.corundumstudio.socketio.SocketIOServer
+import com.fredboat.sentinel.SocketServer
 import com.fredboat.sentinel.config.RoutingKey
 import com.fredboat.sentinel.config.SentinelProperties
 import com.fredboat.sentinel.entities.FredBoatHello
 import com.fredboat.sentinel.entities.SentinelHello
 import com.fredboat.sentinel.entities.SyncSessionQueueRequest
 import com.fredboat.sentinel.jda.RemoteSessionController
-import com.fredboat.sentinel.rpc.meta.FanoutRequest
-import com.fredboat.sentinel.util.Rabbit
-import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.entities.Activity
+import net.dv8tion.jda.api.sharding.ShardManager
+import org.json.JSONObject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.stereotype.Service
+import org.springframework.context.annotation.Configuration
 
-@Service
-@FanoutRequest
+@Configuration
 class FanoutConsumer(
-        private val rabbit: Rabbit,
         private val sentinelProperties: SentinelProperties,
         private val key: RoutingKey,
-        @param:Qualifier("guildSubscriptions")
-        private val subscriptions: MutableSet<Long>,
         private val shardManager: ShardManager,
-        private val sessionController: RemoteSessionController
+        private val sessionController: RemoteSessionController,
+        socketIOServer: SocketIOServer
 ) {
 
     companion object {
@@ -42,25 +40,29 @@ class FanoutConsumer(
     var knownFredBoatId: String? = null
 
     init {
-        try {
-            sendHello()
-        } catch (e: Exception) {
-            log.error("Error sending hello", e)
+        socketIOServer.addConnectListener {
+            sendHello(it)
         }
+        socketIOServer.addEventListener("fredBoatHello", JSONObject::class.java) { client, event, _ ->
+            onHello(SocketServer.gson.fromJson(event.toString(), FredBoatHello::class.java), client)
+        }
+        socketIOServer.addEventListener("syncSessionQueueRequest", JSONObject::class.java) { _, event, _ ->
+            consume(SocketServer.gson.fromJson(event.toString(), SyncSessionQueueRequest::class.java))
+        }
+        log.info("FanoutConsumer events registered")
     }
 
-    @FanoutRequest
-    fun consume(event: FredBoatHello) {
+    fun onHello(event: FredBoatHello, client: SocketIOClient) {
         if (event.id != knownFredBoatId) {
             log.info("FredBoat ${event.id} says hello \uD83D\uDC4B - Replaces $knownFredBoatId")
             knownFredBoatId = event.id
-            subscriptions.clear()
+            SocketServer.subscriptionsCache.clear()
             sessionController.syncSessionQueue()
         } else {
             log.info("FredBoat ${event.id} says hello \uD83D\uDC4B")
         }
 
-        sendHello()
+        sendHello(client)
 
         val game = if (event.game.isBlank()) null else Activity.listening(event.game)
         shardManager.shards.forEach {
@@ -70,16 +72,16 @@ class FanoutConsumer(
         }
     }
 
-    private fun sendHello() {
-        rabbit.sendEvent(sentinelProperties.run { SentinelHello(
+    private fun sendHello(client: SocketIOClient) {
+        val message = sentinelProperties.run {  SentinelHello(
                 shardStart,
                 shardEnd,
                 shardCount,
                 key.key
-        )})
+        )}
+        client.sendEvent("sentinelHello", message)
     }
 
-    @FanoutRequest
     fun consume(request: SyncSessionQueueRequest) {
         sessionController.syncSessionQueue()
     }

@@ -15,7 +15,6 @@ apply plugin: "maven"
 apply plugin: "maven-publish"
 apply plugin: 'org.springframework.boot'
 apply plugin: 'net.ltgt.apt'
-apply plugin: "com.github.ben-manes.versions"
 
 configurations {
     // Screws up the Spring Boot jar
@@ -31,17 +30,15 @@ compileTestKotlin {
 
 dependencies {
     compile project(":sentinel-shared")
+    compile "com.corundumstudio.socketio:netty-socketio:$serverSocketIOVersion"
     //compile "net.dv8tion:JDA:$jdaVersion"
-    compile "com.github.DV8FromTheWorld:JDA:5492d1d2eb"
+    compile "com.github.DV8FromTheWorld:JDA:c2d16c83e2"
     compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-script-runtime:$kotlin_version"      // For kotlin eval
     //compile "org.jetbrains.kotlin:kotlin-script-util:$kotlin_version"       // For kotlin eval
     compile "org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlin_version" // For kotlin eval
     compile "org.springframework.boot:spring-boot-starter-web:$bootVersion"
-    compile "io.projectreactor.rabbitmq:reactor-rabbitmq:$reactorRabbitVersion"
-    compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion"
-    compile "org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$coroutinesVersion"
-    compile "org.springframework.amqp:spring-rabbit:$amqpVersion"
+    compile "io.projectreactor:reactor-core:$reactorVersion"
     annotationProcessor "org.springframework.boot:spring-boot-configuration-processor:$bootVersion"
     compile "com.google.code.gson:gson:$gsonVersion"
     compile "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonKotlinVersion"
@@ -65,8 +62,8 @@ dependencies {
     //required for the docker compose rule https://github.com/palantir/docker-compose-rule/issues/224
     testRuntime group: 'org.junit.jupiter', name: 'junit-jupiter-migrationsupport', version: junitVersion
     //allows us to fire up docker containers to test with, for example our postgres database
-    testCompile group: 'com.palantir.docker.compose', name: 'docker-compose-rule-junit4', version: dockerComposeRuleVersion
-    testCompile group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
+    //testCompile group: 'com.palantir.docker.compose', name: 'docker-compose-rule-junit4', version: dockerComposeRuleVersion
+    //testCompile group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
 }
 
 bootRun {

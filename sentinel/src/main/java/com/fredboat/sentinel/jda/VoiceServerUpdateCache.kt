@@ -18,12 +18,12 @@ import java.util.concurrent.ConcurrentHashMap
 @Service
 class VoiceServerUpdateCache {
 
-    private val map = ConcurrentHashMap<Long, VoiceServerUpdate>()
+    private val map = ConcurrentHashMap<String, VoiceServerUpdate>()
 
-    operator fun set(guildId: Long, update: VoiceServerUpdate) = map.put(guildId, update)
-    operator fun get(guildId: Long): VoiceServerUpdate? = map[guildId]
+    operator fun set(guildId: String, update: VoiceServerUpdate) = map.put(guildId, update)
+    operator fun get(guildId: String): VoiceServerUpdate? = map[guildId]
 
     /** Invalidate */
-    fun onVoiceLeave(guildId: Long) = map.remove(guildId)
+    fun onVoiceLeave(guildId: String) = map.remove(guildId)
 
 }

@@ -23,5 +23,5 @@ data class SentinelHello(
         val shardEnd: Int,
         val shardCount: Int,
         val key: String,
-        val time: Long = System.currentTimeMillis()
+        val time: String = System.currentTimeMillis().toString()
 )

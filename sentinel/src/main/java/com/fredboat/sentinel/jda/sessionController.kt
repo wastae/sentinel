@@ -7,13 +7,14 @@
 
 package com.fredboat.sentinel.jda
 
+import com.corundumstudio.socketio.SocketIOClient
+import com.fredboat.sentinel.SocketServer
 import com.fredboat.sentinel.config.RoutingKey
 import com.fredboat.sentinel.config.SentinelProperties
 import com.fredboat.sentinel.entities.AppendSessionEvent
 import com.fredboat.sentinel.entities.RemoveSessionEvent
-import com.fredboat.sentinel.util.Rabbit
-import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.SessionController
 import net.dv8tion.jda.api.utils.SessionController.SessionConnectNode
 import net.dv8tion.jda.api.utils.SessionControllerAdapter
@@ -26,9 +27,8 @@ private val log: Logger = LoggerFactory.getLogger(RemoteSessionController::class
 
 @Service
 class RemoteSessionController(
-        val sentinelProps: SentinelProperties,
-        val rabbit: Rabbit,
-        val routingKey: RoutingKey
+    val sentinelProps: SentinelProperties,
+    val routingKey: RoutingKey
 ) : SessionController {
 
     private val adapter = SessionControllerAdapter()
@@ -54,13 +54,12 @@ class RemoteSessionController(
         localQueue.values.forEach { it.send(false) }
     }
 
-    fun onRunRequest(id: Int): String {
+    fun onRunRequest(id: Int, client: SocketIOClient) {
         val status = shardManager.getShardById(id)?.status
         log.info("Received request to run shard $id, which has status $status")
         val node = localQueue[id]
         if (node == null) {
-            val msg = RemoveSessionEvent(id, sentinelProps.shardCount, routingKey.key)
-            rabbit.sendEvent(msg)
+            client.sendEvent("removeSessionEvent", RemoveSessionEvent(id, sentinelProps.shardCount, routingKey.key))
             throw IllegalStateException("Node $id is not queued")
         }
 
@@ -68,22 +67,29 @@ class RemoteSessionController(
             val msg = "Refusing to run shard $id as it has status $status"
             log.error(msg)
             node.send(true)
-            return msg
+            client.sendEvent("onRunResponse", msg)
         }
 
         node.run(false) // Always assume false, so that we don't immediately return
         removeSession(node)
 
-        return "Started node ${node.shardInfo}" // Generates a reply
+        client.sendEvent("onRunResponse", "Started node ${node.shardInfo}") // Generates a reply
     }
 
     fun SessionConnectNode.send(remove: Boolean) {
-        val msg: Any = if (remove) {
-            RemoveSessionEvent(shardInfo.shardId, shardInfo.shardTotal, routingKey.key)
+        if (remove) {
+            SocketServer.contextMap.forEach {
+                it.value.socketClient.sendEvent("removeSessionEvent",
+                    RemoveSessionEvent(shardInfo.shardId, shardInfo.shardTotal, routingKey.key)
+                )
+            }
         } else {
-            AppendSessionEvent(shardInfo.shardId, shardInfo.shardTotal, routingKey.key)
+            SocketServer.contextMap.forEach {
+                it.value.socketClient.sendEvent("appendSessionEvent",
+                    AppendSessionEvent(shardInfo.shardId, shardInfo.shardTotal, routingKey.key)
+                )
+            }
         }
-        rabbit.sendEvent(msg)
     }
 
     /* Handle gateway and global ratelimit */
@@ -91,13 +97,16 @@ class RemoteSessionController(
     override fun getGlobalRatelimit() = globalRatelimit
 
     override fun setGlobalRatelimit(ratelimit: Long) {
-        rabbit.sendSession(SetGlobalRatelimit(ratelimit))
+        SocketServer.contextMap.forEach {
+            it.value.socketClient.sendEvent("setGlobalRatelimit", SetGlobalRatelimit(ratelimit))
+        }
         globalRatelimit = ratelimit
     }
 
-    fun handleRatelimitSet(event: SetGlobalRatelimit) {
-        globalRatelimit = event.new
-    }
+//    @RabbitHandler
+//    fun handleRatelimitSet(event: SetGlobalRatelimit) {
+//        globalRatelimit = event.new
+//    }
 
     override fun getGateway(api: JDA) = adapter.getGateway(api)
     override fun getGatewayBot(api: JDA) = adapter.getGatewayBot(api)

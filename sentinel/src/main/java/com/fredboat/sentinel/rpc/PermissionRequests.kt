@@ -7,41 +7,52 @@
 
 package com.fredboat.sentinel.rpc
 
+import com.corundumstudio.socketio.SocketIOClient
 import com.fredboat.sentinel.entities.*
-import com.fredboat.sentinel.rpc.meta.SentinelRequest
-import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.entities.GuildChannel
+import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.springframework.stereotype.Service
 
 @Service
-@SentinelRequest
 class PermissionRequests(private val shardManager: ShardManager) {
 
     /**
      * Returns true if the Role and/or Member has the given permissions in a Guild
      */
-    @SentinelRequest
-    fun consume(request: GuildPermissionRequest): PermissionCheckResponse {
+    fun consume(request: GuildPermissionRequest, client: SocketIOClient) {
         val guild = shardManager.getGuildById(request.guild)
                 ?: throw RuntimeException("Got request for guild which isn't found")
 
         request.member?.apply {
-            val member = guild.getMemberById(this) ?: return PermissionCheckResponse(0, 0, true)
-            val effective = PermissionUtil.getEffectivePermission(member)
-            return PermissionCheckResponse(effective, getMissing(request.rawPermissions, effective), false)
+            val member = guild.getMemberById(this)
+            if (member == null) {
+                client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse("0", "0", true))
+                return
+            } else {
+                val effective = PermissionUtil.getEffectivePermission(member)
+                client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse(effective.toString(), getMissing(request.rawPermissions.toLong(), effective), false))
+                return
+            }
         }
 
         // Role must be specified then
-        val role = guild.getRoleById(request.role!!) ?: return PermissionCheckResponse(0, 0, true)
-        return PermissionCheckResponse(role.permissionsRaw, getMissing(request.rawPermissions, role.permissionsRaw), false)
+        request.role?.apply {
+            val role = guild.getRoleById(this)
+            if (role == null) {
+                client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse("0", "0", true))
+                return
+            } else {
+                client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse(role.permissionsRaw.toString(), getMissing(request.rawPermissions.toLong(), role.permissionsRaw), false))
+                return
+            }
+        }
     }
 
     /**
      * Returns true if the Role and/or Member has the given permissions in a Channel
      */
-    @SentinelRequest
-    fun consume(request: ChannelPermissionRequest): PermissionCheckResponse {
+    fun consume(request: ChannelPermissionRequest, client: SocketIOClient) {
         var channel: GuildChannel? = shardManager.getTextChannelById(request.channel)
                 ?: shardManager.getVoiceChannelById(request.channel)
         channel = channel ?: shardManager.getCategoryById(request.channel)
@@ -50,33 +61,40 @@ class PermissionRequests(private val shardManager: ShardManager) {
         val guild = channel.guild
 
         request.member?.apply {
-            val member = guild.getMemberById(this) ?: return PermissionCheckResponse(0, 0, true)
-            val effective = PermissionUtil.getEffectivePermission(channel, member)
-            return PermissionCheckResponse(
-                    effective,
-                    getMissing(request.rawPermissions, effective),
-                    false
-            )
+            val member = guild.getMemberById(this)
+            if (member == null) {
+                client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse("0", "0", true))
+            } else {
+                val effective = PermissionUtil.getEffectivePermission(channel, member)
+                client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse(effective.toString(), getMissing(request.rawPermissions.toLong(), effective), false))
+            }
         }
 
         // Role must be specified then
-        val role = guild.getRoleById(request.role!!) ?: return PermissionCheckResponse(0, 0, true)
-        val effective = PermissionUtil.getEffectivePermission(channel, role)
-        return PermissionCheckResponse(effective, getMissing(request.rawPermissions, effective), false)
+        request.role?.apply {
+            val role = guild.getRoleById(this)
+            if (role == null) {
+                client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse("0", "0", true))
+            } else {
+                val effective = PermissionUtil.getEffectivePermission(channel, role)
+                client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse(effective.toString(), getMissing(request.rawPermissions.toLong(), effective), false))
+            }
+        }
     }
 
-    @SentinelRequest
-    fun consume(request: BulkGuildPermissionRequest): BulkGuildPermissionResponse {
+    fun consume(request: BulkGuildPermissionRequest, client: SocketIOClient) {
         val guild = shardManager.getGuildById(request.guild)
                 ?: throw RuntimeException("Got request for guild which isn't found")
 
-        return BulkGuildPermissionResponse(request.members.map {
+        val bulkGuildPermissionResponse = BulkGuildPermissionResponse(request.members.map {
             val member = guild.getMemberById(it) ?: return@map null
-            PermissionUtil.getEffectivePermission(member)
+            PermissionUtil.getEffectivePermission(member).toString()
         })
+        client.sendEvent("bulkGuildPermissionResponse-${request.responseId}", bulkGuildPermissionResponse)
     }
 
     /** Performs converse nonimplication */
-    private fun getMissing(expected: Long, actual: Long) = (expected.inv() or actual).inv()
-
+    private fun getMissing(expected: Long, actual: Long): String {
+        return (expected.inv() or actual).inv().toString()
+    }
 }

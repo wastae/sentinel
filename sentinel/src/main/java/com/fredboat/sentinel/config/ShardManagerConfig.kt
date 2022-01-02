@@ -8,7 +8,7 @@
 package com.fredboat.sentinel.config
 
 import com.fredboat.sentinel.ApplicationState
-import com.fredboat.sentinel.jda.JdaRabbitEventListener
+import com.fredboat.sentinel.SocketServer
 import com.fredboat.sentinel.jda.RemoteSessionController
 import com.fredboat.sentinel.jda.VoiceInterceptor
 import net.dv8tion.jda.api.entities.Message.MentionType
@@ -32,10 +32,11 @@ class ShardManagerConfig {
         private val log: Logger = LoggerFactory.getLogger(ShardManagerConfig::class.java)
     }
     @Bean
-    fun buildShardManager(sentinelProperties: SentinelProperties,
-                          rabbitEventListener: JdaRabbitEventListener,
-                          sessionController: RemoteSessionController,
-                          voiceInterceptor: VoiceInterceptor
+    fun buildShardManager(
+            sentinelProperties: SentinelProperties,
+            socketServer: SocketServer,
+            sessionController: RemoteSessionController,
+            voiceInterceptor: VoiceInterceptor
     ): ShardManager {
 
         val intents = listOf(
@@ -57,7 +58,7 @@ class ShardManagerConfig {
                 .setSessionController(sessionController)
                 .setChunkingFilter(ChunkingFilter.ALL)
                 .setVoiceDispatchInterceptor(voiceInterceptor)
-                .addEventListeners(rabbitEventListener)
+                .setRawEventsEnabled(false)
 
         val shardManager: ShardManager
         try {
@@ -68,7 +69,9 @@ class ShardManagerConfig {
             )))
             shardManager = builder.build()
             sessionController.shardManager = shardManager
-            rabbitEventListener.shardManager = shardManager
+            socketServer.shardManager = shardManager
+
+            //rabbitEventListener.shardManager = shardManager
             if (ApplicationState.isTesting) {
                 log.info("Shutting down JDA because we are running tests")
                 try {

@@ -25,50 +25,57 @@ fun JDA.toEntityExtended() = ExtendedShardInfo(
 )
 
 fun net.dv8tion.jda.api.entities.Guild.toEntity(updateCache: VoiceServerUpdateCache) = Guild(
-        idLong,
+        id,
         name,
-        owner?.user?.idLong,
+        owner?.user?.id,
         members.map { it.toEntity() },
         textChannels.map { it.toEntity() },
         voiceChannels.map { it.toEntity() },
         roles.map { it.toEntity() },
-        updateCache[idLong])
+        updateCache[id]
+)
 
 fun net.dv8tion.jda.api.entities.User.toEntity() = User(
-        idLong,
+        id,
         name,
         discriminator,
         isBot)
 
-fun net.dv8tion.jda.api.entities.Member.toEntity(): Member {
-    return Member(
-            user.idLong,
-            user.name,
-            nickname,
-            user.discriminator,
-            guild.idLong,
-            user.isBot,
-            roles.map { it.idLong },
-            PermissionUtil.getEffectivePermission(this),
-            voiceState?.channel?.idLong)
-}
+fun net.dv8tion.jda.api.entities.Member.toEntity() = Member(
+        user.id,
+        user.name,
+        nickname,
+        user.discriminator,
+        guild.id,
+        user.isBot,
+        roles.map { it.id },
+        PermissionUtil.getEffectivePermission(this).toString(),
+        voiceState?.channel?.id
+)
 
 fun net.dv8tion.jda.api.entities.VoiceChannel.toEntity() = VoiceChannel(
-        idLong,
+        id,
         name,
-        members.map { it.user.idLong },
+        members.map { it.user.id },
         userLimit,
-        PermissionUtil.getExplicitPermission(this, guild.selfMember))
+        PermissionUtil.getExplicitPermission(this, guild.selfMember).toString()
+)
 
 fun net.dv8tion.jda.api.entities.TextChannel.toEntity() = TextChannel(
-        idLong,
+        id,
         name,
-        PermissionUtil.getExplicitPermission(this, guild.selfMember))
+        PermissionUtil.getExplicitPermission(this, guild.selfMember).toString()
+)
 
 fun net.dv8tion.jda.api.entities.Role.toEntity() = Role(
-        idLong,
+        id,
         name,
-        permissionsRaw
+        permissionsRaw.toString()
 )
 
 fun JDA.Status.toEntity() = ShardStatus.valueOf(this.toString())
+
+fun net.dv8tion.jda.api.interactions.commands.OptionMapping.toEntity() = Option(
+        name,
+        asString
+)

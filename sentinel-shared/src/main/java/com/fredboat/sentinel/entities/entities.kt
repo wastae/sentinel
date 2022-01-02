@@ -19,9 +19,9 @@ data class Shard(
 val Shard.shardString: String get() = "[$id/$total]"
 
 data class Guild(
-        val id: Long,
+        val id: String,
         val name: String,
-        val owner: Long?, // Discord has a history of having guilds without owners :(
+        val owner: String?, // Discord has a history of having guilds without owners :(
         val members: List<Member>,
         val textChannels: List<TextChannel>,
         val voiceChannels: List<VoiceChannel>,
@@ -30,42 +30,40 @@ data class Guild(
 )
 
 data class User(
-        val id: Long,
+        val id: String,
         val name: String,
         val discrim: String,
         val bot: Boolean
 )
 
 data class Member(
-        val id: Long,
+        val id: String,
         val name: String,
         val nickname: String?,
         val discrim: String,
-        val guildId: Long,
+        val guildId: String,
         val bot: Boolean,
-        val roles: List<Long>,
-        val permissions: Long,
-        val voiceChannel: Long?
+        val roles: List<String>,
+        val permissions: String,
+        val voiceChannel: String?
 )
 
 data class TextChannel(
-        val id: Long,
+        val id: String,
         val name: String,
-        val ourEffectivePermissions: Long
+        val ourEffectivePermissions: String
 )
 
 data class VoiceChannel(
-        val id: Long,
+        val id: String,
         val name: String,
-        val members: List<Long>,
+        val members: List<String>,
         val userLimit: Int,
-        val ourEffectivePermissions: Long
+        val ourEffectivePermissions: String
 )
 
 data class Role(
-        val id: Long,
+        val id: String,
         val name: String,
-        val permissions: Long
+        val permissions: String
 )
-
-

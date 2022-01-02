@@ -1,21 +1,22 @@
 package com.fredboat.sentinel.jda
 
+import com.fredboat.sentinel.SocketServer
 import com.fredboat.sentinel.entities.VoiceServerUpdate
-import com.fredboat.sentinel.util.Rabbit
 import com.google.gson.Gson
 import net.dv8tion.jda.api.hooks.VoiceDispatchInterceptor
 import org.springframework.stereotype.Component
 
 @Component
-class VoiceInterceptor(private val rabbit: Rabbit, val cache: VoiceServerUpdateCache) : VoiceDispatchInterceptor {
+class VoiceInterceptor(val cache: VoiceServerUpdateCache) : VoiceDispatchInterceptor {
     private val gson = Gson()
 
     override fun onVoiceServerUpdate(update: VoiceDispatchInterceptor.VoiceServerUpdate) {
         val json = RawServerUpdateJson(update.endpoint, update.guildId, update.token).toString()
         val event = VoiceServerUpdate(update.sessionId, json)
-        cache[update.guildIdLong] = event
-
-        rabbit.sendEvent(event)
+        cache[update.guildId] = event
+        SocketServer.contextMap.forEach {
+            it.value.socketClient.sendEvent("voiceServerUpdate", event)
+        }
     }
 
     override fun onVoiceStateUpdate(update: VoiceDispatchInterceptor.VoiceStateUpdate) = false

@@ -9,8 +9,8 @@ package com.fredboat.sentinel.entities
 
 data class AudioQueueRequest(
         val type: AudioQueueRequestEnum,
-        val guild: Long,
-        val channel: Long? = null // Only used with QUEUE_CONNECT
+        val guild: String,
+        val channel: String? = null // Only used with QUEUE_CONNECT
 )
 
 enum class AudioQueueRequestEnum {

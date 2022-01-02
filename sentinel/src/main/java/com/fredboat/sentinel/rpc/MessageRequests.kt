@@ -7,188 +7,276 @@
 
 package com.fredboat.sentinel.rpc
 
+import com.corundumstudio.socketio.SocketIOClient
 import com.fredboat.sentinel.entities.*
-import com.fredboat.sentinel.entities.SendMessageResponse
-import com.fredboat.sentinel.rpc.meta.SentinelRequest
-import com.fredboat.sentinel.util.mono
 import com.fredboat.sentinel.util.toJda
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.interactions.components.ActionRow
+import net.dv8tion.jda.api.interactions.components.ComponentLayout
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.JDAImpl
 import net.dv8tion.jda.internal.entities.UserImpl
+import net.dv8tion.jda.internal.interactions.InteractionHookImpl
+import net.dv8tion.jda.internal.interactions.InteractionImpl
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import reactor.core.publisher.Mono
 
 @Service
-@SentinelRequest
 class MessageRequests(private val shardManager: ShardManager) {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(MessageRequests::class.java)
     }
 
-    @SentinelRequest
-    fun consume(request: SendMessageRequest): Mono<SendMessageResponse> {
+    fun consume(request: SendMessageRequest, client: SocketIOClient) {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
             log.error("Received SendMessageRequest for channel ${request.channel} which was not found")
-            return Mono.empty()
+            return
         }
 
-        return channel.sendMessage(request.message).mono("sendMessage")
-            .map {
-                SendMessageResponse(it.idLong)
-            }
+        channel.sendMessage(request.message).queue {
+            client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+        }
     }
 
-    @SentinelRequest
-    fun consume(request: SendEmbedRequest): Mono<SendMessageResponse> {
+    fun consume(request: SendEmbedRequest, client: SocketIOClient) {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
             log.error("Received SendEmbedRequest for channel ${request.channel} which was not found")
-            return Mono.empty()
+            return
         }
 
-        return channel.sendMessage(request.embed.toJda()).mono("sendEmbed")
-            .map {
-                SendMessageResponse(it.idLong)
-            }
+        channel.sendMessageEmbeds(request.embed.toJda()).queue {
+            client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+        }
     }
 
-    @SentinelRequest
-    fun consume(request: SendPrivateMessageRequest): Mono<SendMessageResponse> {
+    fun consume(request: SendPrivateMessageRequest, client: SocketIOClient) {
         val shard = shardManager.shards.find { it.status == JDA.Status.CONNECTED } as JDAImpl
-        val user = UserImpl(request.recipient, shard)
+        val user = UserImpl(request.recipient.toLong(), shard)
+        val channel = user.openPrivateChannel().complete(true)!!
 
-        return user.openPrivateChannel().mono("openPrivateChannel")
-            .flatMap {
-                it.sendMessage(request.message).mono("sendPrivateMessage")
-            }.map {
-                SendMessageResponse(it.idLong)
-            }
+        channel.sendMessage(request.message).queue {
+            client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+        }
     }
 
-    @SentinelRequest
-    fun consume(request: EditMessageRequest): Mono<Void> {
+    fun consume(request: EditMessageRequest) {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
             log.error("Received EditMessageRequest for channel ${request.channel} which was not found")
-            return Mono.empty()
+            return
         }
 
-        return channel.editMessageById(request.messageId, request.message).mono("editMessage").then()
+        channel.editMessageById(request.messageId, request.message).queue()
     }
 
-    @SentinelRequest
-    fun consume(request: EditEmbedRequest): Mono<EditEmbedResponse> {
+    fun consume(request: EditEmbedRequest, client: SocketIOClient) {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
             log.error("Received EditEmbedRequest for channel ${request.channel} which was not found")
-            return Mono.empty()
+            return
         }
 
-        var successful = false
-        return channel.editMessageById(request.messageId, request.embed.toJda()).mono("editEmbedMessage")
-                .doOnSuccess {
-                    successful = true
-                }.map {
-                    EditEmbedResponse(
-                        it.idLong,
-                        it.guild.idLong,
-                        successful
-                    )
-                }
+        channel.editMessageEmbedsById(request.messageId, request.embed.toJda()).queue {
+            client.sendEvent("editEmbedResponse-${request.responseId}", EditEmbedResponse(it.id, it.guild.id))
+        }
     }
 
-    @SentinelRequest
-    fun consume(request: AddReactionRequest): Mono<Void> {
+    fun consume(request: AddReactionRequest) {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
             log.error("Received AddReactionRequest for channel ${request.channel} which was not found")
-            return Mono.empty()
+            return
         }
 
-        return channel.addReactionById(request.messageId, request.emote).mono("addReaction").then()
+        channel.addReactionById(request.messageId, request.emote).queue()
     }
 
-    @SentinelRequest
-    fun consume(request: AddReactionsRequest): Mono<Void> {
+    fun consume(request: AddReactionsRequest) {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
             log.error("Received AddReactionsRequest for channel ${request.channel} which was not found")
-            return Mono.empty()
+            return
         }
 
         for (emote in request.emote) {
             channel.addReactionById(request.messageId, emote).queue()
         }
 
-        return Mono.empty()
+        return
     }
 
-    @SentinelRequest
-    fun consume(request: RemoveReactionRequest): Mono<Void> {
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+    fun consume(request: RemoveReactionRequest) {
+        shardManager.retrieveUserById(request.userId).queue {
+            val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
-        if (channel == null) {
-            log.error("Received RemoveReactionRequest for channel ${request.channel} which was not found")
-            return Mono.empty()
-        }
-
-        return shardManager.retrieveUserById(request.userId).mono("retrieveUser")
-            .flatMap {
-                channel.removeReactionById(request.messageId, request.emote, it).mono("removeReaction").then()
+            if (channel == null) {
+                log.error("Received RemoveReactionRequest for channel ${request.channel} which was not found")
+                return@queue
             }
+
+            channel.removeReactionById(request.messageId, request.emote, it).queue()
+        }
     }
 
-    @SentinelRequest
-    fun consume(request: RemoveReactionsRequest): Mono<Void> {
+    fun consume(request: RemoveReactionsRequest) {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
             log.error("Received RemoveReactionsRequest for channel ${request.channel} which was not found")
-            return Mono.empty()
+            return
         }
 
-        return channel.clearReactionsById(request.messageId).mono("clearReactions").then()
+        channel.clearReactionsById(request.messageId).queue()
     }
 
-    @SentinelRequest
-    fun consume(request: MessageDeleteRequest): Mono<Void> {
+    fun consume(request: MessageDeleteRequest) {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
             log.error("Received MessageDeleteRequest for channel ${request.channel} which was not found")
-            return Mono.empty()
+            return
         }
 
         if (request.messages.size < 2) {
-            return channel.deleteMessageById(request.messages[0].toString()).mono("deleteMessage").then()
+            channel.deleteMessageById(request.messages[0]).queue()
+            return
         }
 
         val list = request.messages.map { toString() }
-        return channel.deleteMessagesByIds(list).mono("deleteMessages").then()
+        channel.deleteMessagesByIds(list).queue()
     }
 
-    @SentinelRequest
-    fun consume(request: SendTypingRequest): Mono<Void> {
+    fun consume(request: SendTypingRequest) {
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
             log.error("Received SendTypingRequest for channel ${request.channel} which was not found")
-            return Mono.empty()
+            return
         }
 
-        return channel.sendTyping().mono("sendTyping").then()
+        channel.sendTyping().queue()
+    }
+
+    fun consume(request: SendSlashCommandRequest, client: SocketIOClient) {
+        val guild: Guild? = shardManager.getGuildById(request.guildId)
+
+        if (guild == null) {
+            log.error("Received SendSlashCommandRequest for guild ${request.guildId} which was not found")
+            return
+        }
+
+        val channel: TextChannel? = shardManager.getTextChannelById(request.channelId)
+
+        if (channel == null) {
+            log.error("Can't find channel in guild ${request.guildId} with ${request.channelId} id")
+            return
+        }
+
+        val member: Member? = guild.getMemberById(request.userId)
+
+        if (member == null) {
+            log.error("Can't find member in guild ${request.guildId} with ${request.userId} id")
+            return
+        }
+
+        val interaction = InteractionImpl(
+            request.interactionId.toLong(),
+            request.interactionType,
+            request.interactionToken,
+            guild,
+            member,
+            member.user,
+            channel
+        )
+        val hook = InteractionHookImpl(interaction, guild.jda)
+        hook.ack()
+        hook.ready()
+        if (request.ephemeral) {
+            hook.setEphemeral(request.ephemeral).sendMessage(request.message).queue {
+                client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+            }
+        } else {
+            hook.editOriginal(request.message).queue {
+                client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+            }
+        }
+    }
+
+    /**
+     * Components
+     */
+
+    fun consume(request: SendMessageButtonsRequest) {
+        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+
+        if (channel == null) {
+            log.error("Received SendMessageButtonsRequest for channel ${request.channel} which was not found")
+            return
+        }
+
+        channel.sendMessage(request.message).setActionRows(request.buttons.toJda()).queue()
+    }
+
+    fun consume(request: SendMessageSelectionMenuRequest) {
+        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+
+        if (channel == null) {
+            log.error("Received SendMessageSelectionMenuRequest for channel ${request.channel} which was not found")
+            return
+        }
+
+        channel.sendMessage(request.message).setActionRow(request.menu.toJda()).queue()
+    }
+
+    fun consume(request: EditButtonsRequest) {
+        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+
+        if (channel == null) {
+            log.error("Received EditButtonsRequest for channel ${request.channel} which was not found")
+            return
+        }
+
+        channel.editMessageComponentsById(request.messageId, request.buttons.toJda()).queue()
+    }
+
+    fun consume(request: EditSelectionMenuRequest) {
+        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+
+        if (channel == null) {
+            log.error("Received EditSelectionMenuRequest for channel ${request.channel} which was not found")
+            return
+        }
+
+        channel.editMessageComponentsById(request.messageId, ActionRow.of(request.menu.toJda())).queue()
+    }
+
+    fun consume(request: RemoveComponentsRequest) {
+        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+
+        if (channel == null) {
+            log.error("Received RemoveComponentsRequest for channel ${request.channel} which was not found")
+            return
+        }
+
+        channel.retrieveMessageById(request.messageId).queue { message ->
+            val components: List<ActionRow> = ArrayList<ActionRow>(message.actionRows)
+            val ids = ArrayList<String>()
+            message.actionRows.forEach { actionRow -> actionRow.components.forEach { ids.add(it.id!!) } }
+            ids.forEach { ComponentLayout.updateComponent(components, it, null) }
+            channel.editMessageComponentsById(request.messageId, components).queue()
+        }
     }
 }
