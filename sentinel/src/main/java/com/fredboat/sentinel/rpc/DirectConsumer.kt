@@ -194,7 +194,7 @@ class DirectConsumer(
         //
 
         socketIOServer.addEventListener("runSessionRequest-${key.key}", JSONObject::class.java) { client, request, _ ->
-            sessionController.onRunRequest(SocketServer.gson.fromJson(request.toString(), RunSessionRequest::class.java).shardId, client)
+            sessionController.onRunRequest(SocketServer.gson.fromJson(request.toString(), RunSessionRequest::class.java), client)
         }
 
         log.info("DirectConsumer events registered")

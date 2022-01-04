@@ -411,8 +411,8 @@ class JdaRabbitEventListener(
     /* Util */
 
     private fun dispatchSocket(eventName: String, event: Any) {
-        socketClient.sendEvent(eventName, event)
         log.info("Sent $eventName to ${socketClient.sessionId}")
+        socketClient.sendEvent(eventName, event)
     }
 
     fun removeListener() {

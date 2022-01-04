@@ -18,6 +18,8 @@ import java.io.FileInputStream
 @Component
 @ConfigurationProperties(prefix = "sentinel")
 class SentinelProperties(
+    var address: String = "",
+    var port: Int = 8989,
     discordToken: String = "",
     var shardStart: Int = 0,
     var shardEnd: Int = 0,

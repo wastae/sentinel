@@ -1,6 +1,8 @@
 package com.fredboat.sentinel
 
 import com.corundumstudio.socketio.SocketIOServer
+import com.fredboat.sentinel.config.RoutingKey
+import com.fredboat.sentinel.config.SentinelProperties
 import com.fredboat.sentinel.jda.JdaRabbitEventListener
 import com.fredboat.sentinel.jda.VoiceServerUpdateCache
 import com.google.gson.Gson
@@ -14,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.LinkedHashSet
 
 @Configuration
-class SocketServer {
+class SocketServer(private val sentinelProperties: SentinelProperties, private val key: RoutingKey) {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(SocketServer::class.java)
@@ -29,17 +31,15 @@ class SocketServer {
     @Bean
     fun startSocketServer(): SocketIOServer {
         val config = com.corundumstudio.socketio.Configuration()
-        config.hostname = "localhost"
-        config.port = 3005
+        config.hostname = sentinelProperties.address
+        config.port = sentinelProperties.port
 
         val socketServer = SocketIOServer(config)
 
         socketServer.addConnectListener {
-            contextMap[it.sessionId] = JdaRabbitEventListener(
-                shardManager,
-                it
-            )
-            log.info("Session id ${it.sessionId} connected")
+            contextMap[it.sessionId] = JdaRabbitEventListener(shardManager, it)
+            it.sendEvent("initialEvent", key.key)
+            log.info("Session id ${it.sessionId} connected to server with key ${key.key}")
         }
 
         socketServer.addDisconnectListener {

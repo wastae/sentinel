@@ -70,8 +70,6 @@ class ShardManagerConfig {
             shardManager = builder.build()
             sessionController.shardManager = shardManager
             socketServer.shardManager = shardManager
-
-            //rabbitEventListener.shardManager = shardManager
             if (ApplicationState.isTesting) {
                 log.info("Shutting down JDA because we are running tests")
                 try {

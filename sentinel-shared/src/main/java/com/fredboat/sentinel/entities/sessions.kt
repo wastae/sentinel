@@ -22,7 +22,7 @@ data class RemoveSessionEvent(
 )
 
 /** Tells Sentinel that a shard should run */
-data class RunSessionRequest(val shardId: Int)
+data class RunSessionRequest(val shardId: Int, val responseId: String)
 
 /** Tells Sentinel to send [AppendSessionEvent] for each queued node */
 class SyncSessionQueueRequest

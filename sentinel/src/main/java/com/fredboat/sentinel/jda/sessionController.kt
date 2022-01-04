@@ -13,6 +13,7 @@ import com.fredboat.sentinel.config.RoutingKey
 import com.fredboat.sentinel.config.SentinelProperties
 import com.fredboat.sentinel.entities.AppendSessionEvent
 import com.fredboat.sentinel.entities.RemoveSessionEvent
+import com.fredboat.sentinel.entities.RunSessionRequest
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.SessionController
@@ -54,17 +55,17 @@ class RemoteSessionController(
         localQueue.values.forEach { it.send(false) }
     }
 
-    fun onRunRequest(id: Int, client: SocketIOClient) {
-        val status = shardManager.getShardById(id)?.status
-        log.info("Received request to run shard $id, which has status $status")
-        val node = localQueue[id]
+    fun onRunRequest(request: RunSessionRequest, client: SocketIOClient) {
+        val status = shardManager.getShardById(request.shardId)?.status
+        log.info("Received request to run shard ${request.shardId}, which has status $status")
+        val node = localQueue[request.shardId]
         if (node == null) {
-            client.sendEvent("removeSessionEvent", RemoveSessionEvent(id, sentinelProps.shardCount, routingKey.key))
-            throw IllegalStateException("Node $id is not queued")
+            client.sendEvent("removeSessionEvent", RemoveSessionEvent(request.shardId, sentinelProps.shardCount, routingKey.key))
+            throw IllegalStateException("Node ${request.shardId} is not queued")
         }
 
-        if (shardManager.getShardById(id)?.status == JDA.Status.AWAITING_LOGIN_CONFIRMATION) {
-            val msg = "Refusing to run shard $id as it has status $status"
+        if (shardManager.getShardById(request.shardId)?.status == JDA.Status.AWAITING_LOGIN_CONFIRMATION) {
+            val msg = "Refusing to run shard ${request.shardId} as it has status $status"
             log.error(msg)
             node.send(true)
             client.sendEvent("onRunResponse", msg)
@@ -73,7 +74,7 @@ class RemoteSessionController(
         node.run(false) // Always assume false, so that we don't immediately return
         removeSession(node)
 
-        client.sendEvent("onRunResponse", "Started node ${node.shardInfo}") // Generates a reply
+        client.sendEvent("onRunResponse-${request.responseId}", "Started node ${node.shardInfo}") // Generates a reply
     }
 
     fun SessionConnectNode.send(remove: Boolean) {
