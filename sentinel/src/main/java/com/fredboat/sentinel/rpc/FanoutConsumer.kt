@@ -56,7 +56,6 @@ class FanoutConsumer(
         if (event.id != knownFredBoatId) {
             log.info("FredBoat ${event.id} says hello \uD83D\uDC4B - Replaces $knownFredBoatId")
             knownFredBoatId = event.id
-            SocketServer.subscriptionsCache.clear()
             sessionController.syncSessionQueue()
         } else {
             log.info("FredBoat ${event.id} says hello \uD83D\uDC4B")
