@@ -111,15 +111,43 @@ data class SendTypingRequest(
 
 /** Returns [SendMessageResponse]*/
 data class SendSlashCommandRequest(
-        val interactionId: String,
-        val interactionToken: String,
-        val interactionType: Int,
+        val interaction: ByteArray,
         val guildId: String,
         val channelId: String,
         val userId: String,
         val message: String,
         val ephemeral: Boolean,
         val responseId: String
+)
+
+/** Returns [SendMessageResponse]*/
+data class SendSlashEmbedCommandRequest(
+        val interaction: ByteArray,
+        val guildId: String,
+        val channelId: String,
+        val userId: String,
+        val message: Embed,
+        val ephemeral: Boolean,
+        val responseId: String
+)
+
+data class EditSlashCommandRequest(
+        val interaction: ByteArray,
+        val message: String,
+        val guildId: String
+)
+
+data class SlashDeferReplyRequest(
+        val interaction: ByteArray,
+        val guildId: String,
+)
+
+data class SlashAutoCompleteRequest(
+        val interaction: ByteArray,
+        val guildId: String,
+        val channelId: String,
+        val userId: String,
+        val autoCompletion: Choices
 )
 
 /**

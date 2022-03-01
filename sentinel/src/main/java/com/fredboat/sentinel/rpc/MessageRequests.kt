@@ -12,15 +12,17 @@ import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.util.toJda
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.interactions.components.ActionComponent
 import net.dv8tion.jda.api.interactions.components.ActionRow
-import net.dv8tion.jda.api.interactions.components.ComponentLayout
+import net.dv8tion.jda.api.interactions.components.LayoutComponent
 import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.api.utils.data.DataObject
 import net.dv8tion.jda.internal.JDAImpl
 import net.dv8tion.jda.internal.entities.UserImpl
 import net.dv8tion.jda.internal.interactions.InteractionHookImpl
-import net.dv8tion.jda.internal.interactions.InteractionImpl
+import net.dv8tion.jda.internal.interactions.command.CommandAutoCompleteInteractionImpl
+import net.dv8tion.jda.internal.interactions.command.CommandInteractionImpl
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -178,41 +180,97 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channelId)
-
-        if (channel == null) {
-            log.error("Can't find channel in guild ${request.guildId} with ${request.channelId} id")
-            return
-        }
-
-        val member: Member? = guild.getMemberById(request.userId)
-
-        if (member == null) {
-            log.error("Can't find member in guild ${request.guildId} with ${request.userId} id")
-            return
-        }
-
-        val interaction = InteractionImpl(
-            request.interactionId.toLong(),
-            request.interactionType,
-            request.interactionToken,
-            guild,
-            member,
-            member.user,
-            channel
+        val interaction = CommandInteractionImpl(
+            guild.jda as JDAImpl, DataObject.fromJson(request.interaction).getObject("d")
         )
-        val hook = InteractionHookImpl(interaction, guild.jda)
-        hook.ack()
-        hook.ready()
+
         if (request.ephemeral) {
-            hook.setEphemeral(request.ephemeral).sendMessage(request.message).queue {
-                client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+            interaction.reply(request.message).setEphemeral(true).queue { it ->
+                it.retrieveOriginal().queue {
+                    client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+                }
             }
         } else {
+            val hook = interaction.hook as InteractionHookImpl
+            hook.ack()
+            hook.ready()
             hook.editOriginal(request.message).queue {
                 client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
             }
         }
+    }
+
+    fun consume(request: SendSlashEmbedCommandRequest, client: SocketIOClient) {
+        val guild: Guild? = shardManager.getGuildById(request.guildId)
+
+        if (guild == null) {
+            log.error("Received SendSlashEmbedCommandRequest for guild ${request.guildId} which was not found")
+            return
+        }
+
+        val interaction = CommandInteractionImpl(
+            guild.jda as JDAImpl, DataObject.fromJson(request.interaction).getObject("d")
+        )
+
+        if (request.ephemeral) {
+            interaction.replyEmbeds(request.message.toJda()).setEphemeral(true).queue { it ->
+                it.retrieveOriginal().queue {
+                    client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+                }
+            }
+        } else {
+            val hook = interaction.hook as InteractionHookImpl
+            hook.ack()
+            hook.ready()
+            hook.editOriginalEmbeds(request.message.toJda()).queue {
+                client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+            }
+        }
+    }
+
+    fun consume(request: EditSlashCommandRequest) {
+        val guild: Guild? = shardManager.getGuildById(request.guildId)
+
+        if (guild == null) {
+            log.error("Received EditSlashCommandRequest for guild ${request.guildId} which was not found")
+            return
+        }
+
+        val interaction = CommandInteractionImpl(
+            guild.jda as JDAImpl, DataObject.fromJson(request.interaction).getObject("d")
+        )
+
+        val hook = interaction.hook as InteractionHookImpl
+        hook.ack()
+        hook.ready()
+        hook.editOriginal(request.message).queue()
+    }
+
+    fun consume(request: SlashDeferReplyRequest) {
+        val guild: Guild? = shardManager.getGuildById(request.guildId)
+
+        if (guild == null) {
+            log.error("Received SlashDeferReplyRequest for guild ${request.guildId} which was not found")
+            return
+        }
+
+        val interaction = CommandInteractionImpl(
+            guild.jda as JDAImpl, DataObject.fromJson(request.interaction).getObject("d")
+        )
+
+        interaction.deferReply().queue()
+    }
+
+    fun consume(request: SlashAutoCompleteRequest) {
+        val guild: Guild? = shardManager.getGuildById(request.guildId)
+
+        if (guild == null) {
+            log.error("Received SlashAutoCompleteRequest for guild ${request.guildId} which was not found")
+            return
+        }
+
+        val interaction = CommandAutoCompleteInteractionImpl((guild.jda as JDAImpl), DataObject.fromJson(request.interaction).getObject("d"))
+        interaction.replyChoices(request.autoCompletion.toJda()).queue()
     }
 
     /**
@@ -272,10 +330,10 @@ class MessageRequests(private val shardManager: ShardManager) {
         }
 
         channel.retrieveMessageById(request.messageId).queue { message ->
-            val components: List<ActionRow> = ArrayList<ActionRow>(message.actionRows)
+            val components: List<ActionRow> = ArrayList(message.actionRows)
             val ids = ArrayList<String>()
-            message.actionRows.forEach { actionRow -> actionRow.components.forEach { ids.add(it.id!!) } }
-            ids.forEach { ComponentLayout.updateComponent(components, it, null) }
+            message.actionRows.forEach { actionRow -> actionRow.components.forEach { ids.add((it as ActionComponent).id!!) } }
+            ids.forEach { LayoutComponent.updateComponent(components, it, null) }
             channel.editMessageComponentsById(request.messageId, components).queue()
         }
     }

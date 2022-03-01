@@ -10,7 +10,8 @@ package com.fredboat.sentinel.entities
 /** Returns [Guild] as well as jda */
 data class GuildSubscribeRequest(
         val id: String,
-        val requestTime: String = System.currentTimeMillis().toString(),
+        val requestTime: String,
+        val shardId: String,
         /** Optionally a channel to post a warning in, if the guild is very large */
         val channelInvoked: String?,
         val responseId: String

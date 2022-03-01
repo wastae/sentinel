@@ -18,11 +18,11 @@ data class ShardLifecycleEvent (
 )
 
 enum class LifecycleEventEnum {
-    READIED,
-    DISCONNECTED,
-    RESUMED,
-    RECONNECTED,
-    SHUTDOWN
+        READIED,
+        DISCONNECTED,
+        RESUMED,
+        RECONNECTED,
+        SHUTDOWN
 }
 
 /* Guild leave/join */
@@ -37,35 +37,24 @@ data class GuildLeaveEvent(
         val joinTime: String
 )
 
-/* Guild member jda  */
-data class GuildMemberJoinEvent(
-        val guild: String,
-        val member: Member
-)
-
-data class GuildMemberLeaveEvent(
-        val guild: String,
-        val member: String
-)
-
 /* Voice jda */
 data class VoiceJoinEvent(
         val guild: String,
         val channel: String,
-        val member: Member
+        val member: String
 )
 
 data class VoiceLeaveEvent(
         val guild: String,
         val channel: String,
-        val member: Member
+        val member: String
 )
 
 data class VoiceMoveEvent(
         val guild: String,
         val oldChannel: String,
         val newChannel: String,
-        val member: Member
+        val member: String
 )
 
 /* Messages */
@@ -78,9 +67,7 @@ data class MessageReceivedEvent(
         val content: String,
         val author: String,
         val fromBot: Boolean,
-        val attachments: List<String>,
-        val member: Member,
-        val mentionedMembers: List<Member>
+        val attachments: List<String>
 )
 
 data class PrivateMessageReceivedEvent (
@@ -101,22 +88,33 @@ data class MessageReactionAddEvent(
         val channelPermissions: String,
         val memberPermissions: String,
         val author: String,
+        val fromBot: Boolean,
         val reaction: String,
-        val isEmoji: Boolean,
-        val member: Member
+        val isEmoji: Boolean
 )
 
 data class SlashCommandsEvent(
-        val interactionId: String,
-        val interactionToken: String,
-        val interactionType: Int,
+        val interaction: ByteArray,
         val guild: String,
         val channel: String,
         val channelPermissions: String,
         val memberPermissions: String,
+        val author: String,
+        val fromBot: Boolean,
+        val locale: String,
         val command: String,
-        val options: List<Option>,
-        val member: Member
+        val options: List<Option>
+)
+
+data class SlashAutoCompleteEvent(
+        val interaction: ByteArray,
+        val guild: String,
+        val channel: String,
+        val channelPermissions: String,
+        val memberPermissions: String,
+        val author: String,
+        val fromBot: Boolean,
+        val input: String
 )
 
 /**
@@ -124,26 +122,22 @@ data class SlashCommandsEvent(
  */
 
 data class ButtonEvent(
-        val interactionId: String,
-        val interactionToken: String,
-        val interactionType: Int,
+        val interaction: ByteArray,
         val componentId: String,
         val messageId: String,
         val guild: String,
         val channel: String,
         val author: String,
-        val member: Member
+        val fromBot: Boolean
 )
 
 data class SelectionMenuEvent(
-        val interactionId: String,
-        val interactionToken: String,
-        val interactionType: Int,
+        val interaction: ByteArray,
         val selected: List<String>,
         val componentId: String,
         val messageId: String,
         val guild: String,
         val channel: String,
         val author: String,
-        val member: Member
+        val fromBot: Boolean
 )

@@ -146,6 +146,18 @@ class DirectConsumer(
         socketIOServer.addEventListener("sendSlashCommandRequest-${key.key}", JSONObject::class.java) { client, request, _ ->
             message.consume(SocketServer.gson.fromJson(request.toString(), SendSlashCommandRequest::class.java), client)
         }
+        socketIOServer.addEventListener("sendSlashEmbedCommandRequest-${key.key}", JSONObject::class.java) { client, request, _ ->
+            message.consume(SocketServer.gson.fromJson(request.toString(), SendSlashEmbedCommandRequest::class.java), client)
+        }
+        socketIOServer.addEventListener("editSlashCommandRequest-${key.key}", JSONObject::class.java) { _, request, _ ->
+            message.consume(SocketServer.gson.fromJson(request.toString(), EditSlashCommandRequest::class.java))
+        }
+        socketIOServer.addEventListener("slashDeferReplyRequest-${key.key}", JSONObject::class.java) { _, request, _ ->
+            message.consume(SocketServer.gson.fromJson(request.toString(), SlashDeferReplyRequest::class.java))
+        }
+        socketIOServer.addEventListener("slashAutoCompleteRequest-${key.key}", JSONObject::class.java) { _, request, _ ->
+            message.consume(SocketServer.gson.fromJson(request.toString(), SlashAutoCompleteRequest::class.java))
+        }
         socketIOServer.addEventListener("registerSlashCommandRequest-${key.key}", JSONObject::class.java) { _, request, _ ->
             management.consume(SocketServer.gson.fromJson(request.toString(), RegisterSlashCommandRequest::class.java))
         }
@@ -197,6 +209,6 @@ class DirectConsumer(
             sessionController.onRunRequest(SocketServer.gson.fromJson(request.toString(), RunSessionRequest::class.java), client)
         }
 
-        log.info("DirectConsumer events registered")
-    } // 44 events total
+        log.info("All events in DirectConsumer registered")
+    } // 45 events total
 }

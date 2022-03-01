@@ -47,11 +47,22 @@ data class SlashOptions(
     var slashOptions: MutableList<SlashOption> = mutableListOf()
 )
 
+data class Choices(
+    var choices: MutableList<Choice> = mutableListOf()
+)
+
 data class SlashOption(
     var optionType: Int = 0,
     var optionName: String = "",
     var optionDescription: String = "",
-    var required: Boolean = false
+    var required: Boolean = false,
+    var autoComplete: Boolean = false,
+    var choices: Choices = Choices()
+)
+
+data class Choice(
+    var name: String = "",
+    var value: String = ""
 )
 
 data class SlashGroup(
@@ -97,6 +108,10 @@ inline fun subGroup(block: SlashGroup.() -> Unit): SlashGroup = SlashGroup().app
 
 inline fun slashOptions(block: SlashOptions.() -> Unit): SlashOptions = SlashOptions().apply(block)
 
+inline fun slashOptionChoice(block: Choice.() -> Unit): Choice = Choice().apply(block)
+
+inline fun choices(block: Choices.() -> Unit): Choices = Choices().apply(block)
+
 inline fun buttons(block: Buttons.() -> Unit): Buttons = Buttons().apply(block)
 
 inline fun menu(block: SelectMenu.() -> Unit): SelectMenu = SelectMenu().apply(block)
@@ -137,8 +152,18 @@ fun SlashGroup.groupSubCommand(name: String, description: String, slashOptions: 
 inline fun SlashOptions.option(block: SlashOption.() -> Unit) {
     slashOptions.add(SlashOption().apply(block))
 }
-fun SlashOptions.option(optionType: Int, optionName: String, optionDescription: String, required: Boolean) {
-    slashOptions.add(SlashOption(optionType, optionName, optionDescription, required))
+fun SlashOptions.option(optionType: Int, optionName: String, optionDescription: String, required: Boolean, autoComplete: Boolean, choices: Choices) {
+    slashOptions.add(SlashOption(optionType, optionName, optionDescription, required, autoComplete, choices))
+}
+fun SlashOptions.option(optionType: Int, optionName: String, optionDescription: String, required: Boolean, autoComplete: Boolean) {
+    slashOptions.add(SlashOption(optionType, optionName, optionDescription, required, autoComplete))
+}
+
+inline fun Choices.choice(block: Choice.() -> Unit) {
+    choices.add(Choice().apply(block))
+}
+fun Choices.choice(name: String, value: String) {
+    choices.add(Choice(name, value))
 }
 
 /**

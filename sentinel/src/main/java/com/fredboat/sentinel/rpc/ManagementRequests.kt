@@ -12,7 +12,7 @@ import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.entities.ModRequestType.*
 import com.fredboat.sentinel.util.*
 import net.dv8tion.jda.api.entities.Icon
-import net.dv8tion.jda.api.interactions.commands.build.CommandData
+import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.sharding.ShardManager
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -21,8 +21,8 @@ import java.util.*
 
 @Service
 class ManagementRequests(
-        private val shardManager: ShardManager,
-        private val eval: EvalService
+    private val shardManager: ShardManager,
+    private val eval: EvalService
 ) {
     companion object {
         private val log: Logger = LoggerFactory.getLogger(ManagementRequests::class.java)
@@ -90,7 +90,7 @@ class ManagementRequests(
     fun consume(request: RegisterSlashCommandRequest) {
         if (request.guildId != null) {
             val guild = shardManager.getGuildById(request.guildId!!)!!
-            val cmd = CommandData(request.commandName, request.commandDescription)
+            val cmd = Commands.slash(request.commandName, request.commandDescription)
             when {
                 request.group != null -> {
                     if (request.group!!.name != null && request.group!!.description != null) cmd.addSubcommandGroups(request.group!!.toJdaExt())
@@ -106,14 +106,14 @@ class ManagementRequests(
             shardManager.shards.forEach {
                 if (request.options != null) {
                     it.upsertCommand(
-                        CommandData(
+                        Commands.slash(
                             request.commandName,
                             request.commandDescription
                         ).addOptions(request.options!!.toJda()).addSubcommandGroups()
                     ).queue()
                 } else {
                     it.upsertCommand(
-                        CommandData(
+                        Commands.slash(
                             request.commandName,
                             request.commandDescription
                         )
