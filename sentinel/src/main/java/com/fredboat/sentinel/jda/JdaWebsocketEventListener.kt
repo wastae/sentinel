@@ -13,22 +13,15 @@ import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.metrics.Counters
 import com.fredboat.sentinel.util.toEntity
 import com.neovisionaries.ws.client.WebSocketFrame
-import net.dv8tion.jda.api.entities.ChannelType
+import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.GuildChannel
-import net.dv8tion.jda.api.entities.MessageType
+import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.entities.VoiceChannel
 import net.dv8tion.jda.api.events.*
-import net.dv8tion.jda.api.events.channel.category.CategoryCreateEvent
-import net.dv8tion.jda.api.events.channel.category.CategoryDeleteEvent
-import net.dv8tion.jda.api.events.channel.category.GenericCategoryEvent
-import net.dv8tion.jda.api.events.channel.category.update.CategoryUpdatePositionEvent
-import net.dv8tion.jda.api.events.channel.text.GenericTextChannelEvent
-import net.dv8tion.jda.api.events.channel.text.TextChannelCreateEvent
-import net.dv8tion.jda.api.events.channel.text.TextChannelDeleteEvent
-import net.dv8tion.jda.api.events.channel.voice.GenericVoiceChannelEvent
-import net.dv8tion.jda.api.events.channel.voice.VoiceChannelCreateEvent
-import net.dv8tion.jda.api.events.channel.voice.VoiceChannelDeleteEvent
-import net.dv8tion.jda.api.events.channel.voice.update.VoiceChannelUpdatePositionEvent
+import net.dv8tion.jda.api.events.channel.ChannelCreateEvent
+import net.dv8tion.jda.api.events.channel.ChannelDeleteEvent
+import net.dv8tion.jda.api.events.channel.GenericChannelEvent
+import net.dv8tion.jda.api.events.channel.update.ChannelUpdatePositionEvent
 import net.dv8tion.jda.api.events.guild.GenericGuildEvent
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
@@ -41,13 +34,10 @@ import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent
 import net.dv8tion.jda.api.events.http.HttpRequestEvent
-import net.dv8tion.jda.api.events.interaction.ButtonClickEvent
-import net.dv8tion.jda.api.events.interaction.SelectionMenuEvent
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
-import net.dv8tion.jda.api.events.message.guild.GuildMessageDeleteEvent
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
-import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent
-import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
+import net.dv8tion.jda.api.events.interaction.component.SelectMenuInteractionEvent
 import net.dv8tion.jda.api.events.role.GenericRoleEvent
 import net.dv8tion.jda.api.events.role.RoleCreateEvent
 import net.dv8tion.jda.api.events.role.RoleDeleteEvent
@@ -58,24 +48,29 @@ import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentLinkedQueue
 
-class JdaRabbitEventListener(
-        private val shardManager: ShardManager,
-        val socketClient: SocketIOClient
+class JdaWebsocketEventListener(
+    private val shardManager: ShardManager,
+    var socketClient: SocketIOClient
 ) : ListenerAdapter() {
 
     companion object {
-        private val log: Logger = LoggerFactory.getLogger(JdaRabbitEventListener::class.java)
+        private val log: Logger = LoggerFactory.getLogger(JdaWebsocketEventListener::class.java)
     }
 
     init {
         shardManager.addEventListener(this)
     }
 
+    @Volatile
+    private var sessionPaused = false
+    private val resumeEventQueue = ConcurrentLinkedQueue<Pair<String, Any>>()
+
     /* Shard lifecycle */
 
     override fun onStatusChange(event: StatusChangeEvent) = event.run {
-        log.info("Shard ${jda.shardInfo}: $oldStatus -> $newStatus")
+        log.info("${jda.shardInfo}: $oldStatus -> $newStatus")
         dispatchSocket("shardStatusChange", ShardStatusChange(jda.toEntity()))
     }
 
@@ -92,25 +87,26 @@ class JdaRabbitEventListener(
         val prefix = if (event.isClosedByServer) "s" else "c"
         val code = "$prefix${frame?.closeCode}"
 
-        log.warn("Shard ${event.jda.shardInfo} closed. {} {}", code, frame?.closeReason)
+        log.warn("${event.jda.shardInfo} closed. {} {}", code, frame?.closeReason)
         Counters.shardDisconnects.labels(code).inc()
     }
 
-    override fun onResume(event: ResumedEvent) =
+    override fun onResumed(event: ResumedEvent) =
         dispatchSocket("shardLifecycleEvent", ShardLifecycleEvent(event.jda.toEntity(), LifecycleEventEnum.RESUMED))
 
-    override fun onReconnect(event: ReconnectedEvent) =
+    override fun onReconnected(event: ReconnectedEvent) =
         dispatchSocket("shardLifecycleEvent", ShardLifecycleEvent(event.jda.toEntity(), LifecycleEventEnum.RECONNECTED))
 
     override fun onShutdown(event: ShutdownEvent) =
         dispatchSocket("shardLifecycleEvent", ShardLifecycleEvent(event.jda.toEntity(), LifecycleEventEnum.SHUTDOWN))
 
     /* Guild jda */
-    override fun onGuildJoin(event: GuildJoinEvent) =
+    override fun onGuildJoin(event: GuildJoinEvent) {
         dispatchSocket("guildJoinEvent", GuildJoinEvent(
             event.guild.id,
-            event.guild.regionRaw
+            event.guild.locale.toLanguageTag()
         ))
+    }
 
     override fun onGuildLeave(event: GuildLeaveEvent) =
         dispatchSocket("guildLeaveEvent", GuildLeaveEvent(
@@ -141,7 +137,7 @@ class JdaRabbitEventListener(
         dispatchSocket("voiceJoinEvent", VoiceJoinEvent(
             event.guild.id,
             event.channelJoined.id,
-            event.member.toEntity()
+            event.member.user.id
         ))
     }
 
@@ -154,7 +150,7 @@ class JdaRabbitEventListener(
         dispatchSocket("voiceLeaveEvent", VoiceLeaveEvent(
             event.guild.id,
             event.channelLeft.id,
-            event.member.toEntity()
+            event.member.user.id
         ))
     }
 
@@ -168,42 +164,40 @@ class JdaRabbitEventListener(
             event.guild.id,
             event.channelLeft.id,
             event.channelJoined.id,
-            event.member.toEntity()
+            event.member.user.id
         ))
     }
 
     /* Message jda */
-    override fun onGuildMessageReceived(event: GuildMessageReceivedEvent) = event.run {
-        if (message.type != MessageType.DEFAULT) return
-        if (message.isWebhookMessage) return
+    override fun onMessageReceived(event: net.dv8tion.jda.api.events.message.MessageReceivedEvent) {
+        if (event.message.type != MessageType.DEFAULT) return
+        if (event.isWebhookMessage) return
+        if (event.isFromGuild && !event.channelType.isThread) {
 
-        if (SocketServer.subscriptionsCache.contains(event.guild.idLong)) {
-            updateGuild(event.guild)
+            if (SocketServer.subscriptionsCache.contains(event.guild.idLong)) {
+                updateGuild(event.guild)
+            }
+
+            dispatchSocket("messageReceivedEvent", MessageReceivedEvent(
+                event.message.id,
+                event.message.guild.id,
+                event.channel.id,
+                PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.guild.selfMember).toString(),
+                PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.message.member).toString(),
+                event.message.contentRaw,
+                event.author.id,
+                event.author.isBot,
+                event.message.attachments.map { if (it.isImage) it.proxyUrl else it.url }
+            ))
+        } else if (!event.isFromGuild && !event.channelType.isThread) {
+            dispatchSocket("privateMessageReceivedEvent", PrivateMessageReceivedEvent(
+                event.message.contentRaw,
+                event.author.toEntity()
+            ))
         }
-
-        dispatchSocket("messageReceivedEvent", MessageReceivedEvent(
-            message.id,
-            message.guild.id,
-            channel.id,
-            PermissionUtil.getEffectivePermission(channel, guild.selfMember).toString(),
-            PermissionUtil.getEffectivePermission(channel, event.message.member).toString(),
-            message.contentRaw,
-            author.id,
-            author.isBot,
-            message.attachments.map { if (it.isImage) it.proxyUrl else it.url },
-            event.message.member!!.toEntity(),
-            event.message.mentionedMembers.map { it.toEntity() }
-        ))
     }
 
-    override fun onPrivateMessageReceived(event: PrivateMessageReceivedEvent) {
-        dispatchSocket("privateMessageReceivedEvent", PrivateMessageReceivedEvent(
-            event.message.contentRaw,
-            event.author.toEntity()
-        ))
-    }
-
-    override fun onGuildMessageDelete(event: GuildMessageDeleteEvent) {
+    override fun onMessageDelete(event: net.dv8tion.jda.api.events.message.MessageDeleteEvent) {
         dispatchSocket("messageDeleteEvent", MessageDeleteEvent(
             event.messageId,
             event.guild.id,
@@ -211,7 +205,9 @@ class JdaRabbitEventListener(
         ))
     }
 
-    override fun onGuildMessageReactionAdd(event: GuildMessageReactionAddEvent) {
+    override fun onMessageReactionAdd(event: net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent) {
+        if (event.isFromGuild && event.channelType.isThread) return
+        if (event.member == null) return
         if (!SocketServer.subscriptionsCache.contains(event.guild.idLong)) return
 
         updateGuild(event.guild)
@@ -220,12 +216,12 @@ class JdaRabbitEventListener(
             event.messageId,
             event.guild.id,
             event.channel.id,
-            PermissionUtil.getEffectivePermission(event.channel, event.guild.selfMember).toString(),
-            PermissionUtil.getEffectivePermission(event.channel, event.member).toString(),
-            event.member.id,
+            PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.guild.selfMember).toString(),
+            PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.member).toString(),
+            event.member!!.id,
+            event.member!!.user.isBot,
             event.reactionEmote.asReactionCode,
-            event.reactionEmote.isEmoji,
-            event.member.toEntity()
+            event.reactionEmote.isEmoji
         ))
     }
 
@@ -233,7 +229,15 @@ class JdaRabbitEventListener(
         log.info("RawGatewayEvent ${event.`package`.toPrettyString()}")
     }
 
-    override fun onSlashCommand(event: SlashCommandEvent) {
+    override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
+        if (!event.isFromGuild) {
+            event.reply("Slash commands not supported in DM").setEphemeral(true).queue()
+            return
+        }
+        if (event.isFromGuild && event.channelType.isThread) {
+            event.reply("Slash commands not supported in threads").setEphemeral(true).queue()
+            return
+        }
         if (event.guild == null) return
         if (event.member == null) return
 
@@ -241,23 +245,51 @@ class JdaRabbitEventListener(
             updateGuild(event.guild!!)
         }
 
-        event.deferReply().queue()
-        val channel = event.jda.getGuildChannelById(event.channel.id)
+        //event.deferReply().queue()
         dispatchSocket("slashCommandsEvent", SlashCommandsEvent(
-            event.interaction.id,
-            event.interaction.token,
-            event.interaction.type.ordinal,
+            event.rawData.toJson(),
             event.guild!!.id,
             event.channel.id,
-            PermissionUtil.getEffectivePermission(channel, event.guild!!.selfMember).toString(),
-            PermissionUtil.getEffectivePermission(channel, event.member).toString(),
+            PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.guild!!.selfMember).toString(),
+            PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.member).toString(),
+            event.member!!.id,
+            event.member!!.user.isBot,
+            event.userLocale.toLanguageTag(),
             event.commandPath,
-            event.options.map { it.toEntity() },
-            event.member!!.toEntity()
+            event.options.map { it.toEntity() }
         ))
     }
 
-    override fun onButtonClick(event: ButtonClickEvent) {
+    override fun onCommandAutoCompleteInteraction(event: CommandAutoCompleteInteractionEvent) {
+        if (!event.isFromGuild) {
+            event.replyChoiceStrings("Slash commands not supported in DM").queue()
+            return
+        }
+        if (event.isFromGuild && event.channelType.isThread) {
+            event.replyChoiceStrings("Slash commands not supported in threads").queue()
+            return
+        }
+        if (event.guild == null) return
+        if (event.channel == null) return
+
+        if (event.focusedOption.value.isEmpty()) {
+            event.replyChoice("Empty request", "dQw4w9WgXcQ").queue()
+            return
+        }
+
+        dispatchSocket("autoCompleteEvent", SlashAutoCompleteEvent(
+            event.rawData.toJson(),
+            event.guild!!.id,
+            event.channel!!.id,
+            PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.guild!!.selfMember).toString(),
+            PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.member).toString(),
+            event.member!!.id,
+            event.member!!.user.isBot,
+            event.focusedOption.value
+        ))
+    }
+
+    override fun onButtonInteraction(event: ButtonInteractionEvent) {
         if (event.guild == null) return
         if (event.member == null) return
         if (!SocketServer.subscriptionsCache.contains(event.guild!!.idLong)) return
@@ -266,19 +298,17 @@ class JdaRabbitEventListener(
         event.deferEdit().queue()
 
         dispatchSocket("buttonEvent", ButtonEvent(
-            event.interaction.id,
-            event.interaction.token,
-            event.interaction.type.ordinal,
+            event.rawData.toJson(),
             event.componentId,
             event.messageId,
             event.guild!!.id,
             event.channel.id,
             event.member!!.id,
-            event.member!!.toEntity()
+            event.member!!.user.isBot
         ))
     }
 
-    override fun onSelectionMenu(event: SelectionMenuEvent) {
+    override fun onSelectMenuInteraction(event: SelectMenuInteractionEvent) {
         if (event.guild == null) return
         if (event.member == null) return
         if (!SocketServer.subscriptionsCache.contains(event.guild!!.idLong)) return
@@ -287,16 +317,14 @@ class JdaRabbitEventListener(
         event.deferEdit().queue()
 
         dispatchSocket("selectionMenuEvent", SelectionMenuEvent(
-            event.interaction.id,
-            event.interaction.token,
-            event.interaction.type.ordinal,
+            event.rawData.toJson(),
             event.values,
             event.componentId,
             event.messageId,
             event.guild!!.id,
             event.channel.id,
             event.member!!.id,
-            event.member!!.toEntity()
+            event.member!!.user.isBot
         ))
     }
 
@@ -318,45 +346,30 @@ class JdaRabbitEventListener(
         if (!SocketServer.subscriptionsCache.contains(event.guild.idLong)) return
         if (event is GuildUpdateNameEvent || event is GuildUpdateOwnerEvent) {
             updateGuild(event.guild)
+        } else if (event is GenericPermissionOverrideEvent && event.channel is TextChannel) {
+            updateChannelPermissions(event.guild)
+        } else if (event is GenericPermissionOverrideEvent && event.channel is VoiceChannel) {
+            updateChannelPermissions(event.guild)
         }
     }
 
-    override fun onGenericTextChannel(event: GenericTextChannelEvent) {
+    override fun onGenericChannel(event: GenericChannelEvent) {
         if (!SocketServer.subscriptionsCache.contains(event.guild.idLong)) return
-        if (event is TextChannelDeleteEvent || event is TextChannelCreateEvent) {
+        if (event is ChannelDeleteEvent || event is ChannelCreateEvent) {
             updateGuild(event.guild)
             return
-        } else if (event is RoleUpdatePositionEvent || event is RoleUpdatePermissionsEvent) {
+        } else if (event is ChannelUpdatePositionEvent) {
             updateChannelPermissions(event.guild)
-        }
-        dispatchSocket("textChannelUpdate", TextChannelUpdate(
-            event.guild.id,
-            event.channel.toEntity()
-        ))
-    }
-
-    /** Note: voice state updates (join, move, leave, etc.) are not handled as [GenericVoiceChannelEvent] */
-    override fun onGenericVoiceChannel(event: GenericVoiceChannelEvent) {
-        if (!SocketServer.subscriptionsCache.contains(event.guild.idLong)) return
-        if (event is VoiceChannelDeleteEvent || event is VoiceChannelCreateEvent) {
-            updateGuild(event.guild)
-            return
-        } else if (event is VoiceChannelUpdatePositionEvent || event is RoleUpdatePermissionsEvent) {
-            updateChannelPermissions(event.guild)
-        }
-        dispatchSocket("voiceChannelUpdate", VoiceChannelUpdate(
-            event.guild.id,
-            event.channel.toEntity()
-        ))
-    }
-
-    override fun onGenericCategory(event: GenericCategoryEvent) {
-        if (!SocketServer.subscriptionsCache.contains(event.guild.idLong)) return
-        if (event is CategoryDeleteEvent || event is CategoryCreateEvent) {
-            updateGuild(event.guild)
-            return
-        } else if (event is CategoryUpdatePositionEvent || event is GenericPermissionOverrideEvent) {
-            updateChannelPermissions(event.guild)
+        } else if (event.channel is TextChannel) {
+            dispatchSocket("textChannelUpdate", TextChannelUpdate(
+                event.guild.id,
+                (event.channel as TextChannel).toEntity()
+            ))
+        } else if (event.channel is VoiceChannel) {
+            dispatchSocket("voiceChannelUpdate", VoiceChannelUpdate(
+                event.guild.id,
+                (event.channel as VoiceChannel).toEntity()
+            ))
         }
     }
 
@@ -390,7 +403,7 @@ class JdaRabbitEventListener(
         val permissions = mutableMapOf<String, String>()
         val self = guild.selfMember
         val func = { channel: GuildChannel ->
-            permissions[channel.id] = PermissionUtil.getEffectivePermission(channel, self).toString()
+            permissions[channel.id] = PermissionUtil.getEffectivePermission(channel.permissionContainer, self).toString()
         }
 
         guild.textChannels.forEach(func)
@@ -411,8 +424,30 @@ class JdaRabbitEventListener(
     /* Util */
 
     private fun dispatchSocket(eventName: String, event: Any) {
-        log.info("Sent $eventName to ${socketClient.sessionId}")
+        if (sessionPaused) {
+            log.info("Saved to queue $eventName")
+            resumeEventQueue.add(Pair(eventName, event))
+            return
+        }
+
+        log.info("Sent $eventName")
         socketClient.sendEvent(eventName, event)
+    }
+
+    fun pause() {
+        sessionPaused = true
+    }
+
+    fun resume(socketClient: SocketIOClient) {
+        sessionPaused = false
+        this.socketClient = socketClient
+        log.info("Replaying ${resumeEventQueue.size} events")
+
+        while (resumeEventQueue.isNotEmpty()) {
+            val event = resumeEventQueue.remove()
+            log.info("Replayed ${event.first}")
+            dispatchSocket(event.first, event.second)
+        }
     }
 
     fun removeListener() {
