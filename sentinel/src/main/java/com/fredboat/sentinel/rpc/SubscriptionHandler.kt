@@ -16,6 +16,7 @@ import net.dv8tion.jda.api.sharding.ShardManager
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.util.concurrent.CompletableFuture
 
 @Service
 class SubscriptionHandler(
@@ -27,34 +28,36 @@ class SubscriptionHandler(
     }
 
     fun consume(request: GuildSubscribeRequest, client: SocketIOClient) {
-        val guild = shardManager.getGuildById(request.id)
-        log.info(
-            "Request to subscribe to {} received after {}ms",
-            guild,
-            System.currentTimeMillis() - request.requestTime.toLong()
-        )
+        CompletableFuture.runAsync {
+            val guild = shardManager.getShardById(request.shardId)?.awaitReady()?.getGuildById(request.id)
+            log.info(
+                "Request to subscribe to {} received after {}ms",
+                guild,
+                System.currentTimeMillis() - request.requestTime.toLong()
+            )
 
-        if (guild == null) {
-            log.warn("Attempt to subscribe to unknown guild ${request.id}")
-            return
-        }
-
-        val added = SocketServer.subscriptionsCache.add(request.id.toLong())
-        if (!added) {
-            if (SocketServer.subscriptionsCache.contains(request.id.toLong())) {
-                log.warn("Attempt to subscribe ${request.id} while we are already subscribed")
-            } else {
-                log.error("Failed to subscribe to ${request.id}")
+            if (guild == null) {
+                log.warn("Attempt to subscribe to unknown guild ${request.id}")
+                return@runAsync
             }
-        }
 
-        val entity = guild.toEntity(SocketServer.voiceServerUpdateCache)
-        log.info(
-            "Request to subscribe to {} processed after {}ms",
-            guild,
-            System.currentTimeMillis() - request.requestTime.toLong()
-        )
-        client.sendEvent("guild-${request.responseId}", entity)
+            val added = SocketServer.subscriptionsCache.add(request.id.toLong())
+            if (!added) {
+                if (SocketServer.subscriptionsCache.contains(request.id.toLong())) {
+                    log.warn("Attempt to subscribe ${request.id} while we are already subscribed")
+                } else {
+                    log.error("Failed to subscribe to ${request.id}")
+                }
+            }
+
+            val entity = guild.toEntity(SocketServer.voiceServerUpdateCache)
+            log.info(
+                "Request to subscribe to {} processed after {}ms",
+                guild,
+                System.currentTimeMillis() - request.requestTime.toLong()
+            )
+            client.sendEvent("guild-${request.responseId}", entity)
+        }
     }
 
     fun consume(request: GuildUnsubscribeRequest) {
