@@ -21,6 +21,9 @@ configurations {
     compile.exclude module: 'opus-java'
 }
 
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
 compileKotlin {
     kotlinOptions.jvmTarget = "1.8"
 }
@@ -32,7 +35,7 @@ dependencies {
     compile project(":sentinel-shared")
     compile "com.corundumstudio.socketio:netty-socketio:$serverSocketIOVersion"
     //compile "net.dv8tion:JDA:$jdaVersion"
-    compile "com.github.DV8FromTheWorld:JDA:c2d16c83e2"
+    compile "com.github.DV8FromTheWorld:JDA:PR2014-SNAPSHOT"
     compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-script-runtime:$kotlin_version"      // For kotlin eval
     //compile "org.jetbrains.kotlin:kotlin-script-util:$kotlin_version"       // For kotlin eval

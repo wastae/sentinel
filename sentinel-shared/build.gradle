@@ -7,6 +7,7 @@
 
 buildscript {
     repositories {
+        mavenLocal()
         mavenCentral()
     }
     dependencies {
@@ -26,7 +27,27 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
+    mavenLocal()
     mavenCentral()
+}
+
+task sourceJar(type: Jar) {
+  from sourceSets.main.allJava
+}
+
+publishing {
+  publications {
+    mavenJava(MavenPublication) {
+      groupId rootProject.group
+      artifactId "sentinel-shared"
+
+      from components.java
+
+      artifact sourceJar {
+        classifier 'sources'
+      }
+    }
+  }
 }
 
 dependencies {

@@ -8,8 +8,8 @@
 buildscript {
     ext {
         gradleGitVersion = '2.1.0'
-        kotlin_version = '1.4.32'
-        bootVersion = '2.0.1.RELEASE'
+        kotlin_version = '1.6.10'
+        bootVersion = '2.6.2'
         aptVersion = '0.17'
     }
 
@@ -55,6 +55,7 @@ compileTestKotlin {
 
 allprojects {
     repositories {
+        mavenLocal()
         mavenCentral()
         maven { url 'https://jitpack.io' }
         jcenter()
@@ -64,7 +65,7 @@ allprojects {
 
 ext {
     serverSocketIOVersion = '1.7.19'
-    jdaVersion = "c2d16c83e2"
+    jdaVersion = "5.0.0-alpha.5"
     reactorVersion = "3.1.1.RELEASE"
     gsonVersion = '2.8.2'
     jacksonKotlinVersion = "2.13.1"
@@ -97,7 +98,7 @@ void versionTxt() {
 
 versionTxt()
 
-//publishToMavenLocal.dependsOn jar
+publishToMavenLocal.dependsOn jar
 
 /*
 // called by jitpack
