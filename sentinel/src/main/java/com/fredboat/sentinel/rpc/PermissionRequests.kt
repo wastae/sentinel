@@ -65,7 +65,7 @@ class PermissionRequests(private val shardManager: ShardManager) {
             if (member == null) {
                 client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse("0", "0", true))
             } else {
-                val effective = PermissionUtil.getEffectivePermission(channel, member)
+                val effective = PermissionUtil.getEffectivePermission(channel.permissionContainer, member)
                 client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse(effective.toString(), getMissing(request.rawPermissions.toLong(), effective), false))
             }
         }
@@ -76,7 +76,7 @@ class PermissionRequests(private val shardManager: ShardManager) {
             if (role == null) {
                 client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse("0", "0", true))
             } else {
-                val effective = PermissionUtil.getEffectivePermission(channel, role)
+                val effective = PermissionUtil.getEffectivePermission(channel.permissionContainer, role)
                 client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse(effective.toString(), getMissing(request.rawPermissions.toLong(), effective), false))
             }
         }

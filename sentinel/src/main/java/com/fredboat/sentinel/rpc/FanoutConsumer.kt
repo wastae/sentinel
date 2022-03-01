@@ -35,21 +35,30 @@ class FanoutConsumer(
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(FanoutConsumer::class.java)
+
+        fun sendHello(client: SocketIOClient, sentinelProperties: SentinelProperties, key: RoutingKey) {
+            val message = sentinelProperties.run { SentinelHello(
+                shardStart,
+                shardEnd,
+                shardCount,
+                key.key
+            )}
+
+            client.sendEvent("sentinelHello", message)
+        }
     }
 
     var knownFredBoatId: String? = null
 
     init {
-        socketIOServer.addConnectListener {
-            sendHello(it)
-        }
         socketIOServer.addEventListener("fredBoatHello", JSONObject::class.java) { client, event, _ ->
             onHello(SocketServer.gson.fromJson(event.toString(), FredBoatHello::class.java), client)
         }
         socketIOServer.addEventListener("syncSessionQueueRequest", JSONObject::class.java) { _, event, _ ->
             consume(SocketServer.gson.fromJson(event.toString(), SyncSessionQueueRequest::class.java))
         }
-        log.info("FanoutConsumer events registered")
+
+        log.info("All events in FanoutConsumer registered")
     }
 
     fun onHello(event: FredBoatHello, client: SocketIOClient) {
@@ -61,7 +70,7 @@ class FanoutConsumer(
             log.info("FredBoat ${event.id} says hello \uD83D\uDC4B")
         }
 
-        sendHello(client)
+        sendHello(client, sentinelProperties, key)
 
         val game = if (event.game.isBlank()) null else Activity.listening(event.game)
         shardManager.shards.forEach {
@@ -69,16 +78,6 @@ class FanoutConsumer(
                 it.presence.setPresence(OnlineStatus.ONLINE, game)
             }
         }
-    }
-
-    private fun sendHello(client: SocketIOClient) {
-        val message = sentinelProperties.run {  SentinelHello(
-                shardStart,
-                shardEnd,
-                shardCount,
-                key.key
-        )}
-        client.sendEvent("sentinelHello", message)
     }
 
     fun consume(request: SyncSessionQueueRequest) {

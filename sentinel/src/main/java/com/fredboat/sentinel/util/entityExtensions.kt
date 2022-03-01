@@ -39,7 +39,8 @@ fun net.dv8tion.jda.api.entities.User.toEntity() = User(
         id,
         name,
         discriminator,
-        isBot)
+        isBot
+)
 
 fun net.dv8tion.jda.api.entities.Member.toEntity() = Member(
         user.id,

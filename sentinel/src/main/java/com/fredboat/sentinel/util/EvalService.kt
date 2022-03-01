@@ -22,10 +22,10 @@ import javax.script.ScriptEngineManager
 
 @Service
 class EvalService(
-        private val key: RoutingKey,
-        private val shards: ShardManager,
-        private val sentinelProps: SentinelProperties,
-        private val springContext: Supplier<ApplicationContext>
+    private val key: RoutingKey,
+    private val shards: ShardManager,
+    private val sentinelProps: SentinelProperties,
+    private val springContext: Supplier<ApplicationContext>
 ) {
 
     companion object {

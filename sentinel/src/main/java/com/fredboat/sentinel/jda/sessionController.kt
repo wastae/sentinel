@@ -44,6 +44,10 @@ class RemoteSessionController(
     }
 
     override fun removeSession(node: SessionConnectNode) {
+        if (node.jda.status == JDA.Status.RECONNECT_QUEUED) {
+            log.info("${node.shardInfo} is reconnecting, not removing it from queue. Queue size is ${localQueue.size}")
+            return
+        }
         localQueue.remove(node.shardInfo.shardId)
         log.info("Removed ${node.shardInfo} from the queue. Queue size is ${localQueue.size}.")
         node.send(true)
@@ -68,13 +72,13 @@ class RemoteSessionController(
             val msg = "Refusing to run shard ${request.shardId} as it has status $status"
             log.error(msg)
             node.send(true)
-            client.sendEvent("onRunResponse", msg)
+            client.sendEvent("onRunResponse-${request.responseId}", msg)
         }
 
         node.run(false) // Always assume false, so that we don't immediately return
         removeSession(node)
 
-        client.sendEvent("onRunResponse-${request.responseId}", "Started node ${node.shardInfo}") // Generates a reply
+        client.sendEvent("onRunResponse-${request.responseId}", "Started node ${node.shardInfo}")
     }
 
     fun SessionConnectNode.send(remove: Boolean) {
@@ -104,13 +108,9 @@ class RemoteSessionController(
         globalRatelimit = ratelimit
     }
 
-//    @RabbitHandler
-//    fun handleRatelimitSet(event: SetGlobalRatelimit) {
-//        globalRatelimit = event.new
-//    }
-
-    override fun getGateway(api: JDA) = adapter.getGateway(api)
-    override fun getGatewayBot(api: JDA) = adapter.getGatewayBot(api)
+    override fun getShardedGateway(api: JDA): SessionController.ShardedGateway {
+        return adapter.getShardedGateway(api)
+    }
 }
 
 data class SetGlobalRatelimit(val new: Long)

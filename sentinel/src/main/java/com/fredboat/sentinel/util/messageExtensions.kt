@@ -11,14 +11,13 @@ import com.fredboat.sentinel.entities.*
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Emoji
 import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.interactions.commands.Command
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandGroupData
 import net.dv8tion.jda.api.interactions.components.ActionRow
-import net.dv8tion.jda.api.interactions.components.Button
-import net.dv8tion.jda.api.interactions.components.Component
-import net.dv8tion.jda.api.interactions.components.selections.SelectionMenu
+import net.dv8tion.jda.api.interactions.components.ItemComponent
 import java.time.Instant
 
 private val threadLocal: ThreadLocal<EmbedBuilder> = ThreadLocal.withInitial { EmbedBuilder() }
@@ -28,7 +27,7 @@ fun Embed.toJda(): MessageEmbed {
     builder.setTitle(title, url)
     color?.let { builder.setColor(it) }
     builder.setDescription(description)
-    builder.setTimestamp(timestamp?.let { Instant.ofEpochMilli(it.toLong()) })
+    builder.setTimestamp(timestamp?.let { Instant.ofEpochMilli(it) })
     builder.setFooter(footer?.text, footer?.iconUrl)
     builder.setThumbnail(thumbnail)
     builder.setImage(image)
@@ -42,11 +41,33 @@ fun Embed.toJda(): MessageEmbed {
 
 fun SlashOptions.toJda(): ArrayList<OptionData> {
     val optionsData = ArrayList<OptionData>()
-    slashOptions.forEach {
-        optionsData.add(OptionData(OptionType.fromKey(it.optionType), it.optionName, it.optionDescription, it.required))
+    slashOptions.forEach { it ->
+        val optionData = OptionData(
+            OptionType.fromKey(it.optionType), it.optionName, it.optionDescription, it.required, it.autoComplete
+        )
+
+        if (it.choices.choices.isNotEmpty()) {
+            val choices = ArrayList<Command.Choice>()
+            it.choices.choices.forEach {
+                choices.add(Command.Choice(it.name, it.value))
+            }
+
+            optionData.addChoices(choices)
+        }
+
+        optionsData.add(optionData)
     }
 
     return optionsData
+}
+
+fun Choices.toJda(): ArrayList<Command.Choice> {
+    val choice = ArrayList<Command.Choice>()
+    choices.forEach {
+        choice.add(Command.Choice(it.name, it.value))
+    }
+
+    return choice
 }
 
 fun SlashGroup.toJdaExt(): SubcommandGroupData {
@@ -59,13 +80,8 @@ fun SlashGroup.toJda(): ArrayList<SubcommandData> {
 
 private fun buildSubCmds(subCommands: MutableList<SlashSubcommand>): ArrayList<SubcommandData> {
     val subCmds = ArrayList<SubcommandData>()
-    val subCmdOptions = ArrayList<OptionData>()
-    subCommands.forEach { it ->
-        it.slashOptions.slashOptions.forEach {
-            subCmdOptions.add(OptionData(OptionType.fromKey(it.optionType), it.optionName, it.optionDescription, it.required))
-        }
-        subCmds.add(SubcommandData(it.name, it.description).addOptions(subCmdOptions))
-        subCmdOptions.clear()
+    subCommands.forEach {
+        subCmds.add(SubcommandData(it.name, it.description).addOptions(it.slashOptions.toJda()))
     }
 
     return subCmds
@@ -80,8 +96,8 @@ fun SlashSubcommand.toJda(): SubcommandData {
     return SubcommandData(name, description).addOptions(optionsData)
 }
 
-fun SelectMenu.toJda(): SelectionMenu {
-    val menu = SelectionMenu.create(customId).setPlaceholder(placeholder)
+fun SelectMenu.toJda(): net.dv8tion.jda.api.interactions.components.selections.SelectMenu {
+    val menu = net.dv8tion.jda.api.interactions.components.selections.SelectMenu.create(customId).setPlaceholder(placeholder)
     selectOptions.forEach {
         menu.addOption(it.label, it.value)
     }
@@ -91,10 +107,10 @@ fun SelectMenu.toJda(): SelectionMenu {
 
 fun Buttons.toJda(): ArrayList<ActionRow> {
     val actionRows = ArrayList<ActionRow>()
-    val buttonsList = ArrayList<Component>()
+    val buttonsList = ArrayList<ItemComponent>()
     buttons.forEach {
-        if (it.label.isEmpty()) buttonsList.add(Button.secondary(it.id, Emoji.fromMarkdown(it.emoji)))
-        else buttonsList.add(Button.secondary(it.id, it.label).withEmoji(Emoji.fromMarkdown(it.emoji)))
+        if (it.label.isEmpty()) buttonsList.add(net.dv8tion.jda.api.interactions.components.buttons.Button.secondary(it.id, Emoji.fromMarkdown(it.emoji)))
+        else buttonsList.add(net.dv8tion.jda.api.interactions.components.buttons.Button.secondary(it.id, it.label).withEmoji(Emoji.fromMarkdown(it.emoji)))
         if (buttonsList.size == 5) {
             actionRows.add(ActionRow.of(buttonsList))
             buttonsList.clear()
