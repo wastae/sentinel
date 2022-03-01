@@ -13,9 +13,8 @@ import com.fredboat.sentinel.entities.ModRequestType.*
 import com.fredboat.sentinel.util.*
 import net.dv8tion.jda.api.entities.Icon
 import net.dv8tion.jda.api.interactions.commands.build.Commands
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.sharding.ShardManager
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -24,10 +23,6 @@ class ManagementRequests(
     private val shardManager: ShardManager,
     private val eval: EvalService
 ) {
-    companion object {
-        private val log: Logger = LoggerFactory.getLogger(ManagementRequests::class.java)
-    }
-
     fun consume(request: ModRequest, client: SocketIOClient) {
         val guild = shardManager.getGuildById(request.guildId)
                 ?: throw RuntimeException("Guild ${request.guildId} not found")
@@ -90,37 +85,27 @@ class ManagementRequests(
     fun consume(request: RegisterSlashCommandRequest) {
         if (request.guildId != null) {
             val guild = shardManager.getGuildById(request.guildId!!)!!
-            val cmd = Commands.slash(request.commandName, request.commandDescription)
-            when {
-                request.group != null -> {
-                    if (request.group!!.name != null && request.group!!.description != null) cmd.addSubcommandGroups(request.group!!.toJdaExt())
-                    else cmd.addSubcommands(request.group!!.toJda())
-                }
-                request.options != null -> {
-                    cmd.addOptions(request.options!!.toJda())
-                }
-            }
-            log.info("Registering slash command ${cmd.toData().toPrettyString()}")
-            guild.upsertCommand(cmd).queue()
+            guild.upsertCommand(buildSlashCommand(request)).queue()
         } else {
             shardManager.shards.forEach {
-                if (request.options != null) {
-                    it.upsertCommand(
-                        Commands.slash(
-                            request.commandName,
-                            request.commandDescription
-                        ).addOptions(request.options!!.toJda()).addSubcommandGroups()
-                    ).queue()
-                } else {
-                    it.upsertCommand(
-                        Commands.slash(
-                            request.commandName,
-                            request.commandDescription
-                        )
-                    ).queue()
-                }
+                it.upsertCommand(buildSlashCommand(request)).queue()
             }
         }
+    }
+
+    private fun buildSlashCommand(request: RegisterSlashCommandRequest): SlashCommandData {
+        val cmd = Commands.slash(request.commandName, request.commandDescription)
+        when {
+            request.group != null -> {
+                if (request.group!!.name != null && request.group!!.description != null) cmd.addSubcommandGroups(request.group!!.toJdaExt())
+                else cmd.addSubcommands(request.group!!.toJda())
+            }
+            request.options != null -> {
+                cmd.addOptions(request.options!!.toJda())
+            }
+        }
+
+        return cmd
     }
 
     @Volatile
