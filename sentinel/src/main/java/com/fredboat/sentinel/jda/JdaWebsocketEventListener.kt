@@ -425,12 +425,10 @@ class JdaWebsocketEventListener(
 
     private fun dispatchSocket(eventName: String, event: Any) {
         if (sessionPaused) {
-            log.info("Saved to queue $eventName")
             resumeEventQueue.add(Pair(eventName, event))
             return
         }
 
-        log.info("Sent $eventName")
         socketClient.sendEvent(eventName, event)
     }
 
@@ -445,7 +443,6 @@ class JdaWebsocketEventListener(
 
         while (resumeEventQueue.isNotEmpty()) {
             val event = resumeEventQueue.remove()
-            log.info("Replayed ${event.first}")
             dispatchSocket(event.first, event.second)
         }
     }
