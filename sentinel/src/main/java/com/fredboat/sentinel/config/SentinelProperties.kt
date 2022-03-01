@@ -20,6 +20,7 @@ import java.io.FileInputStream
 class SentinelProperties(
     var address: String = "",
     var port: Int = 8989,
+    var password: String = "youshallnotpass",
     discordToken: String = "",
     var shardStart: Int = 0,
     var shardEnd: Int = 0,
