@@ -322,6 +322,7 @@ class MessageRequests(private val shardManager: ShardManager) {
     }
 
     fun consume(request: RemoveComponentsRequest) {
+        if (request.messageId == "0") return
         val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
 
         if (channel == null) {
