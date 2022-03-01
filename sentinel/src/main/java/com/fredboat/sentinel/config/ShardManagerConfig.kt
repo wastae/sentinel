@@ -9,12 +9,12 @@ package com.fredboat.sentinel.config
 
 import com.fredboat.sentinel.ApplicationState
 import com.fredboat.sentinel.SocketServer
+import com.fredboat.sentinel.jda.DefaultShardManagerBuilder
 import com.fredboat.sentinel.jda.RemoteSessionController
 import com.fredboat.sentinel.jda.VoiceInterceptor
 import net.dv8tion.jda.api.entities.Message.MentionType
 import net.dv8tion.jda.api.requests.GatewayIntent
 import net.dv8tion.jda.api.requests.restaction.MessageAction
-import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.ChunkingFilter
 import net.dv8tion.jda.api.utils.cache.CacheFlag
@@ -33,39 +33,40 @@ class ShardManagerConfig {
     }
     @Bean
     fun buildShardManager(
-            sentinelProperties: SentinelProperties,
-            socketServer: SocketServer,
-            sessionController: RemoteSessionController,
-            voiceInterceptor: VoiceInterceptor
+        sentinelProperties: SentinelProperties,
+        socketServer: SocketServer,
+        sessionController: RemoteSessionController,
+        voiceInterceptor: VoiceInterceptor
     ): ShardManager {
 
         val intents = listOf(
-                GatewayIntent.DIRECT_MESSAGES,
-                GatewayIntent.GUILD_MESSAGES,
-                GatewayIntent.GUILD_MESSAGE_REACTIONS,
-                GatewayIntent.GUILD_VOICE_STATES,
-                GatewayIntent.GUILD_MEMBERS
+            GatewayIntent.DIRECT_MESSAGES,
+            GatewayIntent.GUILD_MESSAGES,
+            GatewayIntent.GUILD_MESSAGE_REACTIONS,
+            GatewayIntent.GUILD_VOICE_STATES,
+            GatewayIntent.GUILD_MEMBERS
         )
 
         val builder = DefaultShardManagerBuilder.create(sentinelProperties.discordToken, intents)
-                .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE)
-                .disableCache(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE, CacheFlag.ROLE_TAGS)
-                .setBulkDeleteSplittingEnabled(false)
-                .setEnableShutdownHook(true)
-                .setAutoReconnect(true)
-                .setShardsTotal(sentinelProperties.shardCount)
-                .setShards(sentinelProperties.shardStart, sentinelProperties.shardEnd)
-                .setSessionController(sessionController)
-                .setChunkingFilter(ChunkingFilter.ALL)
-                .setVoiceDispatchInterceptor(voiceInterceptor)
-                .setRawEventsEnabled(false)
+            .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE)
+            .disableCache(CacheFlag.ACTIVITY, CacheFlag.ONLINE_STATUS, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE, CacheFlag.ROLE_TAGS)
+            .setBulkDeleteSplittingEnabled(false)
+            .setEnableShutdownHook(true)
+            .setAutoReconnect(true)
+            .setShardsTotal(sentinelProperties.shardCount)
+            .setShards(sentinelProperties.shardStart, sentinelProperties.shardEnd)
+            .setSessionController(sessionController)
+            .setChunkingFilter(ChunkingFilter.ALL)
+            .setVoiceDispatchInterceptor(voiceInterceptor)
+            .setRawEventsEnabled(false)
+            .setEventPassthrough(true)
 
         val shardManager: ShardManager
         try {
             MessageAction.setDefaultMentions(EnumSet.complementOf(EnumSet.of(
-                    MentionType.EVERYONE,
-                    MentionType.HERE,
-                    MentionType.ROLE
+                MentionType.EVERYONE,
+                MentionType.HERE,
+                MentionType.ROLE
             )))
             shardManager = builder.build()
             sessionController.shardManager = shardManager
@@ -89,5 +90,4 @@ class ShardManagerConfig {
 
     @Bean
     fun guildSubscriptions(): MutableSet<Long> = Collections.synchronizedSet(HashSet())
-
 }
