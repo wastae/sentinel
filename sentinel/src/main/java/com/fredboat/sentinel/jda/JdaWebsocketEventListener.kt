@@ -94,11 +94,14 @@ class JdaWebsocketEventListener(
     override fun onResumed(event: ResumedEvent) =
         dispatchSocket("shardLifecycleEvent", ShardLifecycleEvent(event.jda.toEntity(), LifecycleEventEnum.RESUMED))
 
+
     override fun onReconnected(event: ReconnectedEvent) =
         dispatchSocket("shardLifecycleEvent", ShardLifecycleEvent(event.jda.toEntity(), LifecycleEventEnum.RECONNECTED))
 
+
     override fun onShutdown(event: ShutdownEvent) =
         dispatchSocket("shardLifecycleEvent", ShardLifecycleEvent(event.jda.toEntity(), LifecycleEventEnum.SHUTDOWN))
+
 
     /* Guild jda */
     override fun onGuildJoin(event: GuildJoinEvent) {
@@ -130,7 +133,7 @@ class JdaWebsocketEventListener(
     /* Voice jda */
     override fun onGuildVoiceJoin(event: GuildVoiceJoinEvent) {
         if (!SocketServer.subscriptionsCache.contains(event.guild.idLong)) return
-        updateGuild(event.guild)
+
         if (event.channelJoined.type == ChannelType.STAGE && event.member.user.idLong == event.guild.selfMember.user.idLong) {
             event.guild.requestToSpeak()
         }
@@ -146,7 +149,7 @@ class JdaWebsocketEventListener(
             SocketServer.voiceServerUpdateCache.onVoiceLeave(event.guild.id)
         }
         if (!SocketServer.subscriptionsCache.contains(event.guild.idLong)) return
-        updateGuild(event.guild)
+
         dispatchSocket("voiceLeaveEvent", VoiceLeaveEvent(
             event.guild.id,
             event.channelLeft.id,
@@ -156,10 +159,11 @@ class JdaWebsocketEventListener(
 
     override fun onGuildVoiceMove(event: GuildVoiceMoveEvent) {
         if (!SocketServer.subscriptionsCache.contains(event.guild.idLong)) return
-        updateGuild(event.guild)
+
         if (event.channelJoined.type == ChannelType.STAGE && event.member.user.idLong == event.guild.selfMember.user.idLong) {
             event.guild.requestToSpeak()
         }
+
         dispatchSocket("voiceMoveEvent", VoiceMoveEvent(
             event.guild.id,
             event.channelLeft.id,
@@ -173,10 +177,6 @@ class JdaWebsocketEventListener(
         if (event.message.type != MessageType.DEFAULT) return
         if (event.isWebhookMessage) return
         if (event.isFromGuild && !event.channelType.isThread) {
-
-            if (SocketServer.subscriptionsCache.contains(event.guild.idLong)) {
-                updateGuild(event.guild)
-            }
 
             dispatchSocket("messageReceivedEvent", MessageReceivedEvent(
                 event.message.id,
@@ -210,8 +210,6 @@ class JdaWebsocketEventListener(
         if (event.member == null) return
         if (!SocketServer.subscriptionsCache.contains(event.guild.idLong)) return
 
-        updateGuild(event.guild)
-
         dispatchSocket("messageReactionAddEvent", MessageReactionAddEvent(
             event.messageId,
             event.guild.id,
@@ -241,11 +239,6 @@ class JdaWebsocketEventListener(
         if (event.guild == null) return
         if (event.member == null) return
 
-        if (SocketServer.subscriptionsCache.contains(event.guild!!.idLong)) {
-            updateGuild(event.guild!!)
-        }
-
-        //event.deferReply().queue()
         dispatchSocket("slashCommandsEvent", SlashCommandsEvent(
             event.rawData.toJson(),
             event.guild!!.id,
@@ -294,9 +287,7 @@ class JdaWebsocketEventListener(
         if (event.member == null) return
         if (!SocketServer.subscriptionsCache.contains(event.guild!!.idLong)) return
 
-        updateGuild(event.guild!!)
         event.deferEdit().queue()
-
         dispatchSocket("buttonEvent", ButtonEvent(
             event.rawData.toJson(),
             event.componentId,
@@ -313,9 +304,7 @@ class JdaWebsocketEventListener(
         if (event.member == null) return
         if (!SocketServer.subscriptionsCache.contains(event.guild!!.idLong)) return
 
-        updateGuild(event.guild!!)
         event.deferEdit().queue()
-
         dispatchSocket("selectionMenuEvent", SelectionMenuEvent(
             event.rawData.toJson(),
             event.values,
@@ -426,6 +415,7 @@ class JdaWebsocketEventListener(
     private fun dispatchSocket(eventName: String, event: Any) {
         if (sessionPaused) {
             resumeEventQueue.add(Pair(eventName, event))
+            log.info("Saved $eventName to queue, total size ${resumeEventQueue.size}")
             return
         }
 
