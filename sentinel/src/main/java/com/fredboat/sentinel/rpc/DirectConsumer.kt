@@ -158,6 +158,9 @@ class DirectConsumer(
         socketIOServer.addEventListener("slashAutoCompleteRequest-${key.key}", JSONObject::class.java) { _, request, _ ->
             message.consume(SocketServer.gson.fromJson(request.toString(), SlashAutoCompleteRequest::class.java))
         }
+        socketIOServer.addEventListener("removeSlashCommandsRequest-${key.key}", JSONObject::class.java) { _, request, _ ->
+            management.consume(SocketServer.gson.fromJson(request.toString(), RemoveSlashCommandsRequest::class.java))
+        }
         socketIOServer.addEventListener("registerSlashCommandRequest-${key.key}", JSONObject::class.java) { _, request, _ ->
             management.consume(SocketServer.gson.fromJson(request.toString(), RegisterSlashCommandRequest::class.java))
         }

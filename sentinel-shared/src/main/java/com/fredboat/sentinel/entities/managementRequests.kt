@@ -34,6 +34,10 @@ data class GetPingResponse(val shardPing: String, val average: Double)
 data class BanListRequest(val guildId: String, val responseId: String)
 data class Ban(val user: User, val reason: String?)
 
+data class RemoveSlashCommandsRequest(
+        val guildId: String?
+)
+
 data class RegisterSlashCommandRequest(
         val commandName: String,
         val commandDescription: String,

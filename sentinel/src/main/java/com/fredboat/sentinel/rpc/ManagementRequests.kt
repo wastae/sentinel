@@ -82,6 +82,17 @@ class ManagementRequests(
         }
     }
 
+    fun consume(request: RemoveSlashCommandsRequest) {
+        if (request.guildId != null) {
+            val guild = shardManager.getGuildById(request.guildId!!)!!
+            guild.updateCommands().queue()
+        } else {
+            shardManager.shards.forEach {
+                it.updateCommands().queue()
+            }
+        }
+    }
+
     fun consume(request: RegisterSlashCommandRequest) {
         if (request.guildId != null) {
             val guild = shardManager.getGuildById(request.guildId!!)!!
