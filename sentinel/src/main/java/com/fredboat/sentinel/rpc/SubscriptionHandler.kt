@@ -44,7 +44,9 @@ class SubscriptionHandler(
             }
 
             val added = SocketServer.subscriptionsCache.add(request.id.toLong())
-            if (!added) {
+            if (added) {
+                guild.loadMembers().onSuccess { log.info("Successfully loaded ${it.size} members for $guild") }.get()
+            } else {
                 if (SocketServer.subscriptionsCache.contains(request.id.toLong())) {
                     log.warn("Attempt to subscribe ${request.id} while we are already subscribed")
                 } else {

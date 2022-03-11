@@ -25,7 +25,8 @@ class SentinelProperties(
     var shardStart: Int = 0,
     var shardEnd: Int = 0,
     var shardCount: Int = 1,
-    var instance: String = "unknown"
+    var instance: String = "unknown",
+    var mainGuild: Long = 0L
 ) {
 
     companion object {

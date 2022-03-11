@@ -17,6 +17,7 @@ import net.dv8tion.jda.api.requests.GatewayIntent
 import net.dv8tion.jda.api.requests.restaction.MessageAction
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.ChunkingFilter
+import net.dv8tion.jda.api.utils.MemberCachePolicy
 import net.dv8tion.jda.api.utils.cache.CacheFlag
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -42,7 +43,6 @@ class ShardManagerConfig {
         val intents = listOf(
             GatewayIntent.DIRECT_MESSAGES,
             GatewayIntent.GUILD_MESSAGES,
-            GatewayIntent.GUILD_MESSAGE_REACTIONS,
             GatewayIntent.GUILD_VOICE_STATES,
             GatewayIntent.GUILD_MEMBERS
         )
@@ -56,7 +56,8 @@ class ShardManagerConfig {
             .setShardsTotal(sentinelProperties.shardCount)
             .setShards(sentinelProperties.shardStart, sentinelProperties.shardEnd)
             .setSessionController(sessionController)
-            .setChunkingFilter(ChunkingFilter.ALL)
+            .setMemberCachePolicy(MemberCachePolicy.ALL)
+            .setChunkingFilter(ChunkingFilter.include(sentinelProperties.mainGuild))
             .setVoiceDispatchInterceptor(voiceInterceptor)
             .setRawEventsEnabled(false)
             .setEventPassthrough(true)
