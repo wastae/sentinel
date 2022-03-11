@@ -49,7 +49,7 @@ class SocketServer(
                         FanoutConsumer.sendHello(it, sentinelProperties, key)
                         log.info("Bot with ID $botId connected for listening events to server with key ${key.key}")
                     } else {
-                        it.sendEvent("initialEvent", key.key)
+                        it.sendEvent("reconnectEvent", key.key)
                         FanoutConsumer.sendHello(it, sentinelProperties, key)
                         oldConnection.resume(it)
                         log.info("Resumed events for bot with ID $botId")
