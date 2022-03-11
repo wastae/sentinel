@@ -17,13 +17,13 @@ import java.util.concurrent.ConcurrentHashMap
 @Configuration
 class SocketServer(
     private val sentinelProperties: SentinelProperties,
-    private val key: RoutingKey
+    private val key: RoutingKey,
+    private val voiceServerUpdateCache: VoiceServerUpdateCache
 ) {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(SocketServer::class.java)
         val contextMap = ConcurrentHashMap<String, JdaWebsocketEventListener>()
-        val voiceServerUpdateCache = VoiceServerUpdateCache()
         val subscriptionsCache = LinkedHashSet<Long>()
         val gson = Gson()
     }
@@ -44,7 +44,7 @@ class SocketServer(
                 if (botId != null) {
                     val oldConnection = contextMap[botId]
                     if (oldConnection == null) {
-                        contextMap[botId] = JdaWebsocketEventListener(shardManager, it)
+                        contextMap[botId] = JdaWebsocketEventListener(shardManager, voiceServerUpdateCache, it)
                         it.sendEvent("initialEvent", key.key)
                         FanoutConsumer.sendHello(it, sentinelProperties, key)
                         log.info("Bot with ID $botId connected for listening events to server with key ${key.key}")

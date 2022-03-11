@@ -7,13 +7,13 @@ import net.dv8tion.jda.api.hooks.VoiceDispatchInterceptor
 import org.springframework.stereotype.Component
 
 @Component
-class VoiceInterceptor(val cache: VoiceServerUpdateCache) : VoiceDispatchInterceptor {
+class VoiceInterceptor(private val voiceServerUpdateCache: VoiceServerUpdateCache) : VoiceDispatchInterceptor {
     private val gson = Gson()
 
     override fun onVoiceServerUpdate(update: VoiceDispatchInterceptor.VoiceServerUpdate) {
         val json = RawServerUpdateJson(update.endpoint, update.guildId, update.token).toString()
         val event = VoiceServerUpdate(update.sessionId, json)
-        cache[update.guildId] = event
+        voiceServerUpdateCache[update.guildId] = event
         SocketServer.contextMap.forEach {
             it.value.socketClient.sendEvent("voiceServerUpdate", event)
         }

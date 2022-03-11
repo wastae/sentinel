@@ -11,6 +11,7 @@ import com.corundumstudio.socketio.SocketIOClient
 import com.fredboat.sentinel.SocketServer
 import com.fredboat.sentinel.entities.GuildSubscribeRequest
 import com.fredboat.sentinel.entities.GuildUnsubscribeRequest
+import com.fredboat.sentinel.jda.VoiceServerUpdateCache
 import com.fredboat.sentinel.util.toEntity
 import net.dv8tion.jda.api.sharding.ShardManager
 import org.slf4j.Logger
@@ -20,7 +21,8 @@ import java.util.concurrent.CompletableFuture
 
 @Service
 class SubscriptionHandler(
-    private val shardManager: ShardManager
+    private val shardManager: ShardManager,
+    private val voiceServerUpdateCache: VoiceServerUpdateCache
 ) {
 
     companion object {
@@ -50,7 +52,7 @@ class SubscriptionHandler(
                 }
             }
 
-            val entity = guild.toEntity(SocketServer.voiceServerUpdateCache)
+            val entity = guild.toEntity(voiceServerUpdateCache)
             log.info(
                 "Request to subscribe to {} processed after {}ms",
                 guild,

@@ -52,6 +52,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
 
 class JdaWebsocketEventListener(
     private val shardManager: ShardManager,
+    private val voiceServerUpdateCache: VoiceServerUpdateCache,
     var socketClient: SocketIOClient
 ) : ListenerAdapter() {
 
@@ -146,7 +147,7 @@ class JdaWebsocketEventListener(
 
     override fun onGuildVoiceLeave(event: GuildVoiceLeaveEvent) {
         if (event.member.user.idLong == event.guild.selfMember.user.idLong) {
-            SocketServer.voiceServerUpdateCache.onVoiceLeave(event.guild.id)
+            voiceServerUpdateCache.onVoiceLeave(event.guild.id)
         }
         if (!SocketServer.subscriptionsCache.contains(event.guild.idLong)) return
 
@@ -177,7 +178,6 @@ class JdaWebsocketEventListener(
         if (event.message.type != MessageType.DEFAULT) return
         if (event.isWebhookMessage) return
         if (event.isFromGuild && !event.channelType.isThread) {
-
             dispatchSocket("messageReceivedEvent", MessageReceivedEvent(
                 event.message.id,
                 event.message.guild.id,
@@ -385,7 +385,7 @@ class JdaWebsocketEventListener(
     }
 
     private fun updateGuild(guild: Guild) {
-        dispatchSocket("guildUpdateEvent", GuildUpdateEvent(guild.toEntity(SocketServer.voiceServerUpdateCache)))
+        dispatchSocket("guildUpdateEvent", GuildUpdateEvent(guild.toEntity(voiceServerUpdateCache)))
     }
 
     private fun updateChannelPermissions(guild: Guild) {
