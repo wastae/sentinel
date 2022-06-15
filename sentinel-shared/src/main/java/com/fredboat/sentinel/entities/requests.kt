@@ -67,7 +67,9 @@ data class EditEmbedRequest(
 
 data class EditEmbedResponse(
         val messageId: String,
-        val guildId: String
+        val guildId: String,
+        val successful: Boolean,
+        val reason: String?
 )
 
 /** Returns [Unit]*/

@@ -89,9 +89,15 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        channel.editMessageEmbedsById(request.messageId, request.embed.toJda()).queue {
-            client.sendEvent("editEmbedResponse-${request.responseId}", EditEmbedResponse(it.id, it.guild.id))
-        }
+        channel.editMessageEmbedsById(request.messageId, request.embed.toJda()).queue({
+            client.sendEvent("editEmbedResponse-${request.responseId}",
+                EditEmbedResponse(it.id, it.guild.id, true, null)
+            )
+        }, {
+            client.sendEvent("editEmbedResponse-${request.responseId}",
+                EditEmbedResponse(request.messageId, channel.guild.id, false, it.stackTraceToString())
+            )
+        })
     }
 
     fun consume(request: AddReactionRequest) {

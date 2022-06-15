@@ -12,6 +12,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import java.lang.Thread.sleep
 import java.util.concurrent.ConcurrentHashMap
 
 @Configuration
@@ -49,10 +50,16 @@ class SocketServer(
                         FanoutConsumer.sendHello(it, sentinelProperties, key)
                         log.info("Bot with ID $botId connected for listening events to server with key ${key.key}")
                     } else {
-                        it.sendEvent("reconnectEvent", key.key)
-                        FanoutConsumer.sendHello(it, sentinelProperties, key)
-                        oldConnection.resume(it)
-                        log.info("Resumed events for bot with ID $botId")
+                        if (oldConnection.sessionPaused) {
+                            it.sendEvent("reconnectEvent", key.key)
+                            FanoutConsumer.sendHello(it, sentinelProperties, key)
+                            sleep(5000L)
+                            oldConnection.resume(it)
+                            log.info("Resumed events for bot with ID $botId")
+                        } else {
+                            it.disconnect()
+                            log.info("Bot with ID $botId tried connect to not paused session, disconnect")
+                        }
                     }
                 }
             } else {

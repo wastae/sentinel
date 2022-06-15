@@ -65,7 +65,7 @@ class JdaWebsocketEventListener(
     }
 
     @Volatile
-    private var sessionPaused = false
+    var sessionPaused = false
     private val resumeEventQueue = ConcurrentLinkedQueue<Pair<String, Any>>()
 
     /* Shard lifecycle */
@@ -121,7 +121,11 @@ class JdaWebsocketEventListener(
     override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) = onMemberChange(event.member)
     override fun onGuildMemberRoleRemove(event: GuildMemberRoleRemoveEvent) = onMemberChange(event.member)
     override fun onGuildMemberJoin(event: GuildMemberJoinEvent) = onMemberChange(event.member)
-    override fun onGuildMemberRemove(event: GuildMemberRemoveEvent) = onMemberChange(event.member!!)
+    override fun onGuildMemberRemove(event: GuildMemberRemoveEvent) {
+        if (event.member != null) {
+            onMemberChange(event.member!!)
+        }
+    }
 
     private fun onMemberChange(member: net.dv8tion.jda.api.entities.Member) {
         if (!SocketServer.subscriptionsCache.contains(member.guild.idLong)) return
@@ -406,7 +410,7 @@ class JdaWebsocketEventListener(
 
     override fun onHttpRequest(event: HttpRequestEvent) {
         if (event.response!!.code >= 300) {
-            log.warn("Unsuccessful JDA HTTP Request:\n{}\nResponse:{}\n", event.requestRaw, event.responseRaw)
+            log.warn("Unsuccessful JDA HTTP\n{}\n{}", event.requestRaw, event.responseRaw)
         }
     }
 

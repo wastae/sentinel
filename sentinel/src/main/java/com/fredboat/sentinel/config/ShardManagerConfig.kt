@@ -52,6 +52,7 @@ class ShardManagerConfig {
             .disableCache(CacheFlag.ACTIVITY, CacheFlag.ONLINE_STATUS, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE, CacheFlag.ROLE_TAGS)
             .setBulkDeleteSplittingEnabled(false)
             .setEnableShutdownHook(false)
+            .setUseShutdownNow(true)
             .setAutoReconnect(true)
             .setShardsTotal(sentinelProperties.shardCount)
             .setShards(sentinelProperties.shardStart, sentinelProperties.shardEnd)
