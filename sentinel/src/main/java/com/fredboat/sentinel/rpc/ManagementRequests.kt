@@ -12,6 +12,7 @@ import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.entities.ModRequestType.*
 import com.fredboat.sentinel.util.*
 import net.dv8tion.jda.api.entities.Icon
+import net.dv8tion.jda.api.entities.UserSnowflake
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.sharding.ShardManager
@@ -28,9 +29,9 @@ class ManagementRequests(
                 ?: throw RuntimeException("Guild ${request.guildId} not found")
 
         val action = when (request.type) {
-            KICK -> guild.kick(request.userId, request.reason)
-            BAN -> guild.ban(request.userId, request.banDeleteDays, request.reason)
-            UNBAN -> guild.unban(request.userId)
+            KICK -> guild.kick(UserSnowflake.fromId(request.userId), request.reason)
+            BAN -> guild.ban(UserSnowflake.fromId(request.userId), request.banDeleteDays, request.reason)
+            UNBAN -> guild.unban(UserSnowflake.fromId(request.userId))
         }
         action.queue()
 
