@@ -222,8 +222,7 @@ class JdaWebsocketEventListener(
             PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.member).toString(),
             event.member!!.id,
             event.member!!.user.isBot,
-            event.reactionEmote.asReactionCode,
-            event.reactionEmote.isEmoji
+            event.emoji.asReactionCode
         ))
     }
 
@@ -242,9 +241,10 @@ class JdaWebsocketEventListener(
         }
         if (event.guild == null) return
         if (event.member == null) return
+        if (event.rawData == null) return
 
         dispatchSocket("slashCommandsEvent", SlashCommandsEvent(
-            event.rawData.toJson(),
+            event.rawData!!.toJson(),
             event.guild!!.id,
             event.channel.id,
             PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.guild!!.selfMember).toString(),
@@ -268,6 +268,7 @@ class JdaWebsocketEventListener(
         }
         if (event.guild == null) return
         if (event.channel == null) return
+        if (event.rawData == null) return
 
         if (event.focusedOption.value.isEmpty()) {
             event.replyChoice("Empty request", "dQw4w9WgXcQ").queue()
@@ -275,7 +276,7 @@ class JdaWebsocketEventListener(
         }
 
         dispatchSocket("autoCompleteEvent", SlashAutoCompleteEvent(
-            event.rawData.toJson(),
+            event.rawData!!.toJson(),
             event.guild!!.id,
             event.channel!!.id,
             PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.guild!!.selfMember).toString(),
@@ -289,11 +290,12 @@ class JdaWebsocketEventListener(
     override fun onButtonInteraction(event: ButtonInteractionEvent) {
         if (event.guild == null) return
         if (event.member == null) return
+        if (event.rawData == null) return
         if (!SocketServer.subscriptionsCache.contains(event.guild!!.idLong)) return
 
         event.deferEdit().queue()
         dispatchSocket("buttonEvent", ButtonEvent(
-            event.rawData.toJson(),
+            event.rawData!!.toJson(),
             event.componentId,
             event.messageId,
             event.guild!!.id,
@@ -306,11 +308,12 @@ class JdaWebsocketEventListener(
     override fun onSelectMenuInteraction(event: SelectMenuInteractionEvent) {
         if (event.guild == null) return
         if (event.member == null) return
+        if (event.rawData == null) return
         if (!SocketServer.subscriptionsCache.contains(event.guild!!.idLong)) return
 
         event.deferEdit().queue()
         dispatchSocket("selectionMenuEvent", SelectionMenuEvent(
-            event.rawData.toJson(),
+            event.rawData!!.toJson(),
             event.values,
             event.componentId,
             event.messageId,

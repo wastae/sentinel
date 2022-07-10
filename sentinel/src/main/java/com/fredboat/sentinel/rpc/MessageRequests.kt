@@ -13,6 +13,7 @@ import com.fredboat.sentinel.util.toJda
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.interactions.components.ActionComponent
 import net.dv8tion.jda.api.interactions.components.ActionRow
 import net.dv8tion.jda.api.interactions.components.LayoutComponent
@@ -108,7 +109,7 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        channel.addReactionById(request.messageId, request.emote).queue()
+        channel.addReactionById(request.messageId, Emoji.fromFormatted(request.emote)).queue()
     }
 
     fun consume(request: AddReactionsRequest) {
@@ -120,10 +121,8 @@ class MessageRequests(private val shardManager: ShardManager) {
         }
 
         for (emote in request.emote) {
-            channel.addReactionById(request.messageId, emote).queue()
+            channel.addReactionById(request.messageId, Emoji.fromFormatted(emote)).queue()
         }
-
-        return
     }
 
     fun consume(request: RemoveReactionRequest) {
@@ -135,7 +134,7 @@ class MessageRequests(private val shardManager: ShardManager) {
                 return@queue
             }
 
-            channel.removeReactionById(request.messageId, request.emote, it).queue()
+            channel.removeReactionById(request.messageId, Emoji.fromFormatted(request.emote), it).queue()
         }
     }
 

@@ -9,8 +9,8 @@ package com.fredboat.sentinel.util
 
 import com.fredboat.sentinel.entities.*
 import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.entities.Emoji
 import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.interactions.commands.Command
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
@@ -109,8 +109,8 @@ fun Buttons.toJda(): ArrayList<ActionRow> {
     val actionRows = ArrayList<ActionRow>()
     val buttonsList = ArrayList<ItemComponent>()
     buttons.forEach {
-        if (it.label.isEmpty()) buttonsList.add(net.dv8tion.jda.api.interactions.components.buttons.Button.secondary(it.id, Emoji.fromMarkdown(it.emoji)))
-        else buttonsList.add(net.dv8tion.jda.api.interactions.components.buttons.Button.secondary(it.id, it.label).withEmoji(Emoji.fromMarkdown(it.emoji)))
+        if (it.label.isEmpty()) buttonsList.add(net.dv8tion.jda.api.interactions.components.buttons.Button.secondary(it.id, Emoji.fromFormatted(it.emoji)))
+        else buttonsList.add(net.dv8tion.jda.api.interactions.components.buttons.Button.secondary(it.id, it.label).withEmoji(Emoji.fromFormatted(it.emoji)))
         if (buttonsList.size == 5) {
             actionRows.add(ActionRow.of(buttonsList))
             buttonsList.clear()

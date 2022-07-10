@@ -9,14 +9,15 @@ package com.fredboat.sentinel.config
 
 import com.fredboat.sentinel.ApplicationState
 import com.fredboat.sentinel.SocketServer
-import com.fredboat.sentinel.jda.DefaultShardManagerBuilder
 import com.fredboat.sentinel.jda.RemoteSessionController
 import com.fredboat.sentinel.jda.VoiceInterceptor
 import net.dv8tion.jda.api.entities.Message.MentionType
 import net.dv8tion.jda.api.requests.GatewayIntent
 import net.dv8tion.jda.api.requests.restaction.MessageAction
+import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.ChunkingFilter
+import net.dv8tion.jda.api.utils.Compression
 import net.dv8tion.jda.api.utils.MemberCachePolicy
 import net.dv8tion.jda.api.utils.cache.CacheFlag
 import org.slf4j.Logger
@@ -49,7 +50,7 @@ class ShardManagerConfig {
 
         val builder = DefaultShardManagerBuilder.create(sentinelProperties.discordToken, intents)
             .enableCache(CacheFlag.MEMBER_OVERRIDES, CacheFlag.VOICE_STATE)
-            .disableCache(CacheFlag.ACTIVITY, CacheFlag.ONLINE_STATUS, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE, CacheFlag.ROLE_TAGS)
+            .disableCache(CacheFlag.ACTIVITY, CacheFlag.ONLINE_STATUS, CacheFlag.CLIENT_STATUS, CacheFlag.EMOJI, CacheFlag.ROLE_TAGS, CacheFlag.STICKER)
             .setBulkDeleteSplittingEnabled(false)
             .setEnableShutdownHook(false)
             .setUseShutdownNow(true)
@@ -57,6 +58,7 @@ class ShardManagerConfig {
             .setShardsTotal(sentinelProperties.shardCount)
             .setShards(sentinelProperties.shardStart, sentinelProperties.shardEnd)
             .setSessionController(sessionController)
+            .setCompression(Compression.NONE)
             .setMemberCachePolicy(MemberCachePolicy.ALL)
             .setChunkingFilter(ChunkingFilter.include(sentinelProperties.mainGuild))
             .setVoiceDispatchInterceptor(voiceInterceptor)

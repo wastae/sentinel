@@ -89,8 +89,7 @@ data class MessageReactionAddEvent(
         val memberPermissions: String,
         val author: String,
         val fromBot: Boolean,
-        val reaction: String,
-        val isEmoji: Boolean
+        val reaction: String
 )
 
 data class SlashCommandsEvent(

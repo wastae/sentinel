@@ -16,8 +16,8 @@ import com.fredboat.sentinel.entities.RemoveSessionEvent
 import com.fredboat.sentinel.entities.RunSessionRequest
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.sharding.ShardManager
-import net.dv8tion.jda.api.utils.SessionController
 import net.dv8tion.jda.api.utils.SessionController.SessionConnectNode
+import net.dv8tion.jda.api.utils.SessionController.ShardedGateway
 import net.dv8tion.jda.api.utils.SessionControllerAdapter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -30,11 +30,10 @@ private val log: Logger = LoggerFactory.getLogger(RemoteSessionController::class
 class RemoteSessionController(
     val sentinelProps: SentinelProperties,
     val routingKey: RoutingKey
-) : SessionController {
+) : SessionControllerAdapter() {
 
     private val adapter = SessionControllerAdapter()
     private val localQueue = ConcurrentHashMap<Int, SessionConnectNode>()
-    private var globalRatelimit = -1L
     lateinit var shardManager: ShardManager
 
     override fun appendSession(node: SessionConnectNode) {
@@ -99,17 +98,27 @@ class RemoteSessionController(
 
     /* Handle gateway and global ratelimit */
 
-    override fun getGlobalRatelimit() = globalRatelimit
+    override fun getGlobalRatelimit(): Long = globalRatelimit.get()
 
     override fun setGlobalRatelimit(ratelimit: Long) {
         SocketServer.contextMap.forEach {
             it.value.socketClient.sendEvent("setGlobalRatelimit", SetGlobalRatelimit(ratelimit))
         }
-        globalRatelimit = ratelimit
+        globalRatelimit.set(ratelimit)
     }
 
-    override fun getShardedGateway(api: JDA): SessionController.ShardedGateway {
-        return adapter.getShardedGateway(api)
+    override fun getGateway(): String {
+        return sentinelProps.gatewayProxy.ifBlank {
+            adapter.gateway
+        }
+    }
+
+    override fun getShardedGateway(api: JDA): ShardedGateway {
+        return if (sentinelProps.gatewayProxy.isNotBlank()) {
+            ShardedGateway(sentinelProps.gatewayProxy, sentinelProps.shardCount)
+        } else {
+            adapter.getShardedGateway(api)
+        }
     }
 }
 

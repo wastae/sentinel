@@ -66,9 +66,18 @@ class SubscriptionHandler(
 
     fun consume(request: GuildUnsubscribeRequest) {
         val removed = SocketServer.subscriptionsCache.remove(request.id.toLong())
-        if (!removed) {
+        if (removed) {
+            val guild = shardManager.getGuildById(request.id)
+            if (guild != null) {
+                val cacheCount = guild.memberCache.size()
+                guild.pruneMemberCache()
+                log.info("Request to unsubscribe from {} processed, removed {} members from cache", guild.id, cacheCount)
+            } else {
+                log.warn("Attempt to unsubscribe from ${request.id} while guild is null in JDA")
+            }
+        } else {
             if (!SocketServer.subscriptionsCache.contains(request.id.toLong())) {
-                log.warn("Attempt to unsubscribe ${request.id} while we are not subscribed")
+                log.warn("Attempt to unsubscribe from ${request.id} while we are not subscribed")
             } else {
                 log.error("Failed to unsubscribe from ${request.id}")
             }
