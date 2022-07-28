@@ -13,7 +13,6 @@ import com.fredboat.sentinel.entities.GuildSubscribeRequest
 import com.fredboat.sentinel.entities.GuildUnsubscribeRequest
 import com.fredboat.sentinel.jda.VoiceServerUpdateCache
 import com.fredboat.sentinel.util.toEntity
-import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.sharding.ShardManager
@@ -24,6 +23,7 @@ import net.dv8tion.jda.internal.utils.cache.SnowflakeCacheViewImpl
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.util.concurrent.CompletableFuture
 
 @Service
 class SubscriptionHandler(
@@ -36,52 +36,49 @@ class SubscriptionHandler(
     }
 
     fun consume(request: GuildSubscribeRequest, client: SocketIOClient) {
-        while (shardManager.getShardById(request.shardId)?.status != JDA.Status.CONNECTED) {
-            log.info("Waiting while shard ${request.shardId} will be CONNECTED, current status ${shardManager.getShardById(request.shardId)?.status}")
-            Thread.sleep(500)
-        }
-
-        val jda = shardManager.getShardById(request.shardId)
-        if (jda == null) {
-            log.warn("Attempt to subscribe to ${request.id} guild while JDA instance is null")
-            return
-        }
-
-        val guild = jda.getGuildById(request.id)
-        log.info(
-            "Request to subscribe to $guild received after " +
-                    "${System.currentTimeMillis() - request.requestTime.toLong()}ms"
-        )
-        if (guild == null) {
-            log.warn("Attempt to subscribe to unknown guild ${request.id}")
-            return
-        }
-
-        val added = SocketServer.subscriptionsCache.add(request.id.toLong())
-        if (added) {
-            guild.loadMembers().onSuccess {
-                sendGuildSubscribeResponse(request, client, guild)
-                log.info(StringBuilder()
-                    .append("Request to subscribe to $guild processed after")
-                    .append(" ")
-                    .append("${System.currentTimeMillis() - request.requestTime.toLong()}ms with Discord")
-                    .append(", ")
-                    .append("total user cache size ${shardManager.userCache.size()}").toString()
-                )
+        CompletableFuture.runAsync {
+            val jda = shardManager.getShardById(request.shardId)?.awaitReady()
+            if (jda == null) {
+                log.warn("Attempt to subscribe to ${request.id} guild while JDA instance is null")
+                return@runAsync
             }
-        } else {
-            if (SocketServer.subscriptionsCache.contains(request.id.toLong())) {
-                sendGuildSubscribeResponse(request, client, guild)
-                log.info(StringBuilder()
-                    .append("Request to subscribe to $guild when we are already, processed after")
-                    .append(" ")
-                    .append("${System.currentTimeMillis() - request.requestTime.toLong()}ms")
-                    .append(", ")
-                    .append("total user cache size ${shardManager.userCache.size()}").toString()
-                )
+
+            val guild = jda.getGuildById(request.id)
+            log.info(
+                "Request to subscribe to $guild received after " +
+                        "${System.currentTimeMillis() - request.requestTime.toLong()}ms"
+            )
+            if (guild == null) {
+                log.warn("Attempt to subscribe to unknown guild ${request.id}")
+                return@runAsync
+            }
+
+            val added = SocketServer.subscriptionsCache.add(request.id.toLong())
+            if (added) {
+                guild.loadMembers().onSuccess {
+                    sendGuildSubscribeResponse(request, client, guild)
+                    log.info(StringBuilder()
+                        .append("Request to subscribe to $guild processed after")
+                        .append(" ")
+                        .append("${System.currentTimeMillis() - request.requestTime.toLong()}ms with Discord")
+                        .append(", ")
+                        .append("total user cache size ${shardManager.userCache.size()}").toString()
+                    )
+                }
             } else {
-                log.error("Failed to subscribe to ${request.id}")
-                sendGuildSubscribeResponse(request, client, guild)
+                if (SocketServer.subscriptionsCache.contains(request.id.toLong())) {
+                    sendGuildSubscribeResponse(request, client, guild)
+                    log.info(StringBuilder()
+                        .append("Request to subscribe to $guild when we are already, processed after")
+                        .append(" ")
+                        .append("${System.currentTimeMillis() - request.requestTime.toLong()}ms")
+                        .append(", ")
+                        .append("total user cache size ${shardManager.userCache.size()}").toString()
+                    )
+                } else {
+                    log.error("Failed to subscribe to ${request.id}")
+                    sendGuildSubscribeResponse(request, client, guild)
+                }
             }
         }
     }
