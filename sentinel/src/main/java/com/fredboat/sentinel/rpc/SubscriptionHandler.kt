@@ -17,7 +17,6 @@ import com.fredboat.sentinel.redis.repositories.GuildsRepository
 import com.fredboat.sentinel.util.toEntity
 import com.fredboat.sentinel.util.toJDA
 import com.fredboat.sentinel.util.toRedis
-import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.User
@@ -56,93 +55,90 @@ class SubscriptionHandler(
     }
 
     fun consume(request: GuildSubscribeRequest, client: SocketIOClient) {
-        while (shardManager.getShardById(request.shardId)?.status != JDA.Status.CONNECTED) {
-            log.info("Waiting while shard ${request.shardId} will be CONNECTED, current status ${shardManager.getShardById(request.shardId)?.status}")
-            Thread.sleep(500)
-        }
+        CompletableFuture.runAsync {
+            val jda = shardManager.getShardById(request.shardId)?.awaitReady()
+            if (jda == null) {
+                log.warn("Attempt to subscribe to ${request.id} guild while JDA instance is null")
+                return@runAsync
+            }
 
-        val jda = shardManager.getShardById(request.shardId)
-        if (jda == null) {
-            log.warn("Attempt to subscribe to ${request.id} guild while JDA instance is null")
-            return
-        }
+            val guild = jda.getGuildById(request.id)
+            log.info(
+                "Request to subscribe to $guild received after " +
+                        "${System.currentTimeMillis() - request.requestTime.toLong()}ms"
+            )
+            if (guild == null) {
+                log.warn("Attempt to subscribe to unknown guild ${request.id}")
+                return@runAsync
+            }
 
-        val guild = jda.getGuildById(request.id)
-        log.info(
-            "Request to subscribe to $guild received after " +
-                    "${System.currentTimeMillis() - request.requestTime.toLong()}ms"
-        )
-        if (guild == null) {
-            log.warn("Attempt to subscribe to unknown guild ${request.id}")
-            return
-        }
+            guild.retrieveMetaData().queue { metaData ->
+                val added = SocketServer.subscriptionsCache.add(request.id.toLong())
+                if (added) {
+                    try {
+                        val cachedGuild = guildsRepository.findById(request.id).get()
+                        var memberList = cachedGuild.memberList
+                        var fromDiscord = false
+                        log.info("Redis members cache size: ${memberList.size}")
+                        log.info("Approximate members size: ${metaData.approximateMembers}")
+                        if (metaData.approximateMembers > memberList.size) {
+                            log.info("Loading members from Discord")
+                            memberList = guild.loadMembers().get().toRedis()
+                            fromDiscord = true
+                            CompletableFuture.runAsync { guildsRepository.save(CachedGuild(guild.id, memberList)) }
+                        } else {
+                            log.info("Using cached members from Redis")
+                        }
 
-        guild.retrieveMetaData().queue { metaData ->
-            val added = SocketServer.subscriptionsCache.add(request.id.toLong())
-            if (added) {
-                try {
-                    val cachedGuild = guildsRepository.findById(request.id).get()
-                    var memberList = cachedGuild.memberList
-                    var fromDiscord = false
-                    log.info("Redis members cache size: ${memberList.size}")
-                    log.info("Approximate members size: ${metaData.approximateMembers}")
-                    if (metaData.approximateMembers > memberList.size) {
-                        log.info("Loading members from Discord")
-                        memberList = guild.loadMembers().get().toRedis()
-                        fromDiscord = true
-                        CompletableFuture.runAsync { guildsRepository.save(CachedGuild(guild.id, memberList)) }
-                    } else {
-                        log.info("Using cached members from Redis")
-                    }
-
-                    populateGuildCache(memberList.toJDA(guild as GuildImpl), guild)
-                    log.info("Total user cache size ${shardManager.userCache.size()}")
-                    sendGuildSubscribeResponse(request, client, guild)
-                    invalidateGuildCache(guild, false)
-                    log.info(StringBuilder()
-                        .append("Request to subscribe to $guild processed after")
-                        .append(" ")
-                        .append("${System.currentTimeMillis() - request.requestTime.toLong()}ms with")
-                        .append(" ")
-                        .append(if (fromDiscord) "Discord" else "Redis")
-                        .append(", ")
-                        .append("total user cache size ${shardManager.userCache.size()}").toString()
-                    )
-                } catch (e: NoSuchElementException) {
-                    log.info("Not found cache in Redis")
-                    guild.loadMembers().onSuccess { memberList ->
-                        val cachedGuild = CachedGuild(guild.id, memberList.toRedis())
-                        populateGuildCache(cachedGuild.memberList.toJDA(guild as GuildImpl), guild)
+                        populateGuildCache(memberList.toJDA(guild as GuildImpl), guild)
                         log.info("Total user cache size ${shardManager.userCache.size()}")
                         sendGuildSubscribeResponse(request, client, guild)
                         invalidateGuildCache(guild, false)
                         log.info(StringBuilder()
                             .append("Request to subscribe to $guild processed after")
                             .append(" ")
-                            .append("${System.currentTimeMillis() - request.requestTime.toLong()}ms with Discord")
+                            .append("${System.currentTimeMillis() - request.requestTime.toLong()}ms with")
+                            .append(" ")
+                            .append(if (fromDiscord) "Discord" else "Redis")
                             .append(", ")
                             .append("total user cache size ${shardManager.userCache.size()}").toString()
                         )
-                        CompletableFuture.runAsync { guildsRepository.save(cachedGuild) }
+                    } catch (e: NoSuchElementException) {
+                        log.info("Not found cache in Redis")
+                        guild.loadMembers().onSuccess { memberList ->
+                            val cachedGuild = CachedGuild(guild.id, memberList.toRedis())
+                            populateGuildCache(cachedGuild.memberList.toJDA(guild as GuildImpl), guild)
+                            log.info("Total user cache size ${shardManager.userCache.size()}")
+                            sendGuildSubscribeResponse(request, client, guild)
+                            invalidateGuildCache(guild, false)
+                            log.info(StringBuilder()
+                                .append("Request to subscribe to $guild processed after")
+                                .append(" ")
+                                .append("${System.currentTimeMillis() - request.requestTime.toLong()}ms with Discord")
+                                .append(", ")
+                                .append("total user cache size ${shardManager.userCache.size()}").toString()
+                            )
+                            CompletableFuture.runAsync { guildsRepository.save(cachedGuild) }
+                        }
                     }
-                }
-            } else {
-                if (SocketServer.subscriptionsCache.contains(request.id.toLong())) {
-                    val cachedGuild = guildsRepository.findById(guild.id).get()
-                    populateGuildCache(cachedGuild.memberList.toJDA(guild as GuildImpl), guild)
-                    log.info("Total user cache size ${shardManager.userCache.size()}")
-                    sendGuildSubscribeResponse(request, client, guild)
-                    invalidateGuildCache(guild, false)
-                    log.info(StringBuilder()
-                        .append("Request to subscribe to $guild when we are already, processed after")
-                        .append(" ")
-                        .append("${System.currentTimeMillis() - request.requestTime.toLong()}ms")
-                        .append(", ")
-                        .append("total user cache size ${shardManager.userCache.size()}").toString()
-                    )
                 } else {
-                    log.error("Failed to subscribe to ${request.id}")
-                    sendGuildSubscribeResponse(request, client, guild)
+                    if (SocketServer.subscriptionsCache.contains(request.id.toLong())) {
+                        val cachedGuild = guildsRepository.findById(guild.id).get()
+                        populateGuildCache(cachedGuild.memberList.toJDA(guild as GuildImpl), guild)
+                        log.info("Total user cache size ${shardManager.userCache.size()}")
+                        sendGuildSubscribeResponse(request, client, guild)
+                        invalidateGuildCache(guild, false)
+                        log.info(StringBuilder()
+                            .append("Request to subscribe to $guild when we are already, processed after")
+                            .append(" ")
+                            .append("${System.currentTimeMillis() - request.requestTime.toLong()}ms")
+                            .append(", ")
+                            .append("total user cache size ${shardManager.userCache.size()}").toString()
+                        )
+                    } else {
+                        log.error("Failed to subscribe to ${request.id}")
+                        sendGuildSubscribeResponse(request, client, guild)
+                    }
                 }
             }
         }
