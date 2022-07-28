@@ -65,7 +65,7 @@ allprojects {
 
 ext {
     serverSocketIOVersion = '1.7.19'
-    jdaVersion = "5.0.0-alpha.5"
+    jdaVersion = "5.0.0-alpha.16"
     reactorVersion = "3.1.1.RELEASE"
     gsonVersion = '2.8.2'
     jacksonKotlinVersion = "2.13.1"

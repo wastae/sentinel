@@ -7,6 +7,7 @@
 
 package com.fredboat.sentinel
 
+import com.redis.om.spring.annotations.EnableRedisDocumentRepositories
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.WebApplicationType
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -16,6 +17,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import java.util.function.Supplier
 
+@EnableRedisDocumentRepositories(basePackages = ["com.fredboat.sentinel.redis.repositories"])
 @SpringBootApplication
 @ComponentScan(basePackages = ["com.fredboat"])
 class Launcher : ApplicationContextAware {

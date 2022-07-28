@@ -11,6 +11,7 @@ import com.corundumstudio.socketio.SocketIOClient
 import com.fredboat.sentinel.SocketServer
 import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.metrics.Counters
+import com.fredboat.sentinel.redis.repositories.GuildsRepository
 import com.fredboat.sentinel.util.toEntity
 import com.neovisionaries.ws.client.WebSocketFrame
 import net.dv8tion.jda.api.entities.*
@@ -26,7 +27,6 @@ import net.dv8tion.jda.api.events.guild.GenericGuildEvent
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.api.events.guild.member.*
-import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.api.events.guild.override.GenericPermissionOverrideEvent
 import net.dv8tion.jda.api.events.guild.update.GuildUpdateNameEvent
 import net.dv8tion.jda.api.events.guild.update.GuildUpdateOwnerEvent
@@ -45,14 +45,17 @@ import net.dv8tion.jda.api.events.role.update.RoleUpdatePermissionsEvent
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePositionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.api.utils.data.DataObject
 import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentLinkedQueue
 
 class JdaWebsocketEventListener(
     private val shardManager: ShardManager,
     private val voiceServerUpdateCache: VoiceServerUpdateCache,
+    private val guildsRepository: GuildsRepository,
     var socketClient: SocketIOClient
 ) : ListenerAdapter() {
 
@@ -108,31 +111,63 @@ class JdaWebsocketEventListener(
     override fun onGuildJoin(event: GuildJoinEvent) {
         dispatchSocket("guildJoinEvent", GuildJoinEvent(
             event.guild.id,
-            event.guild.locale.toLanguageTag()
+            event.guild.locale.locale
         ))
     }
 
-    override fun onGuildLeave(event: GuildLeaveEvent) =
+    override fun onGuildLeave(event: GuildLeaveEvent) {
         dispatchSocket("guildLeaveEvent", GuildLeaveEvent(
             event.guild.id,
             (event.guild.selfMember.timeJoined.toEpochSecond() * 1000).toString()
         ))
+    }
 
     override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) = onMemberChange(event.member)
     override fun onGuildMemberRoleRemove(event: GuildMemberRoleRemoveEvent) = onMemberChange(event.member)
-    override fun onGuildMemberJoin(event: GuildMemberJoinEvent) = onMemberChange(event.member)
-    override fun onGuildMemberRemove(event: GuildMemberRemoveEvent) {
-        if (event.member != null) {
-            onMemberChange(event.member!!)
-        }
-    }
+    override fun onGuildMemberJoin(event: GuildMemberJoinEvent) = onMemberChange(event.member, event.rawData)
+    override fun onGuildMemberRemove(event: GuildMemberRemoveEvent) = onMemberChange(event.member, event.rawData)
 
-    private fun onMemberChange(member: net.dv8tion.jda.api.entities.Member) {
-        if (!SocketServer.subscriptionsCache.contains(member.guild.idLong)) return
-        dispatchSocket("guildMemberUpdate", GuildMemberUpdate(
-            member.guild.id,
-            member.toEntity()
-        ))
+    private fun onMemberChange(member: net.dv8tion.jda.api.entities.Member?, data: DataObject? = null) {
+        CompletableFuture.runAsync {
+            if (data != null) {
+                val guildId = data.getObject("d").getString("guild_id")
+                if (!SocketServer.subscriptionsCache.contains(guildId.toLong())) return@runAsync
+
+                try {
+                    val type = data.getString("t")
+                    val memberObject = data.getObject("d")
+                    val userId = memberObject.getObject("user").getString("id")
+                    val guildCache = guildsRepository.findById(guildId).get()
+
+                    when (type) {
+                        "GUILD_MEMBER_ADD" -> {
+                            guildCache.memberList.add(RedisMember(memberObject.toETF()))
+                        }
+                        "GUILD_MEMBER_REMOVE" -> {
+                            guildCache.memberList.remove(RedisMember(memberObject.toETF()))
+                        }
+                        else -> {
+                            log.warn("Unknown type $type")
+                            return@runAsync
+                        }
+                    }
+
+                    log.info("Saving new guild cache for $guildId because of $type event for $userId")
+                    guildsRepository.save(guildCache)
+                } catch (e: NoSuchElementException) {
+                    // ignore
+                }
+            }
+        }
+
+        if (member != null) {
+            if (!SocketServer.subscriptionsCache.contains(member.guild.idLong)) return
+
+            dispatchSocket("guildMemberUpdate", GuildMemberUpdate(
+                member.guild.id,
+                member.toEntity()
+            ))
+        }
     }
 
     /* Voice jda */
@@ -251,7 +286,7 @@ class JdaWebsocketEventListener(
             PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.member).toString(),
             event.member!!.id,
             event.member!!.user.isBot,
-            event.userLocale.toLanguageTag(),
+            event.userLocale.locale,
             event.commandPath,
             event.options.map { it.toEntity() }
         ))
@@ -271,7 +306,7 @@ class JdaWebsocketEventListener(
         if (event.rawData == null) return
 
         if (event.focusedOption.value.isEmpty()) {
-            event.replyChoice("Empty request", "dQw4w9WgXcQ").queue()
+            event.replyChoice("Empty request", "https://www.youtube.com/watch?v=dQw4w9WgXcQ").queue()
             return
         }
 
@@ -340,8 +375,8 @@ class JdaWebsocketEventListener(
 
     override fun onGenericGuild(event: GenericGuildEvent) {
         if (!SocketServer.subscriptionsCache.contains(event.guild.idLong)) return
-        if (event is GuildUpdateNameEvent || event is GuildUpdateOwnerEvent) {
-            updateGuild(event.guild)
+        if (event is GuildUpdateNameEvent || event is GuildUpdateOwnerEvent) { // TODO Rework handling of this events
+            //updateGuild(event.guild)
         } else if (event is GenericPermissionOverrideEvent && event.channel is TextChannel) {
             updateChannelPermissions(event.guild)
         } else if (event is GenericPermissionOverrideEvent && event.channel is VoiceChannel) {
@@ -351,48 +386,78 @@ class JdaWebsocketEventListener(
 
     override fun onGenericChannel(event: GenericChannelEvent) {
         if (!SocketServer.subscriptionsCache.contains(event.guild.idLong)) return
-        if (event is ChannelDeleteEvent || event is ChannelCreateEvent) {
-            updateGuild(event.guild)
-            return
-        } else if (event is ChannelUpdatePositionEvent) {
+        if (event is ChannelUpdatePositionEvent) {
             updateChannelPermissions(event.guild)
         } else if (event.channel is TextChannel) {
-            dispatchSocket("textChannelUpdate", TextChannelUpdate(
-                event.guild.id,
-                (event.channel as TextChannel).toEntity()
-            ))
+            when (event) {
+                is ChannelCreateEvent -> {
+                    dispatchSocket("textChannelCreate", TextChannelCreate(
+                        event.guild.id,
+                        (event.channel as TextChannel).toEntity()
+                    ))
+                }
+                is ChannelDeleteEvent -> {
+                    dispatchSocket("textChannelDelete", TextChannelDelete(
+                        event.guild.id,
+                        (event.channel as TextChannel).toEntity()
+                    ))
+                }
+                else -> {
+                    dispatchSocket("textChannelUpdate", TextChannelUpdate(
+                        event.guild.id,
+                        (event.channel as TextChannel).toEntity()
+                    ))
+                }
+            }
         } else if (event.channel is VoiceChannel) {
-            dispatchSocket("voiceChannelUpdate", VoiceChannelUpdate(
-                event.guild.id,
-                (event.channel as VoiceChannel).toEntity()
-            ))
+            when (event) {
+                is ChannelCreateEvent -> {
+                    dispatchSocket("voiceChannelCreate", VoiceChannelCreate(
+                        event.guild.id,
+                        (event.channel as VoiceChannel).toEntity()
+                    ))
+                }
+                is ChannelDeleteEvent -> {
+                    dispatchSocket("voiceChannelDelete", VoiceChannelDelete(
+                        event.guild.id,
+                        (event.channel as VoiceChannel).toEntity()
+                    ))
+                }
+                else -> {
+                    dispatchSocket("voiceChannelUpdate", VoiceChannelUpdate(
+                        event.guild.id,
+                        (event.channel as VoiceChannel).toEntity()
+                    ))
+                }
+            }
         }
     }
 
     override fun onGenericRole(event: GenericRoleEvent) {
         if (!SocketServer.subscriptionsCache.contains(event.guild.idLong)) return
-        if (event is RoleDeleteEvent || event is RoleCreateEvent) {
-            updateGuild(event.guild)
-            return
-        } else if (event is RoleUpdatePositionEvent || event is RoleUpdatePermissionsEvent) {
-            updateChannelPermissions(event.guild)
+
+        when (event) {
+            is RoleCreateEvent -> {
+                dispatchSocket("roleCreate", RoleCreate(
+                    event.guild.id,
+                    event.role.toEntity()
+                )); return
+            }
+            is RoleDeleteEvent -> {
+                dispatchSocket("roleDelete", RoleDelete(
+                    event.guild.id,
+                    event.role.toEntity()
+                )); return
+            }
+            is RoleUpdatePositionEvent, is RoleUpdatePermissionsEvent -> {
+                updateChannelPermissions(event.guild)
+            }
         }
+
         dispatchSocket("roleUpdate", RoleUpdate(
             event.guild.id,
             event.role.toEntity()
         ))
-    }
-
-    override fun onGenericGuildMember(event: GenericGuildMemberEvent) {
-        if (!SocketServer.subscriptionsCache.contains(event.guild.idLong)) return
-        if (event is GuildMemberRoleAddEvent || event is GuildMemberRoleRemoveEvent) {
-            updateGuild(event.guild)
-            return
-        }
-    }
-
-    private fun updateGuild(guild: Guild) {
-        dispatchSocket("guildUpdateEvent", GuildUpdateEvent(guild.toEntity(voiceServerUpdateCache)))
     }
 
     private fun updateChannelPermissions(guild: Guild) {

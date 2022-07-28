@@ -9,8 +9,11 @@ package com.fredboat.sentinel.config
 
 import com.fredboat.sentinel.ApplicationState
 import com.fredboat.sentinel.SocketServer
+import com.fredboat.sentinel.jda.GuildMembersChunkHandler
 import com.fredboat.sentinel.jda.RemoteSessionController
 import com.fredboat.sentinel.jda.VoiceInterceptor
+import net.dv8tion.jda.api.GatewayEncoding
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.Message.MentionType
 import net.dv8tion.jda.api.requests.GatewayIntent
 import net.dv8tion.jda.api.requests.restaction.MessageAction
@@ -20,6 +23,7 @@ import net.dv8tion.jda.api.utils.ChunkingFilter
 import net.dv8tion.jda.api.utils.Compression
 import net.dv8tion.jda.api.utils.MemberCachePolicy
 import net.dv8tion.jda.api.utils.cache.CacheFlag
+import net.dv8tion.jda.internal.JDAImpl
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
@@ -33,6 +37,7 @@ class ShardManagerConfig {
     companion object {
         private val log: Logger = LoggerFactory.getLogger(ShardManagerConfig::class.java)
     }
+
     @Bean
     fun buildShardManager(
         sentinelProperties: SentinelProperties,
@@ -42,10 +47,11 @@ class ShardManagerConfig {
     ): ShardManager {
 
         val intents = listOf(
+            //GatewayIntent.MESSAGE_CONTENT,
             GatewayIntent.DIRECT_MESSAGES,
             GatewayIntent.GUILD_MESSAGES,
-            GatewayIntent.GUILD_VOICE_STATES,
-            GatewayIntent.GUILD_MEMBERS
+            GatewayIntent.GUILD_MEMBERS,
+            GatewayIntent.GUILD_VOICE_STATES
         )
 
         val builder = DefaultShardManagerBuilder.create(sentinelProperties.discordToken, intents)
@@ -58,21 +64,26 @@ class ShardManagerConfig {
             .setShardsTotal(sentinelProperties.shardCount)
             .setShards(sentinelProperties.shardStart, sentinelProperties.shardEnd)
             .setSessionController(sessionController)
-            .setCompression(Compression.NONE)
-            .setMemberCachePolicy(MemberCachePolicy.ALL)
-            .setChunkingFilter(ChunkingFilter.include(sentinelProperties.mainGuild))
+            .setGatewayEncoding(GatewayEncoding.ETF)
+            .setCompression(Compression.ZLIB)
+            .setMemberCachePolicy(MemberCachePolicy.NONE)
+            .setChunkingFilter(ChunkingFilter.NONE)
             .setVoiceDispatchInterceptor(voiceInterceptor)
             .setRawEventsEnabled(false)
             .setEventPassthrough(true)
 
         val shardManager: ShardManager
         try {
+            shardManager = builder.build()
+            Message.suppressContentIntentWarning()
             MessageAction.setDefaultMentions(EnumSet.complementOf(EnumSet.of(
                 MentionType.EVERYONE,
                 MentionType.HERE,
                 MentionType.ROLE
             )))
-            shardManager = builder.build()
+            shardManager.shards.forEach { it as JDAImpl
+                it.client.handlers.replace("GUILD_MEMBERS_CHUNK", GuildMembersChunkHandler(it))
+            }
             sessionController.shardManager = shardManager
             socketServer.shardManager = shardManager
             if (ApplicationState.isTesting) {

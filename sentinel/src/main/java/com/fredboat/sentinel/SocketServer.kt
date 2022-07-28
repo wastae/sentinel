@@ -5,6 +5,7 @@ import com.fredboat.sentinel.config.RoutingKey
 import com.fredboat.sentinel.config.SentinelProperties
 import com.fredboat.sentinel.jda.JdaWebsocketEventListener
 import com.fredboat.sentinel.jda.VoiceServerUpdateCache
+import com.fredboat.sentinel.redis.repositories.GuildsRepository
 import com.fredboat.sentinel.rpc.FanoutConsumer
 import com.google.gson.Gson
 import net.dv8tion.jda.api.sharding.ShardManager
@@ -19,7 +20,8 @@ import java.util.concurrent.ConcurrentHashMap
 class SocketServer(
     private val sentinelProperties: SentinelProperties,
     private val key: RoutingKey,
-    private val voiceServerUpdateCache: VoiceServerUpdateCache
+    private val voiceServerUpdateCache: VoiceServerUpdateCache,
+    private val guildsRepository: GuildsRepository
 ) {
 
     companion object {
@@ -45,7 +47,7 @@ class SocketServer(
                 if (botId != null) {
                     val oldConnection = contextMap[botId]
                     if (oldConnection == null) {
-                        contextMap[botId] = JdaWebsocketEventListener(shardManager, voiceServerUpdateCache, it)
+                        contextMap[botId] = JdaWebsocketEventListener(shardManager, voiceServerUpdateCache, guildsRepository, it)
                         it.sendEvent("initialEvent", key.key)
                         FanoutConsumer.sendHello(it, sentinelProperties, key)
                         log.info("Bot with ID $botId connected for listening events to server with key ${key.key}")
