@@ -16,6 +16,6 @@ import org.springframework.stereotype.Component
 @Component
 @ConfigurationProperties(prefix = "sentry")
 class SentryProperties(
-        var dsn: String = "",
-        var tags: Map<String, String> = HashMap()
+    var dsn: String = "",
+    var tags: Map<String, String> = HashMap()
 )

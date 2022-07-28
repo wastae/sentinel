@@ -18,10 +18,11 @@ import java.util.*
  * Created by napster on 19.04.18.
  */
 @Service
-class ShardStatusCollector(private val shardManager: ShardManager) : Collector() {
+class ShardStatusCollector(
+    private val shardManager: ShardManager
+) : Collector() {
 
     override fun collect(): List<MetricFamilySamples> {
-
         val mfs = ArrayList<MetricFamilySamples>()
         val noLabels = emptyList<String>()
 

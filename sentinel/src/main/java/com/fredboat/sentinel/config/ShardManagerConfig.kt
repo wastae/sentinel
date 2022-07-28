@@ -11,6 +11,8 @@ import com.fredboat.sentinel.ApplicationState
 import com.fredboat.sentinel.SocketServer
 import com.fredboat.sentinel.jda.RemoteSessionController
 import com.fredboat.sentinel.jda.VoiceInterceptor
+import net.dv8tion.jda.api.GatewayEncoding
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.Message.MentionType
 import net.dv8tion.jda.api.requests.GatewayIntent
 import net.dv8tion.jda.api.requests.restaction.MessageAction
@@ -33,6 +35,7 @@ class ShardManagerConfig {
     companion object {
         private val log: Logger = LoggerFactory.getLogger(ShardManagerConfig::class.java)
     }
+
     @Bean
     fun buildShardManager(
         sentinelProperties: SentinelProperties,
@@ -42,10 +45,11 @@ class ShardManagerConfig {
     ): ShardManager {
 
         val intents = listOf(
+            //GatewayIntent.MESSAGE_CONTENT,
             GatewayIntent.DIRECT_MESSAGES,
             GatewayIntent.GUILD_MESSAGES,
-            GatewayIntent.GUILD_VOICE_STATES,
-            GatewayIntent.GUILD_MEMBERS
+            GatewayIntent.GUILD_MEMBERS,
+            GatewayIntent.GUILD_VOICE_STATES
         )
 
         val builder = DefaultShardManagerBuilder.create(sentinelProperties.discordToken, intents)
@@ -58,7 +62,8 @@ class ShardManagerConfig {
             .setShardsTotal(sentinelProperties.shardCount)
             .setShards(sentinelProperties.shardStart, sentinelProperties.shardEnd)
             .setSessionController(sessionController)
-            .setCompression(Compression.NONE)
+            .setGatewayEncoding(GatewayEncoding.ETF)
+            .setCompression(Compression.ZLIB)
             .setMemberCachePolicy(MemberCachePolicy.ALL)
             .setChunkingFilter(ChunkingFilter.include(sentinelProperties.mainGuild))
             .setVoiceDispatchInterceptor(voiceInterceptor)
@@ -67,12 +72,13 @@ class ShardManagerConfig {
 
         val shardManager: ShardManager
         try {
+            shardManager = builder.build()
+            Message.suppressContentIntentWarning()
             MessageAction.setDefaultMentions(EnumSet.complementOf(EnumSet.of(
                 MentionType.EVERYONE,
                 MentionType.HERE,
                 MentionType.ROLE
             )))
-            shardManager = builder.build()
             sessionController.shardManager = shardManager
             socketServer.shardManager = shardManager
             if (ApplicationState.isTesting) {

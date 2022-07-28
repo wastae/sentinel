@@ -13,11 +13,17 @@ import com.fredboat.sentinel.entities.GuildSubscribeRequest
 import com.fredboat.sentinel.entities.GuildUnsubscribeRequest
 import com.fredboat.sentinel.jda.VoiceServerUpdateCache
 import com.fredboat.sentinel.util.toEntity
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.internal.JDAImpl
+import net.dv8tion.jda.internal.entities.*
+import net.dv8tion.jda.internal.handle.EventCache
+import net.dv8tion.jda.internal.utils.cache.SnowflakeCacheViewImpl
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.util.concurrent.CompletableFuture
 
 @Service
 class SubscriptionHandler(
@@ -30,37 +36,53 @@ class SubscriptionHandler(
     }
 
     fun consume(request: GuildSubscribeRequest, client: SocketIOClient) {
-        CompletableFuture.runAsync {
-            val guild = shardManager.getShardById(request.shardId)?.awaitReady()?.getGuildById(request.id)
-            log.info(
-                "Request to subscribe to {} received after {}ms",
-                guild,
-                System.currentTimeMillis() - request.requestTime.toLong()
-            )
+        while (shardManager.getShardById(request.shardId)?.status != JDA.Status.CONNECTED) {
+            log.info("Waiting while shard ${request.shardId} will be CONNECTED, current status ${shardManager.getShardById(request.shardId)?.status}")
+            Thread.sleep(500)
+        }
 
-            if (guild == null) {
-                log.warn("Attempt to subscribe to unknown guild ${request.id}")
-                return@runAsync
+        val jda = shardManager.getShardById(request.shardId)
+        if (jda == null) {
+            log.warn("Attempt to subscribe to ${request.id} guild while JDA instance is null")
+            return
+        }
+
+        val guild = jda.getGuildById(request.id)
+        log.info(
+            "Request to subscribe to $guild received after " +
+                    "${System.currentTimeMillis() - request.requestTime.toLong()}ms"
+        )
+        if (guild == null) {
+            log.warn("Attempt to subscribe to unknown guild ${request.id}")
+            return
+        }
+
+        val added = SocketServer.subscriptionsCache.add(request.id.toLong())
+        if (added) {
+            guild.loadMembers().onSuccess {
+                sendGuildSubscribeResponse(request, client, guild)
+                log.info(StringBuilder()
+                    .append("Request to subscribe to $guild processed after")
+                    .append(" ")
+                    .append("${System.currentTimeMillis() - request.requestTime.toLong()}ms with Discord")
+                    .append(", ")
+                    .append("total user cache size ${shardManager.userCache.size()}").toString()
+                )
             }
-
-            val added = SocketServer.subscriptionsCache.add(request.id.toLong())
-            if (added) {
-                guild.loadMembers().onSuccess { log.info("Successfully loaded ${it.size} members for $guild") }.get()
+        } else {
+            if (SocketServer.subscriptionsCache.contains(request.id.toLong())) {
+                sendGuildSubscribeResponse(request, client, guild)
+                log.info(StringBuilder()
+                    .append("Request to subscribe to $guild when we are already, processed after")
+                    .append(" ")
+                    .append("${System.currentTimeMillis() - request.requestTime.toLong()}ms")
+                    .append(", ")
+                    .append("total user cache size ${shardManager.userCache.size()}").toString()
+                )
             } else {
-                if (SocketServer.subscriptionsCache.contains(request.id.toLong())) {
-                    log.warn("Attempt to subscribe ${request.id} while we are already subscribed")
-                } else {
-                    log.error("Failed to subscribe to ${request.id}")
-                }
+                log.error("Failed to subscribe to ${request.id}")
+                sendGuildSubscribeResponse(request, client, guild)
             }
-
-            val entity = guild.toEntity(voiceServerUpdateCache)
-            log.info(
-                "Request to subscribe to {} processed after {}ms",
-                guild,
-                System.currentTimeMillis() - request.requestTime.toLong()
-            )
-            client.sendEvent("guild-${request.responseId}", entity)
         }
     }
 
@@ -69,9 +91,8 @@ class SubscriptionHandler(
         if (removed) {
             val guild = shardManager.getGuildById(request.id)
             if (guild != null) {
-                val cacheCount = guild.memberCache.size()
-                guild.pruneMemberCache()
-                log.info("Request to unsubscribe from {} processed, removed {} members from cache", guild.id, cacheCount)
+                invalidateGuildCache(guild)
+                log.info("Request to unsubscribe from ${guild.id} processed, total user cache size ${shardManager.userCache.size()}")
             } else {
                 log.warn("Attempt to unsubscribe from ${request.id} while guild is null in JDA")
             }
@@ -82,5 +103,61 @@ class SubscriptionHandler(
                 log.error("Failed to unsubscribe from ${request.id}")
             }
         }
+    }
+
+    private fun sendGuildSubscribeResponse(request: GuildSubscribeRequest, client: SocketIOClient, guild: Guild) {
+        client.sendEvent("guild-${request.responseId}", guild.toEntity(voiceServerUpdateCache))
+    }
+
+    private fun invalidateGuildCache(guild: Guild) {
+        val membersView = (guild as GuildImpl).membersView
+        membersView.writeLock().use {
+            membersView.map.forEachEntry { id, member ->
+                if (id != guild.jda.selfUser.idLong) {
+                    updateMemberCache(member as MemberImpl, guild.jda, true)
+                }; true
+            }
+        }
+    }
+
+    fun updateMemberCache(member: MemberImpl, jda: JDAImpl, forceRemove: Boolean): Boolean {
+        val guild = member.guild
+        val user = member.user as UserImpl
+        val membersView = guild.membersView
+        if (forceRemove) {
+            if (membersView.remove(member.idLong) == null) return false
+            log.debug("Unloading member {}", member)
+            if (user.mutualGuilds.isEmpty()) {
+                user.setFake(true)
+                jda.usersView.remove(user.idLong)
+            }
+            val voiceState = member.voiceState as GuildVoiceStateImpl?
+            if (voiceState != null) {
+                val connectedChannel = voiceState.channel as VoiceChannelImpl?
+                connectedChannel?.connectedMembersMap?.remove(member.idLong)
+                voiceState.setConnectedChannel(null)
+            }
+
+            return false
+        } else if (guild.getMemberById(member.idLong) != null) {
+            return true
+        }
+
+        log.debug("Loading member {}", member)
+
+        if (jda.getUserById(user.idLong) == null) {
+            val usersView: SnowflakeCacheViewImpl<User> = jda.usersView
+            usersView.writeLock().use { usersView.map.put(user.idLong, user) }
+        }
+
+        membersView.writeLock().use {
+            membersView.map.put(member.idLong, member)
+            if (member.isOwner) guild.owner = member
+        }
+
+        val hashId = guild.idLong xor user.idLong
+        jda.eventCache.playbackCache(EventCache.Type.USER, member.idLong)
+        jda.eventCache.playbackCache(EventCache.Type.MEMBER, hashId)
+        return true
     }
 }

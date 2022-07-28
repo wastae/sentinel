@@ -35,7 +35,8 @@ dependencies {
     compile project(":sentinel-shared")
     compile "com.corundumstudio.socketio:netty-socketio:$serverSocketIOVersion"
     //compile "net.dv8tion:JDA:$jdaVersion"
-    compile "com.github.DV8FromTheWorld:JDA:PR2014-SNAPSHOT"
+    compile "com.github.walkyst:jda:1633b1bccd"
+    compile "net.sf.trove4j:trove4j:3.0.3"
     compile "jakarta.xml.bind:jakarta.xml.bind-api:2.3.2"
     compile "org.glassfish.jaxb:jaxb-runtime:2.3.2"
     //compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"

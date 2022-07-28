@@ -10,73 +10,74 @@ package com.fredboat.sentinel.util
 import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.jda.VoiceServerUpdateCache
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.internal.utils.PermissionUtil
 
 fun JDA.toEntity() = Shard(
-        shardInfo.shardId,
-        shardInfo.shardTotal,
-        status.toEntity()
+    shardInfo.shardId,
+    shardInfo.shardTotal,
+    status.toEntity()
 )
 
 fun JDA.toEntityExtended() = ExtendedShardInfo(
-        toEntity(),
-        guildCache.size().toInt(),
-        userCache.size().toInt()
+    toEntity(),
+    guildCache.size().toInt(),
+    userCache.size().toInt()
 )
 
 fun net.dv8tion.jda.api.entities.Guild.toEntity(updateCache: VoiceServerUpdateCache) = Guild(
-        id,
-        name,
-        owner?.user?.id,
-        members.map { it.toEntity() },
-        textChannels.map { it.toEntity() },
-        voiceChannels.map { it.toEntity() },
-        roles.map { it.toEntity() },
-        updateCache[id]
+    id,
+    name,
+    owner?.user?.id,
+    members.map { it.toEntity() },
+    textChannels.map { it.toEntity() },
+    voiceChannels.map { it.toEntity() },
+    roles.map { it.toEntity() },
+    updateCache[id]
 )
 
 fun net.dv8tion.jda.api.entities.User.toEntity() = User(
-        id,
-        name,
-        discriminator,
-        isBot
+    id,
+    name,
+    discriminator,
+    isBot
 )
 
-fun net.dv8tion.jda.api.entities.Member.toEntity() = Member(
-        user.id,
-        user.name,
-        nickname,
-        user.discriminator,
-        guild.id,
-        user.isBot,
-        roles.map { it.id },
-        PermissionUtil.getEffectivePermission(this).toString(),
-        voiceState?.channel?.id
+fun Member.toEntity() = Member(
+    user.id,
+    user.name,
+    nickname,
+    user.discriminator,
+    guild.id,
+    user.isBot,
+    roles.map { it.id },
+    PermissionUtil.getEffectivePermission(this).toString(),
+    voiceState?.channel?.id
 )
 
 fun net.dv8tion.jda.api.entities.VoiceChannel.toEntity() = VoiceChannel(
-        id,
-        name,
-        members.map { it.user.id },
-        userLimit,
-        PermissionUtil.getExplicitPermission(this, guild.selfMember).toString()
+    id,
+    name,
+    members.map { it.user.id },
+    userLimit,
+    PermissionUtil.getExplicitPermission(this, guild.selfMember).toString()
 )
 
 fun net.dv8tion.jda.api.entities.TextChannel.toEntity() = TextChannel(
-        id,
-        name,
-        PermissionUtil.getExplicitPermission(this, guild.selfMember).toString()
+    id,
+    name,
+    PermissionUtil.getExplicitPermission(this, guild.selfMember).toString()
 )
 
 fun net.dv8tion.jda.api.entities.Role.toEntity() = Role(
-        id,
-        name,
-        permissionsRaw.toString()
+    id,
+    name,
+    permissionsRaw.toString()
 )
 
 fun JDA.Status.toEntity() = ShardStatus.valueOf(this.toString())
 
 fun net.dv8tion.jda.api.interactions.commands.OptionMapping.toEntity() = Option(
-        name,
-        asString
+    name,
+    asString
 )
