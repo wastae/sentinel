@@ -8,112 +8,112 @@
 package com.fredboat.sentinel.entities
 
 /* Shard lifecycle */
-data class ShardStatusChange (
-        val shard: Shard
+data class ShardStatusChange(
+    val shard: Shard
 )
 
-data class ShardLifecycleEvent (
-        val shard: Shard,
-        val change: LifecycleEventEnum
+data class ShardLifecycleEvent(
+    val shard: Shard,
+    val change: LifecycleEventEnum
 )
 
 enum class LifecycleEventEnum {
-        READIED,
-        DISCONNECTED,
-        RESUMED,
-        RECONNECTED,
-        SHUTDOWN
+    READIED,
+    DISCONNECTED,
+    RESUMED,
+    RECONNECTED,
+    SHUTDOWN
 }
 
 /* Guild leave/join */
 data class GuildJoinEvent(
-        val guild: String,
-        val region: String
+    val guild: String,
+    val region: String
 )
 
 data class GuildLeaveEvent(
-        val guild: String,
-        /** Millis */
-        val joinTime: String
+    val guild: String,
+    /** Millis */
+    val joinTime: String
 )
 
 /* Voice jda */
 data class VoiceJoinEvent(
-        val guild: String,
-        val channel: String,
-        val member: String
+    val guild: String,
+    val channel: String,
+    val member: String
 )
 
 data class VoiceLeaveEvent(
-        val guild: String,
-        val channel: String,
-        val member: String
+    val guild: String,
+    val channel: String,
+    val member: String
 )
 
 data class VoiceMoveEvent(
-        val guild: String,
-        val oldChannel: String,
-        val newChannel: String,
-        val member: String
+    val guild: String,
+    val oldChannel: String,
+    val newChannel: String,
+    val member: String
 )
 
 /* Messages */
 data class MessageReceivedEvent(
-        val id: String,
-        val guild: String,
-        val channel: String,
-        val channelPermissions: String,
-        val memberPermissions: String,
-        val content: String,
-        val author: String,
-        val fromBot: Boolean,
-        val attachments: List<String>
+    val id: String,
+    val guild: String,
+    val channel: String,
+    val channelPermissions: String,
+    val memberPermissions: String,
+    val content: String,
+    val author: String,
+    val fromBot: Boolean,
+    val attachments: List<String>
 )
 
-data class PrivateMessageReceivedEvent (
-        val content: String,
-        val author: User
+data class PrivateMessageReceivedEvent(
+    val content: String,
+    val author: User
 )
 
 data class MessageDeleteEvent(
-        val id: String,
-        val guild: String,
-        val channel: String
+    val id: String,
+    val guild: String,
+    val channel: String
 )
 
 data class MessageReactionAddEvent(
-        val messageId: String,
-        val guild: String,
-        val channel: String,
-        val channelPermissions: String,
-        val memberPermissions: String,
-        val author: String,
-        val fromBot: Boolean,
-        val reaction: String
+    val messageId: String,
+    val guild: String,
+    val channel: String,
+    val channelPermissions: String,
+    val memberPermissions: String,
+    val author: String,
+    val fromBot: Boolean,
+    val reaction: String
 )
 
 data class SlashCommandsEvent(
-        val interaction: ByteArray,
-        val guild: String,
-        val channel: String,
-        val channelPermissions: String,
-        val memberPermissions: String,
-        val author: String,
-        val fromBot: Boolean,
-        val locale: String,
-        val command: String,
-        val options: List<Option>
+    val interaction: ByteArray,
+    val guild: String,
+    val channel: String,
+    val channelPermissions: String,
+    val memberPermissions: String,
+    val author: String,
+    val fromBot: Boolean,
+    val locale: String,
+    val command: String,
+    val options: List<Option>
 )
 
 data class SlashAutoCompleteEvent(
-        val interaction: ByteArray,
-        val guild: String,
-        val channel: String,
-        val channelPermissions: String,
-        val memberPermissions: String,
-        val author: String,
-        val fromBot: Boolean,
-        val input: String
+    val interaction: ByteArray,
+    val guild: String,
+    val channel: String,
+    val channelPermissions: String,
+    val memberPermissions: String,
+    val author: String,
+    val fromBot: Boolean,
+    val input: String
 )
 
 /**
@@ -121,22 +121,22 @@ data class SlashAutoCompleteEvent(
  */
 
 data class ButtonEvent(
-        val interaction: ByteArray,
-        val componentId: String,
-        val messageId: String,
-        val guild: String,
-        val channel: String,
-        val author: String,
-        val fromBot: Boolean
+    val interaction: ByteArray,
+    val componentId: String,
+    val messageId: String,
+    val guild: String,
+    val channel: String,
+    val author: String,
+    val fromBot: Boolean
 )
 
 data class SelectionMenuEvent(
-        val interaction: ByteArray,
-        val selected: List<String>,
-        val componentId: String,
-        val messageId: String,
-        val guild: String,
-        val channel: String,
-        val author: String,
-        val fromBot: Boolean
+    val interaction: ByteArray,
+    val selected: List<String>,
+    val componentId: String,
+    val messageId: String,
+    val guild: String,
+    val channel: String,
+    val author: String,
+    val fromBot: Boolean
 )

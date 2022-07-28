@@ -138,6 +138,7 @@ inline fun Embed.author(block: Author.() -> Unit) {
 inline fun Embed.field(block: Field.() -> Unit) {
     fields.add(Field().apply(block))
 }
+
 fun Embed.field(title: String, body: String, inline: Boolean = false) {
     fields.add(Field(title, body, inline))
 }
@@ -145,6 +146,7 @@ fun Embed.field(title: String, body: String, inline: Boolean = false) {
 inline fun SlashGroup.groupSubCommand(block: SlashSubcommand.() -> Unit) {
     subCommands.add(SlashSubcommand().apply(block))
 }
+
 fun SlashGroup.groupSubCommand(name: String, description: String, slashOptions: SlashOptions) {
     subCommands.add(SlashSubcommand(name, description, slashOptions))
 }
@@ -152,16 +154,32 @@ fun SlashGroup.groupSubCommand(name: String, description: String, slashOptions: 
 inline fun SlashOptions.option(block: SlashOption.() -> Unit) {
     slashOptions.add(SlashOption().apply(block))
 }
-fun SlashOptions.option(optionType: Int, optionName: String, optionDescription: String, required: Boolean, autoComplete: Boolean, choices: Choices) {
+
+fun SlashOptions.option(
+    optionType: Int,
+    optionName: String,
+    optionDescription: String,
+    required: Boolean,
+    autoComplete: Boolean,
+    choices: Choices
+) {
     slashOptions.add(SlashOption(optionType, optionName, optionDescription, required, autoComplete, choices))
 }
-fun SlashOptions.option(optionType: Int, optionName: String, optionDescription: String, required: Boolean, autoComplete: Boolean) {
+
+fun SlashOptions.option(
+    optionType: Int,
+    optionName: String,
+    optionDescription: String,
+    required: Boolean,
+    autoComplete: Boolean
+) {
     slashOptions.add(SlashOption(optionType, optionName, optionDescription, required, autoComplete))
 }
 
 inline fun Choices.choice(block: Choice.() -> Unit) {
     choices.add(Choice().apply(block))
 }
+
 fun Choices.choice(name: String, value: String) {
     choices.add(Choice(name, value))
 }
@@ -173,6 +191,7 @@ fun Choices.choice(name: String, value: String) {
 inline fun Buttons.button(block: Button.() -> Unit) {
     buttons.add(Button().apply(block))
 }
+
 fun Buttons.button(label: String, value: String) {
     buttons.add(Button(label, value))
 }
@@ -180,6 +199,7 @@ fun Buttons.button(label: String, value: String) {
 inline fun SelectMenu.option(block: Option.() -> Unit) {
     selectOptions.add(Option().apply(block))
 }
+
 fun SelectMenu.option(label: String, value: String) {
     selectOptions.add(Option(label, value))
 }

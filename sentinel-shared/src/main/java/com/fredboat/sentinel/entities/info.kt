@@ -10,39 +10,39 @@ package com.fredboat.sentinel.entities
 // Additional info about entities, which may be useful in only a few places
 
 data class GuildInfo(
-        val id: String,
-        val iconUrl: String?,
-        val onlineMembers: Int,
-        val verificationLevel: String
+    val id: String,
+    val iconUrl: String?,
+    val onlineMembers: Int,
+    val verificationLevel: String
 )
 
 data class GuildInfoRequest(val id: String, val responseId: String)
 
 data class RoleInfo(
-        val id: String,
-        val position: Int,
-        val colorRgb: Int?,
-        val isHoisted: Boolean,
-        val isMentionable: Boolean,
-        val isManaged: Boolean
+    val id: String,
+    val position: Int,
+    val colorRgb: Int?,
+    val isHoisted: Boolean,
+    val isMentionable: Boolean,
+    val isManaged: Boolean
 )
 
 data class RoleInfoRequest(val id: String, val responseId: String)
 
 data class MemberInfo(
-        val id: String,
-        val name: String,
-        val nickname: String?,
-        val discrim: String,
-        val guildId: String,
-        val avatarUrl: String,
-        val colorRgb: Int?,
-        val joinDateMillis: String,
-        val bot: Boolean,
-        val mutualGuilds: List<String>,
-        val roles: List<String>,
-        val permissions: String,
-        val voiceChannel: String?
+    val id: String,
+    val name: String,
+    val nickname: String?,
+    val discrim: String,
+    val guildId: String,
+    val avatarUrl: String,
+    val colorRgb: Int?,
+    val joinDateMillis: String,
+    val bot: Boolean,
+    val mutualGuilds: List<String>,
+    val roles: List<String>,
+    val permissions: String,
+    val voiceChannel: String?
 )
 
 data class MemberInfoRequest(val id: String, val guildId: String, val responseId: String)
@@ -62,12 +62,12 @@ data class MembersByIdsResponse(val members: List<Member>)
 data class GetMembersByIdsRequest(val ids: List<String>, val guildId: String, val responseId: String)
 
 data class UserInfo(
-        val id: String,
-        val name: String,
-        val discrim: String,
-        val avatarUrl: String,
-        val bot: Boolean,
-        val mutualGuilds: List<String>
+    val id: String,
+    val name: String,
+    val discrim: String,
+    val avatarUrl: String,
+    val bot: Boolean,
+    val mutualGuilds: List<String>
 )
 
 data class UserInfoRequest(val id: String, val responseId: String)

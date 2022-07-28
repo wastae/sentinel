@@ -9,16 +9,16 @@ package com.fredboat.sentinel.entities
 
 /** Tells FredBoat about a queued session */
 data class AppendSessionEvent(
-        val shardId: Int,
-        val totalShards: Int,
-        val routingKey: String
+    val shardId: Int,
+    val totalShards: Int,
+    val routingKey: String
 )
 
 /** Tells FredBoat that a shard no-longer needs running */
 data class RemoveSessionEvent(
-        val shardId: Int,
-        val totalShards: Int,
-        val routingKey: String
+    val shardId: Int,
+    val totalShards: Int,
+    val routingKey: String
 )
 
 /** Tells Sentinel that a shard should run */

@@ -10,12 +10,12 @@ package com.fredboat.sentinel.entities
 /* This file contains requests for managing either Sentinel or Guilds (banning, reviving, etc.) */
 
 data class ModRequest(
-        val guildId: String,
-        val userId: String,
-        val type: ModRequestType,
-        val reason: String = "",
-        val banDeleteDays: Int = 0,
-        val responseId: String
+    val guildId: String,
+    val userId: String,
+    val type: ModRequestType,
+    val reason: String = "",
+    val banDeleteDays: Int = 0,
+    val responseId: String
 )
 
 enum class ModRequestType { KICK, BAN, UNBAN }
@@ -35,15 +35,15 @@ data class BanListRequest(val guildId: String, val responseId: String)
 data class Ban(val user: User, val reason: String?)
 
 data class RemoveSlashCommandsRequest(
-        val guildId: String?
+    val guildId: String?
 )
 
 data class RegisterSlashCommandRequest(
-        val commandName: String,
-        val commandDescription: String,
-        val options: SlashOptions?,
-        val group: SlashGroup?,
-        val guildId: String?
+    val commandName: String,
+    val commandDescription: String,
+    val options: SlashOptions?,
+    val group: SlashGroup?,
+    val guildId: String?
 )
 
 /**
@@ -52,8 +52,8 @@ data class RegisterSlashCommandRequest(
  * @param kill if we should kill the last running task instead of running a new one.
  */
 data class EvalRequest(
-        val script: String?,
-        val timeout: Int?,
-        val kill: Boolean,
-        val responseId: String
+    val script: String?,
+    val timeout: Int?,
+    val kill: Boolean,
+    val responseId: String
 )

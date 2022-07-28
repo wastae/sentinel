@@ -9,19 +9,19 @@ package com.fredboat.sentinel.entities
 
 /** Sent by FredBoat to fanout. We will respond with [SentinelHello] */
 class FredBoatHello(
-        /** Distinguishes between sessions.
-         * We must clear our subscriptions and requeue sessions when a new one is started. */
-        val id: String,
-        /** Discord status */
-        val game: String
+    /** Distinguishes between sessions.
+     * We must clear our subscriptions and requeue sessions when a new one is started. */
+    val id: String,
+    /** Discord status */
+    val game: String
 )
 
 /** Sent when Sentinel starts or [FredBoatHello] is received.
  *  Used for mapping what Sentinels we have in FredBoat */
 data class SentinelHello(
-        val shardStart: Int,
-        val shardEnd: Int,
-        val shardCount: Int,
-        val key: String,
-        val time: String = System.currentTimeMillis().toString()
+    val shardStart: Int,
+    val shardEnd: Int,
+    val shardCount: Int,
+    val key: String,
+    val time: String = System.currentTimeMillis().toString()
 )
