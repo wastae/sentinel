@@ -36,6 +36,15 @@ fun net.dv8tion.jda.api.entities.Guild.toEntity(updateCache: VoiceServerUpdateCa
     updateCache[id]
 )
 
+fun net.dv8tion.jda.api.entities.Guild.toEntityLite() = GuildLite(
+    id,
+    name,
+    owner?.user?.id,
+    textChannels.map { it.toEntity() },
+    voiceChannels.map { it.toEntity() },
+    roles.map { it.toEntity() }
+)
+
 fun net.dv8tion.jda.api.entities.User.toEntity() = User(
     id,
     name,

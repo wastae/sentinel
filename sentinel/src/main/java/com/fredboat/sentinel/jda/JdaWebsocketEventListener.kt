@@ -12,6 +12,7 @@ import com.fredboat.sentinel.SocketServer
 import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.metrics.Counters
 import com.fredboat.sentinel.util.toEntity
+import com.fredboat.sentinel.util.toEntityLite
 import com.neovisionaries.ws.client.WebSocketFrame
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.entities.Guild
@@ -342,8 +343,8 @@ class JdaWebsocketEventListener(
 
     override fun onGenericGuild(event: GenericGuildEvent) {
         if (!SocketServer.subscriptionsCache.contains(event.guild.idLong)) return
-        if (event is GuildUpdateNameEvent || event is GuildUpdateOwnerEvent) { // TODO Rework handling of this events
-            //updateGuild(event.guild)
+        if (event is GuildUpdateNameEvent || event is GuildUpdateOwnerEvent) {
+            updateGuildLite(event.guild)
         } else if (event is GenericPermissionOverrideEvent && event.channel is TextChannel) {
             updateChannelPermissions(event.guild)
         } else if (event is GenericPermissionOverrideEvent && event.channel is VoiceChannel) {
@@ -425,6 +426,10 @@ class JdaWebsocketEventListener(
             event.guild.id,
             event.role.toEntity()
         ))
+    }
+
+    private fun updateGuildLite(guild: Guild) {
+        dispatchSocket("guildUpdateLiteEvent", GuildUpdateLiteEvent(guild.toEntityLite()))
     }
 
     private fun updateChannelPermissions(guild: Guild) {

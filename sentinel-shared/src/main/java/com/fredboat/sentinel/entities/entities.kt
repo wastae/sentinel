@@ -29,6 +29,15 @@ data class Guild(
     val voiceServerUpdate: VoiceServerUpdate?
 )
 
+data class GuildLite(
+    val id: String,
+    val name: String,
+    val owner: String?,
+    val textChannels: List<TextChannel>,
+    val voiceChannels: List<VoiceChannel>,
+    val roles: List<Role>
+)
+
 data class User(
     val id: String,
     val name: String,

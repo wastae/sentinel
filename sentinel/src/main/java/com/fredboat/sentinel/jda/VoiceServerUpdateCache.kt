@@ -25,5 +25,4 @@ class VoiceServerUpdateCache {
 
     /** Invalidate */
     fun onVoiceLeave(guildId: String) = map.remove(guildId)
-
 }
