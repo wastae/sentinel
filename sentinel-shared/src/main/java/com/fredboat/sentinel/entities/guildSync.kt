@@ -26,8 +26,16 @@ data class GuildUpdateLiteEvent(
 
 /* Updates */
 
+data class GuildMemberCreate(
+    val guild: String,
+    val member: Member
+)
 
-/** When we are subscribed and one of the members change (presence, name, etc) */
+data class GuildMemberDelete(
+    val guild: String,
+    val member: Member
+)
+
 data class GuildMemberUpdate(
     val guild: String,
     val member: Member

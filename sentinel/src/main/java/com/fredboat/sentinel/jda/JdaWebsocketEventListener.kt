@@ -122,10 +122,24 @@ class JdaWebsocketEventListener(
         ))
     }
 
+    override fun onGuildMemberJoin(event: GuildMemberJoinEvent) {
+        dispatchSocket("guildMemberCreate", GuildMemberCreate(
+            event.guild.id,
+            event.member.toEntity()
+        ))
+    }
+
+    override fun onGuildMemberRemove(event: GuildMemberRemoveEvent) {
+        if (event.member == null) return
+
+        dispatchSocket("guildMemberDelete", GuildMemberCreate(
+            event.guild.id,
+            event.member!!.toEntity()
+        ))
+    }
+
     override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) = onMemberChange(event.member)
     override fun onGuildMemberRoleRemove(event: GuildMemberRoleRemoveEvent) = onMemberChange(event.member)
-    override fun onGuildMemberJoin(event: GuildMemberJoinEvent) = onMemberChange(event.member)
-    override fun onGuildMemberRemove(event: GuildMemberRemoveEvent) = onMemberChange(event.member)
 
     private fun onMemberChange(member: net.dv8tion.jda.api.entities.Member?) {
         if (member != null) {
