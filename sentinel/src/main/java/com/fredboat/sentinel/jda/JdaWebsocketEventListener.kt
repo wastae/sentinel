@@ -132,7 +132,7 @@ class JdaWebsocketEventListener(
     override fun onGuildMemberRemove(event: GuildMemberRemoveEvent) {
         if (event.member == null) return
 
-        dispatchSocket("guildMemberDelete", GuildMemberCreate(
+        dispatchSocket("guildMemberDelete", GuildMemberDelete(
             event.guild.id,
             event.member!!.toEntity()
         ))
