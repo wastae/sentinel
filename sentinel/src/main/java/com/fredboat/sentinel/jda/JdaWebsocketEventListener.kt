@@ -464,7 +464,7 @@ class JdaWebsocketEventListener(
 
     override fun onHttpRequest(event: HttpRequestEvent) {
         if (event.response!!.code >= 300) {
-            log.warn("Unsuccessful JDA HTTP\n{}\n{}", event.requestRaw, event.responseRaw)
+            log.warn("Unsuccessful JDA HTTP\nMethod: {} URL: {}\n{}", event.requestRaw?.method, event.requestRaw?.url, event.responseRaw)
         }
     }
 
