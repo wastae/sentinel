@@ -82,11 +82,6 @@ class JdaRabbitEventListener(
 
     override fun onReady(event: ReadyEvent) {
         dispatch(ShardLifecycleEvent(event.jda.toEntity(), LifecycleEventEnum.READIED))
-
-        if (shardManager.shards.all { it.status == JDA.Status.CONNECTED }) {
-            // This file can be used by Ansible playbooks
-            File("readyfile").createNewFile()
-        }
     }
 
     override fun onDisconnect(event: DisconnectEvent) {
