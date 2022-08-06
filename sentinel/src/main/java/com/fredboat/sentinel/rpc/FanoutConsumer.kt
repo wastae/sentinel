@@ -42,7 +42,7 @@ class FanoutConsumer(
                 shardEnd,
                 shardCount,
                 key.key
-            )}
+            ) }
 
             client.sendEvent("sentinelHello", message)
         }

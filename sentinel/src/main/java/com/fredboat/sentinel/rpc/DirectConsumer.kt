@@ -213,5 +213,5 @@ class DirectConsumer(
         }
 
         log.info("All events in DirectConsumer registered")
-    } // 45 events total
+    } // 49 events total
 }

@@ -198,13 +198,13 @@ class JdaWebsocketEventListener(
     override fun onMessageReceived(event: net.dv8tion.jda.api.events.message.MessageReceivedEvent) {
         if (event.message.type != MessageType.DEFAULT) return
         if (event.isWebhookMessage) return
-        if (event.isFromGuild && !event.channelType.isThread) {
+        if (event.isFromGuild && !event.channelType.isThread && !event.channelType.isAudio) {
             dispatchSocket("messageReceivedEvent", MessageReceivedEvent(
                 event.message.id,
                 event.message.guild.id,
                 event.channel.id,
-                PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.guild.selfMember).toString(),
-                PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.message.member).toString(),
+                PermissionUtil.getEffectivePermission((event.channel as GuildChannel).permissionContainer, event.guild.selfMember).toString(),
+                PermissionUtil.getEffectivePermission((event.channel as GuildChannel).permissionContainer, event.message.member).toString(),
                 event.message.contentRaw,
                 event.author.id,
                 event.author.isBot,
@@ -235,8 +235,8 @@ class JdaWebsocketEventListener(
             event.messageId,
             event.guild.id,
             event.channel.id,
-            PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.guild.selfMember).toString(),
-            PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.member).toString(),
+            PermissionUtil.getEffectivePermission((event.channel as GuildChannel).permissionContainer, event.guild.selfMember).toString(),
+            PermissionUtil.getEffectivePermission((event.channel as GuildChannel).permissionContainer, event.member).toString(),
             event.member!!.id,
             event.member!!.user.isBot,
             event.emoji.asReactionCode
@@ -264,8 +264,8 @@ class JdaWebsocketEventListener(
             event.rawData!!.toJson(),
             event.guild!!.id,
             event.channel.id,
-            PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.guild!!.selfMember).toString(),
-            PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.member).toString(),
+            PermissionUtil.getEffectivePermission((event.channel as GuildChannel).permissionContainer, event.guild!!.selfMember).toString(),
+            PermissionUtil.getEffectivePermission((event.channel as GuildChannel).permissionContainer, event.member).toString(),
             event.member!!.id,
             event.member!!.user.isBot,
             event.userLocale.locale,
@@ -296,8 +296,8 @@ class JdaWebsocketEventListener(
             event.rawData!!.toJson(),
             event.guild!!.id,
             event.channel!!.id,
-            PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.guild!!.selfMember).toString(),
-            PermissionUtil.getEffectivePermission((event.channel as TextChannel).permissionContainer, event.member).toString(),
+            PermissionUtil.getEffectivePermission((event.channel as GuildChannel).permissionContainer, event.guild!!.selfMember).toString(),
+            PermissionUtil.getEffectivePermission((event.channel as GuildChannel).permissionContainer, event.member).toString(),
             event.member!!.id,
             event.member!!.user.isBot,
             event.focusedOption.value

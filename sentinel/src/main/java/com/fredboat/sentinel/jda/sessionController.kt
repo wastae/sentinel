@@ -11,9 +11,10 @@ import com.corundumstudio.socketio.SocketIOClient
 import com.fredboat.sentinel.SocketServer
 import com.fredboat.sentinel.config.RoutingKey
 import com.fredboat.sentinel.config.SentinelProperties
-import com.fredboat.sentinel.entities.AppendSessionEvent
-import com.fredboat.sentinel.entities.RemoveSessionEvent
-import com.fredboat.sentinel.entities.RunSessionRequest
+import com.fredboat.sentinel.entities.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.SessionController.SessionConnectNode
@@ -74,10 +75,12 @@ class RemoteSessionController(
             client.sendEvent("onRunResponse-${request.responseId}", msg)
         }
 
-        node.run(false) // Always assume false, so that we don't immediately return
-        removeSession(node)
+        CoroutineScope(Dispatchers.IO).launch {
+            node.run(false) // Always assume false, so that we don't immediately return
+            removeSession(node)
 
-        client.sendEvent("onRunResponse-${request.responseId}", "Started node ${node.shardInfo}")
+            client.sendEvent("onRunResponse-${request.responseId}", "Started node ${node.shardInfo}")
+        }
     }
 
     fun SessionConnectNode.send(remove: Boolean) {
