@@ -75,12 +75,10 @@ class RemoteSessionController(
             client.sendEvent("onRunResponse-${request.responseId}", msg)
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
-            node.run(false) // Always assume false, so that we don't immediately return
-            removeSession(node)
+        node.run(false) // Always assume false, so that we don't immediately return
+        removeSession(node)
 
-            client.sendEvent("onRunResponse-${request.responseId}", "Started node ${node.shardInfo}")
-        }
+        client.sendEvent("onRunResponse-${request.responseId}", "Started node ${node.shardInfo}")
     }
 
     fun SessionConnectNode.send(remove: Boolean) {

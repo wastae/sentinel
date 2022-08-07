@@ -334,4 +334,5 @@ logs/
 *.bat
 **/test/
 **/resources
+*.json
 .vscode

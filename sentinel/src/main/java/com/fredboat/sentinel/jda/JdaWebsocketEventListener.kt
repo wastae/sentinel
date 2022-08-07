@@ -329,7 +329,6 @@ class JdaWebsocketEventListener(
         if (event.rawData == null) return
         if (!SocketServer.subscriptionsCache.contains(event.guild!!.idLong)) return
 
-        event.deferEdit().queue()
         dispatchSocket("selectionMenuEvent", SelectionMenuEvent(
             event.rawData!!.toJson(),
             event.values,

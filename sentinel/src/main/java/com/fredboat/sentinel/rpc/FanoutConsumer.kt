@@ -16,6 +16,9 @@ import com.fredboat.sentinel.entities.FredBoatHello
 import com.fredboat.sentinel.entities.SentinelHello
 import com.fredboat.sentinel.entities.SyncSessionQueueRequest
 import com.fredboat.sentinel.jda.RemoteSessionController
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.sharding.ShardManager
@@ -52,10 +55,14 @@ class FanoutConsumer(
 
     init {
         socketIOServer.addEventListener("fredBoatHello", JSONObject::class.java) { client, event, _ ->
-            onHello(SocketServer.gson.fromJson(event.toString(), FredBoatHello::class.java), client)
+            CoroutineScope(Dispatchers.IO).launch {
+                onHello(SocketServer.gson.fromJson(event.toString(), FredBoatHello::class.java), client)
+            }
         }
         socketIOServer.addEventListener("syncSessionQueueRequest", JSONObject::class.java) { _, event, _ ->
-            consume(SocketServer.gson.fromJson(event.toString(), SyncSessionQueueRequest::class.java))
+            CoroutineScope(Dispatchers.IO).launch {
+                consume(SocketServer.gson.fromJson(event.toString(), SyncSessionQueueRequest::class.java))
+            }
         }
 
         log.info("All events in FanoutConsumer registered")
