@@ -24,6 +24,7 @@ import net.dv8tion.jda.internal.entities.UserImpl
 import net.dv8tion.jda.internal.interactions.InteractionHookImpl
 import net.dv8tion.jda.internal.interactions.command.CommandAutoCompleteInteractionImpl
 import net.dv8tion.jda.internal.interactions.command.CommandInteractionImpl
+import net.dv8tion.jda.internal.interactions.component.SelectMenuInteractionImpl
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -228,6 +229,34 @@ class MessageRequests(private val shardManager: ShardManager) {
             hook.ack()
             hook.ready()
             hook.editOriginalEmbeds(request.message.toJda()).queue {
+                client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+            }
+        }
+    }
+
+    fun consume(request: SendSlashMenuCommandRequest, client: SocketIOClient) {
+        val guild: Guild? = shardManager.getGuildById(request.guildId)
+
+        if (guild == null) {
+            log.error("Received SendSlashMenuCommandRequest for guild ${request.guildId} which was not found")
+            return
+        }
+
+        val interaction = SelectMenuInteractionImpl(
+            guild.jda as JDAImpl, DataObject.fromJson(request.interaction).getObject("d")
+        )
+
+        if (request.ephemeral) {
+            interaction.reply(request.message).setEphemeral(true).queue { it ->
+                it.retrieveOriginal().queue {
+                    client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+                }
+            }
+        } else {
+            val hook = interaction.hook as InteractionHookImpl
+            hook.ack()
+            hook.ready()
+            hook.editOriginal(request.message).queue {
                 client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
             }
         }

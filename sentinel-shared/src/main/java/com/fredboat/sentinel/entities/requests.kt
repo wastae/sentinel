@@ -133,6 +133,17 @@ data class SendSlashEmbedCommandRequest(
     val responseId: String
 )
 
+/** Returns [SendMessageResponse]*/
+data class SendSlashMenuCommandRequest(
+    val interaction: ByteArray,
+    val guildId: String,
+    val channelId: String,
+    val userId: String,
+    val message: String,
+    val ephemeral: Boolean,
+    val responseId: String
+)
+
 data class EditSlashCommandRequest(
     val interaction: ByteArray,
     val message: String,
