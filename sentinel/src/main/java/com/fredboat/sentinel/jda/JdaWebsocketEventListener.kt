@@ -159,10 +159,11 @@ class JdaWebsocketEventListener(
         if (event.channelJoined.type == ChannelType.STAGE && event.member.user.idLong == event.guild.selfMember.user.idLong) {
             event.guild.requestToSpeak()
         }
+
         dispatchSocket("voiceJoinEvent", VoiceJoinEvent(
             event.guild.id,
             event.channelJoined.id,
-            event.member.user.id
+            event.member.toEntity()
         ))
     }
 
@@ -175,7 +176,7 @@ class JdaWebsocketEventListener(
         dispatchSocket("voiceLeaveEvent", VoiceLeaveEvent(
             event.guild.id,
             event.channelLeft.id,
-            event.member.user.id
+            event.member.toEntity()
         ))
     }
 
@@ -190,7 +191,7 @@ class JdaWebsocketEventListener(
             event.guild.id,
             event.channelLeft.id,
             event.channelJoined.id,
-            event.member.user.id
+            event.member.toEntity()
         ))
     }
 
