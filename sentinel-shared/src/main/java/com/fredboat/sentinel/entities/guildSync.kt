@@ -18,7 +18,9 @@ data class GuildSubscribeRequest(
 )
 
 /** Sent when the [Guild] gets uncached */
-data class GuildUnsubscribeRequest(val id: String)
+data class GuildUnsubscribeRequest(
+    val id: String
+)
 
 data class GuildUpdateLiteEvent(
     val guild: GuildLite

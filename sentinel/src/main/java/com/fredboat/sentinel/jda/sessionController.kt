@@ -11,7 +11,9 @@ import com.corundumstudio.socketio.SocketIOClient
 import com.fredboat.sentinel.SocketServer
 import com.fredboat.sentinel.config.RoutingKey
 import com.fredboat.sentinel.config.SentinelProperties
-import com.fredboat.sentinel.entities.*
+import com.fredboat.sentinel.entities.AppendSessionEvent
+import com.fredboat.sentinel.entities.RemoveSessionEvent
+import com.fredboat.sentinel.entities.RunSessionRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -20,12 +22,8 @@ import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.SessionController.SessionConnectNode
 import net.dv8tion.jda.api.utils.SessionController.ShardedGateway
 import net.dv8tion.jda.api.utils.SessionControllerAdapter
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.concurrent.ConcurrentHashMap
-
-private val log: Logger = LoggerFactory.getLogger(RemoteSessionController::class.java)
 
 @Service
 class RemoteSessionController(
@@ -75,10 +73,12 @@ class RemoteSessionController(
             client.sendEvent("onRunResponse-${request.responseId}", msg)
         }
 
-        node.run(false) // Always assume false, so that we don't immediately return
-        removeSession(node)
+        CoroutineScope(Dispatchers.IO).launch {
+            node.run(false) // Always assume false, so that we don't immediately return
+            removeSession(node)
 
-        client.sendEvent("onRunResponse-${request.responseId}", "Started node ${node.shardInfo}")
+            client.sendEvent("onRunResponse-${request.responseId}", "Started node ${node.shardInfo}")
+        }
     }
 
     fun SessionConnectNode.send(remove: Boolean) {

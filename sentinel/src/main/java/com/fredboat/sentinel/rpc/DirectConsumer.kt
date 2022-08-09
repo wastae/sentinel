@@ -305,17 +305,13 @@ class DirectConsumer(
             }
         }
         socketIOServer.addEventListener("guildUnsubscribeRequest-${key.key}", JSONObject::class.java) { _, request, _ ->
-            CoroutineScope(Dispatchers.IO).launch {
-                subscription.consume(SocketServer.gson.fromJson(request.toString(), GuildUnsubscribeRequest::class.java))
-            }
+            subscription.consume(SocketServer.gson.fromJson(request.toString(), GuildUnsubscribeRequest::class.java))
         }
 
         //
 
         socketIOServer.addEventListener("runSessionRequest-${key.key}", JSONObject::class.java) { client, request, _ ->
-            CoroutineScope(Dispatchers.IO).launch {
-                sessionController.onRunRequest(SocketServer.gson.fromJson(request.toString(), RunSessionRequest::class.java), client)
-            }
+            sessionController.onRunRequest(SocketServer.gson.fromJson(request.toString(), RunSessionRequest::class.java), client)
         }
 
         log.info("All events in DirectConsumer registered")
