@@ -12,6 +12,7 @@ import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.util.toJda
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.NewsChannel
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.interactions.components.ActionComponent
@@ -37,7 +38,8 @@ class MessageRequests(private val shardManager: ShardManager) {
     }
 
     fun consume(request: SendMessageRequest, client: SocketIOClient) {
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
+            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
         if (channel == null) {
             log.error("Received SendMessageRequest for channel ${request.channel} which was not found")
@@ -50,7 +52,8 @@ class MessageRequests(private val shardManager: ShardManager) {
     }
 
     fun consume(request: SendEmbedRequest, client: SocketIOClient) {
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
+            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
         if (channel == null) {
             log.error("Received SendEmbedRequest for channel ${request.channel} which was not found")
@@ -73,7 +76,8 @@ class MessageRequests(private val shardManager: ShardManager) {
     }
 
     fun consume(request: EditMessageRequest) {
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
+            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
         if (channel == null) {
             log.error("Received EditMessageRequest for channel ${request.channel} which was not found")
@@ -84,7 +88,8 @@ class MessageRequests(private val shardManager: ShardManager) {
     }
 
     fun consume(request: EditEmbedRequest, client: SocketIOClient) {
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
+            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
         if (channel == null) {
             log.error("Received EditEmbedRequest for channel ${request.channel} which was not found")
@@ -103,7 +108,8 @@ class MessageRequests(private val shardManager: ShardManager) {
     }
 
     fun consume(request: AddReactionRequest) {
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
+            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
         if (channel == null) {
             log.error("Received AddReactionRequest for channel ${request.channel} which was not found")
@@ -114,7 +120,8 @@ class MessageRequests(private val shardManager: ShardManager) {
     }
 
     fun consume(request: AddReactionsRequest) {
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
+            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
         if (channel == null) {
             log.error("Received AddReactionsRequest for channel ${request.channel} which was not found")
@@ -128,7 +135,8 @@ class MessageRequests(private val shardManager: ShardManager) {
 
     fun consume(request: RemoveReactionRequest) {
         shardManager.retrieveUserById(request.userId).queue {
-            val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+            val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
+                ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
             if (channel == null) {
                 log.error("Received RemoveReactionRequest for channel ${request.channel} which was not found")
@@ -140,7 +148,8 @@ class MessageRequests(private val shardManager: ShardManager) {
     }
 
     fun consume(request: RemoveReactionsRequest) {
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
+            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
         if (channel == null) {
             log.error("Received RemoveReactionsRequest for channel ${request.channel} which was not found")
@@ -151,7 +160,8 @@ class MessageRequests(private val shardManager: ShardManager) {
     }
 
     fun consume(request: MessageDeleteRequest) {
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
+            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
         if (channel == null) {
             log.error("Received MessageDeleteRequest for channel ${request.channel} which was not found")
@@ -168,7 +178,8 @@ class MessageRequests(private val shardManager: ShardManager) {
     }
 
     fun consume(request: SendTypingRequest) {
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
+            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
         if (channel == null) {
             log.error("Received SendTypingRequest for channel ${request.channel} which was not found")
@@ -312,7 +323,8 @@ class MessageRequests(private val shardManager: ShardManager) {
      */
 
     fun consume(request: SendMessageButtonsRequest) {
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
+            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
         if (channel == null) {
             log.error("Received SendMessageButtonsRequest for channel ${request.channel} which was not found")
@@ -323,7 +335,8 @@ class MessageRequests(private val shardManager: ShardManager) {
     }
 
     fun consume(request: SendMessageSelectionMenuRequest) {
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
+            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
         if (channel == null) {
             log.error("Received SendMessageSelectionMenuRequest for channel ${request.channel} which was not found")
@@ -334,7 +347,8 @@ class MessageRequests(private val shardManager: ShardManager) {
     }
 
     fun consume(request: EditButtonsRequest) {
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
+            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
         if (channel == null) {
             log.error("Received EditButtonsRequest for channel ${request.channel} which was not found")
@@ -345,7 +359,8 @@ class MessageRequests(private val shardManager: ShardManager) {
     }
 
     fun consume(request: EditSelectionMenuRequest) {
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
+            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
         if (channel == null) {
             log.error("Received EditSelectionMenuRequest for channel ${request.channel} which was not found")
@@ -357,7 +372,8 @@ class MessageRequests(private val shardManager: ShardManager) {
 
     fun consume(request: RemoveComponentsRequest) {
         if (request.messageId == "0") return
-        val channel: TextChannel? = shardManager.getTextChannelById(request.channel)
+        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
+            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
         if (channel == null) {
             log.error("Received RemoveComponentsRequest for channel ${request.channel} which was not found")

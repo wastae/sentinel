@@ -10,6 +10,10 @@ package com.fredboat.sentinel.rpc
 import com.corundumstudio.socketio.SocketIOClient
 import com.fredboat.sentinel.entities.*
 import net.dv8tion.jda.api.entities.GuildChannel
+import net.dv8tion.jda.api.entities.NewsChannel
+import net.dv8tion.jda.api.entities.StageChannel
+import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.entities.VoiceChannel
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.springframework.stereotype.Service
@@ -53,8 +57,10 @@ class PermissionRequests(private val shardManager: ShardManager) {
      * Returns true if the Role and/or Member has the given permissions in a Channel
      */
     fun consume(request: ChannelPermissionRequest, client: SocketIOClient) {
-        var channel: GuildChannel? = shardManager.getTextChannelById(request.channel)
-                ?: shardManager.getVoiceChannelById(request.channel)
+        var channel: GuildChannel? = shardManager.getChannelById(TextChannel::class.java, request.channel)
+                ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
+                ?: shardManager.getChannelById(VoiceChannel::class.java, request.channel)
+                ?: shardManager.getChannelById(StageChannel::class.java, request.channel)
         channel = channel ?: shardManager.getCategoryById(request.channel)
         channel ?: throw RuntimeException("Got request for channel which isn't found")
 

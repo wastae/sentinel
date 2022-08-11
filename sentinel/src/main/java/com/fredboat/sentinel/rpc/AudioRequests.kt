@@ -10,6 +10,8 @@ package com.fredboat.sentinel.rpc
 import com.fredboat.sentinel.entities.AudioQueueRequest
 import com.fredboat.sentinel.entities.AudioQueueRequestEnum.*
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.StageChannel
+import net.dv8tion.jda.api.entities.VoiceChannel
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.JDAImpl
 import org.springframework.stereotype.Service
@@ -30,14 +32,16 @@ class AudioRequests(private val shardManager: ShardManager) {
             REMOVE -> jda.client.removeAudioConnection(request.guild.toLong())
             QUEUE_DISCONNECT -> jda.client.queueAudioDisconnect(guild)
             QUEUE_CONNECT -> {
-                val vc = guild.getVoiceChannelById(request.channel!!)
+                val vc = guild.getChannelById(VoiceChannel::class.java, request.channel!!)
+                    ?: guild.getChannelById(StageChannel::class.java, request.channel!!)
                     ?: throw RuntimeException("Channel ${request.channel} not found in guild $guild for connect")
 
                 jda.client.queueAudioConnect(vc)
             }
             QUEUE_RECONNECT -> {
-                val vc = guild.getVoiceChannelById(request.channel!!)
-                    ?: throw RuntimeException("Channel ${request.channel} not found in guild $guild for reconnect")
+                val vc = guild.getChannelById(VoiceChannel::class.java, request.channel!!)
+                    ?: guild.getChannelById(StageChannel::class.java, request.channel!!)
+                    ?: throw RuntimeException("Channel ${request.channel} not found in guild $guild for connect")
 
                 jda.client.queueAudioReconnect(vc)
             }
