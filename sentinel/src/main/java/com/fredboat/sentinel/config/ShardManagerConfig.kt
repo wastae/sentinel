@@ -10,6 +10,7 @@ package com.fredboat.sentinel.config
 import com.fredboat.sentinel.ApplicationState
 import com.fredboat.sentinel.SocketServer
 import com.fredboat.sentinel.jda.RemoteSessionController
+import com.fredboat.sentinel.jda.SubscribeCachePolicy
 import com.fredboat.sentinel.jda.VoiceInterceptor
 import net.dv8tion.jda.api.GatewayEncoding
 import net.dv8tion.jda.api.entities.Message
@@ -20,7 +21,6 @@ import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.ChunkingFilter
 import net.dv8tion.jda.api.utils.Compression
-import net.dv8tion.jda.api.utils.MemberCachePolicy
 import net.dv8tion.jda.api.utils.cache.CacheFlag
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -64,7 +64,7 @@ class ShardManagerConfig {
             .setSessionController(sessionController)
             .setGatewayEncoding(GatewayEncoding.ETF)
             .setCompression(Compression.ZLIB)
-            .setMemberCachePolicy(MemberCachePolicy.ALL)
+            .setMemberCachePolicy(SubscribeCachePolicy(sentinelProperties))
             .setChunkingFilter(ChunkingFilter.include(sentinelProperties.mainGuild))
             .setVoiceDispatchInterceptor(voiceInterceptor)
             .setRawEventsEnabled(false)
