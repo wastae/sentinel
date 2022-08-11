@@ -13,6 +13,8 @@ import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.metrics.Counters
 import com.fredboat.sentinel.util.toEntity
 import com.fredboat.sentinel.util.toEntityLite
+import com.fredboat.sentinel.util.toTextEntity
+import com.fredboat.sentinel.util.toVoiceEntity
 import com.neovisionaries.ws.client.WebSocketFrame
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.entities.Guild
@@ -211,7 +213,7 @@ class JdaWebsocketEventListener(
                 event.author.isBot,
                 event.message.attachments.map { if (it.isImage) it.proxyUrl else it.url }
             ))
-        } else if (!event.isFromGuild && !event.channelType.isThread) {
+        } else if (!event.isFromGuild) {
             dispatchSocket("privateMessageReceivedEvent", PrivateMessageReceivedEvent(
                 event.message.contentRaw,
                 event.author.toEntity()
@@ -228,7 +230,7 @@ class JdaWebsocketEventListener(
     }
 
     override fun onMessageReactionAdd(event: net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent) {
-        if (event.isFromGuild && event.channelType.isThread) return
+        if (event.isFromGuild && (event.channelType.isThread || event.channelType.isAudio)) return
         if (event.member == null) return
         if (!SocketServer.subscriptionsCache.contains(event.guild.idLong)) return
 
@@ -253,7 +255,7 @@ class JdaWebsocketEventListener(
             event.reply("Slash commands not supported in DM").setEphemeral(true).queue()
             return
         }
-        if (event.isFromGuild && event.channelType.isThread) {
+        if (event.isFromGuild && (event.channelType.isThread || event.channelType.isAudio)) {
             event.reply("Slash commands not supported in threads").setEphemeral(true).queue()
             return
         }
@@ -280,7 +282,7 @@ class JdaWebsocketEventListener(
             event.replyChoiceStrings("Slash commands not supported in DM").queue()
             return
         }
-        if (event.isFromGuild && event.channelType.isThread) {
+        if (event.isFromGuild && (event.channelType.isThread || event.channelType.isAudio)) {
             event.replyChoiceStrings("Slash commands not supported in threads").queue()
             return
         }
@@ -375,40 +377,40 @@ class JdaWebsocketEventListener(
                 is ChannelCreateEvent -> {
                     dispatchSocket("textChannelCreate", TextChannelCreate(
                         event.guild.id,
-                        (event.channel as TextChannel).toEntity()
+                        (event.channel as TextChannel).toTextEntity()
                     ))
                 }
                 is ChannelDeleteEvent -> {
                     dispatchSocket("textChannelDelete", TextChannelDelete(
                         event.guild.id,
-                        (event.channel as TextChannel).toEntity()
+                        (event.channel as TextChannel).toTextEntity()
                     ))
                 }
                 else -> {
                     dispatchSocket("textChannelUpdate", TextChannelUpdate(
                         event.guild.id,
-                        (event.channel as TextChannel).toEntity()
+                        (event.channel as TextChannel).toTextEntity()
                     ))
                 }
             }
-        } else if (event.channel is VoiceChannel) {
+        } else if (event.channel is AudioChannel) {
             when (event) {
                 is ChannelCreateEvent -> {
                     dispatchSocket("voiceChannelCreate", VoiceChannelCreate(
                         event.guild.id,
-                        (event.channel as VoiceChannel).toEntity()
+                        (event.channel as AudioChannel).toVoiceEntity()
                     ))
                 }
                 is ChannelDeleteEvent -> {
                     dispatchSocket("voiceChannelDelete", VoiceChannelDelete(
                         event.guild.id,
-                        (event.channel as VoiceChannel).toEntity()
+                        (event.channel as AudioChannel).toVoiceEntity()
                     ))
                 }
                 else -> {
                     dispatchSocket("voiceChannelUpdate", VoiceChannelUpdate(
                         event.guild.id,
-                        (event.channel as VoiceChannel).toEntity()
+                        (event.channel as AudioChannel).toVoiceEntity()
                     ))
                 }
             }
