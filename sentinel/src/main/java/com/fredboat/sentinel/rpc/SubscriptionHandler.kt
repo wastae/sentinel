@@ -17,9 +17,12 @@ import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.sharding.ShardManager
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.scheduling.annotation.EnableScheduling
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 
 @Service
+@EnableScheduling
 class SubscriptionHandler(
     private val shardManager: ShardManager,
     private val voiceServerUpdateCache: VoiceServerUpdateCache
@@ -27,6 +30,7 @@ class SubscriptionHandler(
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(SubscriptionHandler::class.java)
+        private val unsubscribeQueue = mutableListOf<String>()
     }
 
     fun consume(request: GuildSubscribeRequest, client: SocketIOClient) {
@@ -76,25 +80,30 @@ class SubscriptionHandler(
     }
 
     fun consume(request: GuildUnsubscribeRequest) {
-        val removed = SocketServer.subscriptionsCache.remove(request.id.toLong())
-        if (removed) {
-            val guild = shardManager.getGuildById(request.id)
-            if (guild != null) {
-                guild.pruneMemberCache()
-                log.info("Unsubscribe from $guild, total users cache size ${shardManager.userCache.size()}")
-            } else {
-                log.warn("Attempt unsubscribe from ${request.id} while guild is null in JDA")
-            }
-        } else {
-            if (!SocketServer.subscriptionsCache.contains(request.id.toLong())) {
-                log.warn("Attempt unsubscribe from ${request.id} while we are not subscribed")
-            } else {
-                log.error("Unsubscribe from ${request.id} failed")
-            }
-        }
+        unsubscribeQueue.add(request.id)
+        log.info("Added ${request.id} to unsubscribe, queue size ${unsubscribeQueue.size}")
     }
 
     private fun sendGuildSubscribeResponse(request: GuildSubscribeRequest, client: SocketIOClient, guild: Guild) {
         client.sendEvent("guild-${request.responseId}", guild.toEntity(voiceServerUpdateCache))
+    }
+
+    @Scheduled(initialDelay = 1000, fixedDelay = 1000)
+    private fun invalidateCache() {
+        if (unsubscribeQueue.isNotEmpty()) {
+            val iterator = unsubscribeQueue.iterator()
+            while (iterator.hasNext()) {
+                val id = iterator.next()
+                SocketServer.subscriptionsCache.remove(id.toLong())
+                val guild = shardManager.getGuildById(id)
+                if (guild != null) {
+                    guild.pruneMemberCache()
+                    log.info("Invalidating $id, queue size ${unsubscribeQueue.size}")
+                }
+                iterator.remove()
+            }
+
+            log.info("Total users cache size after invalidating ${shardManager.userCache.size()}, queue size ${unsubscribeQueue.size}")
+        }
     }
 }
