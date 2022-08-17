@@ -59,8 +59,7 @@ class SubscriptionHandler(
                     .append(" ")
                     .append("${System.currentTimeMillis() - request.requestTime.toLong()}ms with Discord")
                     .append(", ")
-                    .append("total users cache size ${shardManager.userCache.size()}").toString()
-                )
+                    .append("total users cache size ${shardManager.userCache.size()}").toString())
             }
         } else {
             if (SocketServer.subscriptionsCache.contains(request.id.toLong())) {
@@ -70,8 +69,7 @@ class SubscriptionHandler(
                     .append(" ")
                     .append("${System.currentTimeMillis() - request.requestTime.toLong()}ms")
                     .append(", ")
-                    .append("total users cache size ${shardManager.userCache.size()}").toString()
-                )
+                    .append("total users cache size ${shardManager.userCache.size()}").toString())
             } else {
                 log.error("Subscribe to ${request.id} failed")
                 sendGuildSubscribeResponse(request, client, guild)

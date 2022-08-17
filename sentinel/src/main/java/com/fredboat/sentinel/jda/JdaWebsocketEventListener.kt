@@ -173,7 +173,10 @@ class JdaWebsocketEventListener(
         if (event.member.user.idLong == event.guild.selfMember.user.idLong) {
             voiceServerUpdateCache.onVoiceLeave(event.guild.id)
         }
-        if (!SocketServer.subscriptionsCache.contains(event.guild.idLong)) return
+        if (!SocketServer.subscriptionsCache.contains(event.guild.idLong)) {
+            event.guild.pruneMemberCache()
+            return
+        }
 
         dispatchSocket("voiceLeaveEvent", VoiceLeaveEvent(
             event.guild.id,
