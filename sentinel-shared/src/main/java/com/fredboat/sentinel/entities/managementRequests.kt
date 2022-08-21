@@ -22,7 +22,7 @@ enum class ModRequestType { KICK, BAN, UNBAN }
 
 data class SetAvatarRequest(val base64: String)
 
-data class ReviveShardRequest(val shardId: Int, val responseId: String)
+data class ReviveShardRequest(val shardId: Int)
 
 data class LeaveGuildRequest(val guildId: String)
 
