@@ -92,7 +92,7 @@ data class MessageReactionAddEvent(
     val reaction: String
 )
 
-data class ContextInteractionEvent(
+data class ContextCommandsEvent(
     val content: String,
     val locale: String
 )
