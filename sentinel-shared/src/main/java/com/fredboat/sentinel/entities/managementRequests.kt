@@ -46,6 +46,12 @@ data class RegisterSlashCommandRequest(
     val guildId: String?
 )
 
+data class RegisterContextCommandRequest(
+    val commandName: String,
+    val type: String,
+    val guildId: String?
+)
+
 /**
  * @param script the script to run.
  * @param timeout max time in seconds, if any

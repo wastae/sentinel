@@ -92,6 +92,11 @@ data class MessageReactionAddEvent(
     val reaction: String
 )
 
+data class ContextInteractionEvent(
+    val content: String,
+    val locale: String
+)
+
 data class SlashCommandsEvent(
     val interaction: ByteArray,
     val guild: String,
