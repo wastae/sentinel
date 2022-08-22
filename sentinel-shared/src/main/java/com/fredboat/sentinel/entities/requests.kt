@@ -111,6 +111,12 @@ data class SendTypingRequest(
     val channel: String
 )
 
+data class SendContextCommandRequest(
+    val interaction: ByteArray,
+    val userId: String,
+    val message: String
+)
+
 /** Returns [SendMessageResponse]*/
 data class SendSlashCommandRequest(
     val interaction: ByteArray,
