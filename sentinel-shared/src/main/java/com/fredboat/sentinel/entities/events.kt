@@ -96,7 +96,8 @@ data class ContextCommandsEvent(
     val interaction: ByteArray,
     val content: String,
     val author: String,
-    val locale: String
+    val locale: String,
+    val routingKey: String
 )
 
 data class SlashCommandsEvent(
