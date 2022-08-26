@@ -7,39 +7,31 @@
 
 package com.fredboat.sentinel.rpc
 
-import com.corundumstudio.socketio.SocketIOClient
-import com.corundumstudio.socketio.SocketIOServer
-import com.fredboat.sentinel.SocketServer
 import com.fredboat.sentinel.config.RoutingKey
 import com.fredboat.sentinel.config.SentinelProperties
 import com.fredboat.sentinel.entities.FredBoatHello
 import com.fredboat.sentinel.entities.SentinelHello
 import com.fredboat.sentinel.entities.SyncSessionQueueRequest
 import com.fredboat.sentinel.jda.RemoteSessionController
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import com.fredboat.sentinel.io.SocketContext
 import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.sharding.ShardManager
-import org.json.JSONObject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.context.annotation.Configuration
+import org.springframework.stereotype.Service
 
-@Configuration
+@Service
 class FanoutConsumer(
-        private val sentinelProperties: SentinelProperties,
-        private val key: RoutingKey,
-        private val shardManager: ShardManager,
-        private val sessionController: RemoteSessionController,
-        socketIOServer: SocketIOServer
+    private val sentinelProperties: SentinelProperties,
+    private val key: RoutingKey,
+    private val sessionController: RemoteSessionController
 ) {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(FanoutConsumer::class.java)
 
-        fun sendHello(client: SocketIOClient, sentinelProperties: SentinelProperties, key: RoutingKey) {
+        fun sendHello(context: SocketContext, sentinelProperties: SentinelProperties, key: RoutingKey) {
             val message = sentinelProperties.run { SentinelHello(
                 shardStart,
                 shardEnd,
@@ -47,28 +39,14 @@ class FanoutConsumer(
                 key.key
             ) }
 
-            client.sendEvent("sentinelHello", message)
+            context.sendResponse(SentinelHello::class.java.simpleName, context.gson.toJson(message), "0")
         }
     }
 
     var knownFredBoatId: String? = null
+    lateinit var shardManager: ShardManager
 
-    init {
-        socketIOServer.addEventListener("fredBoatHello", JSONObject::class.java) { client, event, _ ->
-            CoroutineScope(Dispatchers.IO).launch {
-                onHello(SocketServer.gson.fromJson(event.toString(), FredBoatHello::class.java), client)
-            }
-        }
-        socketIOServer.addEventListener("syncSessionQueueRequest", JSONObject::class.java) { _, event, _ ->
-            CoroutineScope(Dispatchers.IO).launch {
-                consume(SocketServer.gson.fromJson(event.toString(), SyncSessionQueueRequest::class.java))
-            }
-        }
-
-        log.info("All events in FanoutConsumer registered")
-    }
-
-    fun onHello(event: FredBoatHello, client: SocketIOClient) {
+    fun onHello(event: FredBoatHello, context: SocketContext) {
         if (event.id != knownFredBoatId) {
             log.info("FredBoat ${event.id} says hello \uD83D\uDC4B - Replaces $knownFredBoatId")
             knownFredBoatId = event.id
@@ -77,7 +55,7 @@ class FanoutConsumer(
             log.info("FredBoat ${event.id} says hello \uD83D\uDC4B")
         }
 
-        sendHello(client, sentinelProperties, key)
+        sendHello(context, sentinelProperties, key)
 
         val game = if (event.game.isBlank()) null else Activity.listening(event.game)
         shardManager.shards.forEach {

@@ -7,11 +7,9 @@
 
 package com.fredboat.sentinel.rpc
 
-import com.corundumstudio.socketio.SocketIOClient
 import com.fredboat.sentinel.entities.*
-import net.dv8tion.jda.api.entities.GuildChannel
-import net.dv8tion.jda.api.entities.NewsChannel
-import net.dv8tion.jda.api.entities.StageChannel
+import com.fredboat.sentinel.io.SocketContext
+import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.entities.VoiceChannel
 import net.dv8tion.jda.api.sharding.ShardManager
@@ -19,23 +17,33 @@ import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.springframework.stereotype.Service
 
 @Service
-class PermissionRequests(private val shardManager: ShardManager) {
+class PermissionRequests {
+
+    lateinit var shardManager: ShardManager
 
     /**
      * Returns true if the Role and/or Member has the given permissions in a Guild
      */
-    fun consume(request: GuildPermissionRequest, client: SocketIOClient) {
+    fun consume(request: GuildPermissionRequest, context: SocketContext) {
         val guild = shardManager.getGuildById(request.guild)
                 ?: throw RuntimeException("Got request for guild which isn't found")
 
         request.member?.apply {
             val member = guild.getMemberById(this)
             if (member == null) {
-                client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse("0", "0", true))
+                context.sendResponse(PermissionCheckResponse::class.java.simpleName, context.gson.toJson(PermissionCheckResponse(
+                    "0",
+                    "0",
+                    true
+                )), request.responseId)
                 return
             } else {
                 val effective = PermissionUtil.getEffectivePermission(member)
-                client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse(effective.toString(), getMissing(request.rawPermissions.toLong(), effective), false))
+                context.sendResponse(PermissionCheckResponse::class.java.simpleName, context.gson.toJson(PermissionCheckResponse(
+                    effective.toString(),
+                    getMissing(request.rawPermissions.toLong(), effective),
+                    false
+                )), request.responseId)
                 return
             }
         }
@@ -44,10 +52,18 @@ class PermissionRequests(private val shardManager: ShardManager) {
         request.role?.apply {
             val role = guild.getRoleById(this)
             if (role == null) {
-                client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse("0", "0", true))
+                context.sendResponse(PermissionCheckResponse::class.java.simpleName, context.gson.toJson(PermissionCheckResponse(
+                    "0",
+                    "0",
+                    true
+                )), request.responseId)
                 return
             } else {
-                client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse(role.permissionsRaw.toString(), getMissing(request.rawPermissions.toLong(), role.permissionsRaw), false))
+                context.sendResponse(PermissionCheckResponse::class.java.simpleName, context.gson.toJson(PermissionCheckResponse(
+                    role.permissionsRaw.toString(),
+                    getMissing(request.rawPermissions.toLong(), role.permissionsRaw),
+                    false
+                )), request.responseId)
                 return
             }
         }
@@ -56,7 +72,7 @@ class PermissionRequests(private val shardManager: ShardManager) {
     /**
      * Returns true if the Role and/or Member has the given permissions in a Channel
      */
-    fun consume(request: ChannelPermissionRequest, client: SocketIOClient) {
+    fun consume(request: ChannelPermissionRequest, context: SocketContext) {
         var channel: GuildChannel? = shardManager.getChannelById(TextChannel::class.java, request.channel)
                 ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
                 ?: shardManager.getChannelById(VoiceChannel::class.java, request.channel)
@@ -69,10 +85,18 @@ class PermissionRequests(private val shardManager: ShardManager) {
         request.member?.apply {
             val member = guild.getMemberById(this)
             if (member == null) {
-                client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse("0", "0", true))
+                context.sendResponse(PermissionCheckResponse::class.java.simpleName, context.gson.toJson(PermissionCheckResponse(
+                    "0",
+                    "0",
+                    true
+                )), request.responseId)
             } else {
                 val effective = PermissionUtil.getEffectivePermission(channel.permissionContainer, member)
-                client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse(effective.toString(), getMissing(request.rawPermissions.toLong(), effective), false))
+                context.sendResponse(PermissionCheckResponse::class.java.simpleName, context.gson.toJson(PermissionCheckResponse(
+                    effective.toString(),
+                    getMissing(request.rawPermissions.toLong(), effective),
+                    false
+                )), request.responseId)
             }
         }
 
@@ -80,15 +104,23 @@ class PermissionRequests(private val shardManager: ShardManager) {
         request.role?.apply {
             val role = guild.getRoleById(this)
             if (role == null) {
-                client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse("0", "0", true))
+                context.sendResponse(PermissionCheckResponse::class.java.simpleName, context.gson.toJson(PermissionCheckResponse(
+                    "0",
+                    "0",
+                    true
+                )), request.responseId)
             } else {
                 val effective = PermissionUtil.getEffectivePermission(channel.permissionContainer, role)
-                client.sendEvent("permissionCheckResponse-${request.responseId}", PermissionCheckResponse(effective.toString(), getMissing(request.rawPermissions.toLong(), effective), false))
+                context.sendResponse(PermissionCheckResponse::class.java.simpleName, context.gson.toJson(PermissionCheckResponse(
+                    effective.toString(),
+                    getMissing(request.rawPermissions.toLong(), effective),
+                    false
+                )), request.responseId)
             }
         }
     }
 
-    fun consume(request: BulkGuildPermissionRequest, client: SocketIOClient) {
+    fun consume(request: BulkGuildPermissionRequest, context: SocketContext) {
         val guild = shardManager.getGuildById(request.guild)
                 ?: throw RuntimeException("Got request for guild which isn't found")
 
@@ -96,7 +128,7 @@ class PermissionRequests(private val shardManager: ShardManager) {
             val member = guild.getMemberById(it) ?: return@map null
             PermissionUtil.getEffectivePermission(member).toString()
         })
-        client.sendEvent("bulkGuildPermissionResponse-${request.responseId}", bulkGuildPermissionResponse)
+        context.sendResponse(BulkGuildPermissionResponse::class.java.simpleName, context.gson.toJson(bulkGuildPermissionResponse), request.responseId)
     }
 
     /** Performs converse nonimplication */

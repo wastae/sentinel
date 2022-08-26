@@ -33,7 +33,6 @@ compileTestKotlin {
 
 dependencies {
     compile project(":sentinel-shared")
-    compile "com.corundumstudio.socketio:netty-socketio:$serverSocketIOVersion"
     //compile "net.dv8tion:JDA:$jdaVersion"
     compile "com.github.walkyst:jda:1633b1bccd"
     compile "net.sf.trove4j:trove4j:3.0.3"
@@ -44,7 +43,11 @@ dependencies {
     //compile "org.jetbrains.kotlin:kotlin-script-runtime:$kotlin_version"      // For kotlin eval
     //compile "org.jetbrains.kotlin:kotlin-script-util:$kotlin_version"       // For kotlin eval
     //compile "org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlin_version" // For kotlin eval
-    compile "org.springframework.boot:spring-boot-starter-web:$bootVersion"
+    compile "org.springframework:spring-websocket:$bootSocketVersion"
+    compile ("org.springframework.boot:spring-boot-starter-web:$bootVersion") {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-tomcat'
+    }
+    compile "org.springframework.boot:spring-boot-starter-undertow:$bootVersion"
     compile "io.projectreactor:reactor-core:$reactorVersion"
     annotationProcessor "org.springframework.boot:spring-boot-configuration-processor:$bootVersion"
     compile "com.google.code.gson:gson:$gsonVersion"

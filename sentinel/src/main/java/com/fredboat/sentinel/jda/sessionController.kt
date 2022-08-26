@@ -7,16 +7,13 @@
 
 package com.fredboat.sentinel.jda
 
-import com.corundumstudio.socketio.SocketIOClient
-import com.fredboat.sentinel.SocketServer
+import com.fredboat.sentinel.io.SocketServer
 import com.fredboat.sentinel.config.RoutingKey
 import com.fredboat.sentinel.config.SentinelProperties
 import com.fredboat.sentinel.entities.AppendSessionEvent
 import com.fredboat.sentinel.entities.RemoveSessionEvent
 import com.fredboat.sentinel.entities.RunSessionRequest
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import com.fredboat.sentinel.io.SocketContext
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.SessionController.SessionConnectNode
@@ -57,42 +54,47 @@ class RemoteSessionController(
         localQueue.values.forEach { it.send(false) }
     }
 
-    fun onRunRequest(request: RunSessionRequest, client: SocketIOClient) {
+    fun onRunRequest(request: RunSessionRequest, context: SocketContext) {
         val status = shardManager.getShardById(request.shardId)?.status
         log.info("Received request to run shard ${request.shardId}, which has status $status")
         val node = localQueue[request.shardId]
         if (node == null) {
-            client.sendEvent("removeSessionEvent", RemoveSessionEvent(request.shardId, sentinelProps.shardCount, routingKey.key))
+            context.sendResponse(RemoveSessionEvent::class.java.simpleName, context.gson.toJson(RemoveSessionEvent(
+                request.shardId, sentinelProps.shardCount, routingKey.key
+            )), request.responseId)
             throw IllegalStateException("Node ${request.shardId} is not queued")
         }
 
         if (shardManager.getShardById(request.shardId)?.status == JDA.Status.AWAITING_LOGIN_CONFIRMATION) {
-            val msg = "Refusing to run shard ${request.shardId} as it has status $status"
+            val msg = "Refusing to run shard ${request.shardId} as it has status $status:${request.responseId}"
             log.error(msg)
             node.send(true)
-            client.sendEvent("onRunResponse-${request.responseId}", msg)
+            context.sendResponse("OnRunResponse", msg, request.responseId, false)
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
-            node.run(false) // Always assume false, so that we don't immediately return
-            removeSession(node)
+        node.run(false) // Always assume false, so that we don't immediately return
+        removeSession(node)
 
-            client.sendEvent("onRunResponse-${request.responseId}", "Started node ${node.shardInfo}")
-        }
+        context.sendResponse(
+            "OnRunResponse",
+            "Started node ${node.shardInfo}:${request.responseId}",
+            request.responseId,
+            false
+        )
     }
 
     fun SessionConnectNode.send(remove: Boolean) {
         if (remove) {
             SocketServer.contextMap.forEach {
-                it.value.socketClient.sendEvent("removeSessionEvent",
-                    RemoveSessionEvent(shardInfo.shardId, shardInfo.shardTotal, routingKey.key)
-                )
+                it.value.sendResponse(RemoveSessionEvent::class.java.simpleName, it.value.gson.toJson(RemoveSessionEvent(
+                    shardInfo.shardId, shardInfo.shardTotal, routingKey.key
+                )), "0")
             }
         } else {
             SocketServer.contextMap.forEach {
-                it.value.socketClient.sendEvent("appendSessionEvent",
-                    AppendSessionEvent(shardInfo.shardId, shardInfo.shardTotal, routingKey.key)
-                )
+                it.value.sendResponse(AppendSessionEvent::class.java.simpleName, it.value.gson.toJson(AppendSessionEvent(
+                    shardInfo.shardId, shardInfo.shardTotal, routingKey.key
+                )), "0")
             }
         }
     }
@@ -102,9 +104,12 @@ class RemoteSessionController(
     override fun getGlobalRatelimit(): Long = globalRatelimit.get()
 
     override fun setGlobalRatelimit(ratelimit: Long) {
-        SocketServer.contextMap.forEach {
-            it.value.socketClient.sendEvent("setGlobalRatelimit", SetGlobalRatelimit(ratelimit))
-        }
+        // This event should be sent to all other sentinels
+        //SocketServer.contextMap.forEach {
+        //    it.value.sendResponse(SetGlobalRatelimit::class.java.simpleName, it.value.gson.toJson(SetGlobalRatelimit(
+        //        ratelimit
+        //    )))
+        //}
         globalRatelimit.set(ratelimit)
     }
 
@@ -123,4 +128,4 @@ class RemoteSessionController(
     }
 }
 
-data class SetGlobalRatelimit(val new: Long)
+//data class SetGlobalRatelimit(val new: Long)

@@ -7,12 +7,16 @@
 
 package com.fredboat.sentinel.rpc
 
-import com.corundumstudio.socketio.SocketIOClient
 import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.entities.ModRequestType.*
-import com.fredboat.sentinel.util.*
+import com.fredboat.sentinel.io.SocketContext
+import com.fredboat.sentinel.util.toEntityExtended
+import com.fredboat.sentinel.util.toJda
+import com.fredboat.sentinel.util.toJdaExt
 import net.dv8tion.jda.api.entities.Icon
 import net.dv8tion.jda.api.entities.UserSnowflake
+import net.dv8tion.jda.api.interactions.commands.Command
+import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.sharding.ShardManager
@@ -20,11 +24,11 @@ import org.springframework.stereotype.Service
 import java.util.*
 
 @Service
-class ManagementRequests(
-    private val shardManager: ShardManager,
-    private val eval: EvalService
-) {
-    fun consume(request: ModRequest, client: SocketIOClient) {
+class ManagementRequests {
+
+    lateinit var shardManager: ShardManager
+
+    fun consume(request: ModRequest) {
         val guild = shardManager.getGuildById(request.guildId)
                 ?: throw RuntimeException("Guild ${request.guildId} not found")
 
@@ -34,8 +38,6 @@ class ManagementRequests(
             UNBAN -> guild.unban(UserSnowflake.fromId(request.userId))
         }
         action.queue()
-
-        client.sendEvent("modResponse-${request.responseId}", "")
     }
 
     fun consume(request: SetAvatarRequest) {
@@ -43,9 +45,8 @@ class ManagementRequests(
         shardManager.shards[0].selfUser.manager.setAvatar(Icon.from(decoded)).queue()
     }
 
-    fun consume(request: ReviveShardRequest, client: SocketIOClient) {
+    fun consume(request: ReviveShardRequest) {
         shardManager.restart(request.shardId)
-        client.sendEvent("reviveShardResponse-${request.responseId}", "") // Generates a reply
     }
 
     fun consume(request: LeaveGuildRequest) {
@@ -54,13 +55,16 @@ class ManagementRequests(
         guild.leave().queue()
     }
 
-    fun consume(request: GetPingRequest, client: SocketIOClient) {
+    fun consume(request: GetPingRequest, context: SocketContext) {
         val shard = shardManager.getShardById(request.shardId)
-        client.sendEvent("getPingResponse-${request.responseId}", GetPingResponse(shard?.gatewayPing.toString(), shardManager.averageGatewayPing))
+        context.sendResponse(GetPingResponse::class.java.simpleName, context.gson.toJson(GetPingResponse(
+            shard?.gatewayPing.toString(),
+            shardManager.averageGatewayPing
+        )), request.responseId)
     }
 
-    fun consume(request: SentinelInfoRequest, client: SocketIOClient) {
-        client.sendEvent("sentinelInfoResponse-${request.responseId}", SentinelInfoResponse(
+    fun consume(request: SentinelInfoRequest, context: SocketContext) {
+        context.sendResponse(SentinelInfoResponse::class.java.simpleName, context.gson.toJson(SentinelInfoResponse(
             shardManager.guildCache.size().toString(),
             shardManager.userCache.size().toString(),
             shardManager.roleCache.size().toString(),
@@ -68,20 +72,20 @@ class ManagementRequests(
             shardManager.textChannelCache.size().toString(),
             shardManager.voiceChannelCache.size().toString(),
             if (request.includeShards) shardManager.shards.map { it.toEntityExtended() } else null
-        ))
+        )), request.responseId)
     }
 
-    fun consume(request: UserListRequest, client: SocketIOClient) {
-        client.sendEvent("userListResponse-${request.responseId}", shardManager.userCache.map { it.idLong })
-    }
+    //fun consume(request: UserListRequest, context: SocketContext) {
+    //    context.sendResponse("userListResponse-${request.responseId}", context.gson.toJson(shardManager.userCache.map { it.idLong }))
+    //}
 
-    fun consume(request: BanListRequest, client: SocketIOClient) {
-        val guild = shardManager.getGuildById(request.guildId)
-                ?: throw RuntimeException("Guild ${request.guildId} not found")
-        guild.retrieveBanList().queue { it ->
-            client.sendEvent("banListResponse-${request.responseId}", it.map { Ban(it.user.toEntity(), it.reason) }.toTypedArray())
-        }
-    }
+    //fun consume(request: BanListRequest, context: SocketContext) {
+    //    val guild = shardManager.getGuildById(request.guildId)
+    //            ?: throw RuntimeException("Guild ${request.guildId} not found")
+    //    guild.retrieveBanList().queue { it ->
+    //        context.sendResponse("banListResponse-${request.responseId}", context.gson.toJson(it.map { Ban(it.user.toEntity(), it.reason) }.toTypedArray()))
+    //    }
+    //}
 
     fun consume(request: RemoveSlashCommandsRequest) {
         if (request.guildId != null) {
@@ -105,6 +109,21 @@ class ManagementRequests(
         }
     }
 
+    fun consume(request: RegisterContextCommandRequest) {
+        if (request.guildId != null) {
+            val guild = shardManager.getGuildById(request.guildId!!)!!
+            guild.upsertCommand(buildContextCommand(request)).queue()
+        } else {
+            shardManager.shards.forEach {
+                it.upsertCommand(buildContextCommand(request)).queue()
+            }
+        }
+    }
+
+    private fun buildContextCommand(request: RegisterContextCommandRequest): CommandData {
+        return Commands.context(Command.Type.fromId(request.type.toInt()), request.commandName)
+    }
+
     private fun buildSlashCommand(request: RegisterSlashCommandRequest): SlashCommandData {
         val cmd = Commands.slash(request.commandName, request.commandDescription)
         when {
@@ -118,26 +137,5 @@ class ManagementRequests(
         }
 
         return cmd
-    }
-
-    @Volatile
-    var blockingEvalThread: Thread? = null
-
-    fun consume(request: EvalRequest, client: SocketIOClient) {
-        if (request.kill) {
-            blockingEvalThread ?: client.sendEvent("evalResponse-${request.responseId}", "No task is running")
-            blockingEvalThread?.interrupt()
-            client.sendEvent("evalResponse-${request.responseId}", "Task killed")
-        } else {
-            val mono = eval.evalScript(request.script!!, request.timeout)
-            blockingEvalThread = Thread.currentThread()
-            client.sendEvent("evalResponse-${request.responseId}", try {
-                mono.block()!!
-            } catch (ex: Exception) {
-                "${ex.javaClass.simpleName}: ${ex.message ?: "null"}"
-            } finally {
-                blockingEvalThread = null
-            })
-        }
     }
 }

@@ -8,10 +8,11 @@
 package com.fredboat.sentinel.config
 
 import com.fredboat.sentinel.ApplicationState
-import com.fredboat.sentinel.SocketServer
+import com.fredboat.sentinel.io.SocketServer
 import com.fredboat.sentinel.jda.RemoteSessionController
 import com.fredboat.sentinel.jda.SubscribeCachePolicy
 import com.fredboat.sentinel.jda.VoiceInterceptor
+import com.fredboat.sentinel.rpc.*
 import net.dv8tion.jda.api.GatewayEncoding
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.Message.MentionType
@@ -38,10 +39,18 @@ class ShardManagerConfig {
 
     @Bean
     fun buildShardManager(
+        subscribeCachePolicy: SubscribeCachePolicy,
         sentinelProperties: SentinelProperties,
         socketServer: SocketServer,
+        voiceInterceptor: VoiceInterceptor,
+        audio: AudioRequests,
+        info: InfoRequests,
+        management: ManagementRequests,
+        message: MessageRequests,
+        permission: PermissionRequests,
+        subscription: SubscriptionHandler,
         sessionController: RemoteSessionController,
-        voiceInterceptor: VoiceInterceptor
+        fanoutConsumer: FanoutConsumer,
     ): ShardManager {
 
         val intents = listOf(
@@ -64,7 +73,7 @@ class ShardManagerConfig {
             .setSessionController(sessionController)
             .setGatewayEncoding(GatewayEncoding.ETF)
             .setCompression(Compression.ZLIB)
-            .setMemberCachePolicy(SubscribeCachePolicy(sentinelProperties))
+            .setMemberCachePolicy(subscribeCachePolicy)
             .setChunkingFilter(ChunkingFilter.include(sentinelProperties.mainGuild))
             .setVoiceDispatchInterceptor(voiceInterceptor)
             .setRawEventsEnabled(false)
@@ -79,8 +88,15 @@ class ShardManagerConfig {
                 MentionType.HERE,
                 MentionType.ROLE
             )))
-            sessionController.shardManager = shardManager
             socketServer.shardManager = shardManager
+            audio.shardManager = shardManager
+            info.shardManager = shardManager
+            management.shardManager = shardManager
+            message.shardManager = shardManager
+            permission.shardManager = shardManager
+            subscription.shardManager = shardManager
+            sessionController.shardManager = shardManager
+            fanoutConsumer.shardManager = shardManager
             if (ApplicationState.isTesting) {
                 log.info("Shutting down JDA because we are running tests")
                 try {
@@ -97,7 +113,4 @@ class ShardManagerConfig {
 
         return shardManager
     }
-
-    @Bean
-    fun guildSubscriptions(): MutableSet<Long> = Collections.synchronizedSet(HashSet())
 }

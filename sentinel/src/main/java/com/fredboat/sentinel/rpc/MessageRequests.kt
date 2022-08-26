@@ -7,8 +7,8 @@
 
 package com.fredboat.sentinel.rpc
 
-import com.corundumstudio.socketio.SocketIOClient
 import com.fredboat.sentinel.entities.*
+import com.fredboat.sentinel.io.SocketContext
 import com.fredboat.sentinel.util.toJda
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
@@ -31,13 +31,15 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
-class MessageRequests(private val shardManager: ShardManager) {
+class MessageRequests{
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(MessageRequests::class.java)
     }
 
-    fun consume(request: SendMessageRequest, client: SocketIOClient) {
+    lateinit var shardManager: ShardManager
+
+    fun consume(request: SendMessageRequest, context: SocketContext) {
         val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
             ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
@@ -47,11 +49,11 @@ class MessageRequests(private val shardManager: ShardManager) {
         }
 
         channel.sendMessage(request.message).queue {
-            client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+            context.sendResponse(SendMessageResponse::class.java.simpleName, context.gson.toJson(SendMessageResponse(it.id)), request.responseId)
         }
     }
 
-    fun consume(request: SendEmbedRequest, client: SocketIOClient) {
+    fun consume(request: SendEmbedRequest, context: SocketContext) {
         val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
             ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
@@ -61,17 +63,17 @@ class MessageRequests(private val shardManager: ShardManager) {
         }
 
         channel.sendMessageEmbeds(request.embed.toJda()).queue {
-            client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+            context.sendResponse(SendMessageResponse::class.java.simpleName, context.gson.toJson(SendMessageResponse(it.id)), request.responseId)
         }
     }
 
-    fun consume(request: SendPrivateMessageRequest, client: SocketIOClient) {
+    fun consume(request: SendPrivateMessageRequest, context: SocketContext) {
         val shard = shardManager.shards.find { it.status == JDA.Status.CONNECTED } as JDAImpl
         val user = UserImpl(request.recipient.toLong(), shard)
         val channel = user.openPrivateChannel().complete(true)!!
 
         channel.sendMessage(request.message).queue {
-            client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+            context.sendResponse(SendMessageResponse::class.java.simpleName, context.gson.toJson(SendMessageResponse(it.id)), request.responseId)
         }
     }
 
@@ -87,7 +89,7 @@ class MessageRequests(private val shardManager: ShardManager) {
         channel.editMessageById(request.messageId, request.message).queue()
     }
 
-    fun consume(request: EditEmbedRequest, client: SocketIOClient) {
+    fun consume(request: EditEmbedRequest, context: SocketContext) {
         val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
             ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
@@ -97,13 +99,19 @@ class MessageRequests(private val shardManager: ShardManager) {
         }
 
         channel.editMessageEmbedsById(request.messageId, request.embed.toJda()).queue({
-            client.sendEvent("editEmbedResponse-${request.responseId}",
-                EditEmbedResponse(it.id, it.guild.id, true, null)
-            )
+            context.sendResponse(EditEmbedResponse::class.java.simpleName, context.gson.toJson(EditEmbedResponse(
+                it.id,
+                it.guild.id,
+                true,
+                null
+            )), request.responseId)
         }, {
-            client.sendEvent("editEmbedResponse-${request.responseId}",
-                EditEmbedResponse(request.messageId, channel.guild.id, false, it.stackTraceToString())
-            )
+            context.sendResponse(EditEmbedResponse::class.java.simpleName, context.gson.toJson(EditEmbedResponse(
+                request.messageId,
+                channel.guild.id,
+                false,
+                it.stackTraceToString()
+            )), request.responseId)
         })
     }
 
@@ -189,7 +197,22 @@ class MessageRequests(private val shardManager: ShardManager) {
         channel.sendTyping().queue()
     }
 
-    fun consume(request: SendSlashCommandRequest, client: SocketIOClient) {
+    fun consume(request: SendContextCommandRequest) {
+        val dataObject = DataObject.fromJson(request.interaction).getObject("d")
+        val guild: Guild? = shardManager.getGuildById(dataObject.getLong("guild_id", 0L))
+
+        if (guild != null) {
+            val interaction = CommandInteractionImpl(guild.jda as JDAImpl, dataObject)
+            interaction.reply(request.message).setEphemeral(true).queue()
+        } else {
+            shardManager.retrieveUserById(request.userId).queue {
+                val interaction = CommandInteractionImpl(it.jda as JDAImpl, dataObject)
+                interaction.reply(request.message).setEphemeral(true).queue()
+            }
+        }
+    }
+
+    fun consume(request: SendSlashCommandRequest, context: SocketContext) {
         val guild: Guild? = shardManager.getGuildById(request.guildId)
 
         if (guild == null) {
@@ -204,7 +227,7 @@ class MessageRequests(private val shardManager: ShardManager) {
         if (request.ephemeral) {
             interaction.reply(request.message).setEphemeral(true).queue { it ->
                 it.retrieveOriginal().queue {
-                    client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+                    context.sendResponse(SendMessageResponse::class.java.simpleName, context.gson.toJson(SendMessageResponse(it.id)), request.responseId)
                 }
             }
         } else {
@@ -212,12 +235,12 @@ class MessageRequests(private val shardManager: ShardManager) {
             hook.ack()
             hook.ready()
             hook.editOriginal(request.message).queue {
-                client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+                context.sendResponse(SendMessageResponse::class.java.simpleName, context.gson.toJson(SendMessageResponse(it.id)), request.responseId)
             }
         }
     }
 
-    fun consume(request: SendSlashEmbedCommandRequest, client: SocketIOClient) {
+    fun consume(request: SendSlashEmbedCommandRequest, context: SocketContext) {
         val guild: Guild? = shardManager.getGuildById(request.guildId)
 
         if (guild == null) {
@@ -232,7 +255,7 @@ class MessageRequests(private val shardManager: ShardManager) {
         if (request.ephemeral) {
             interaction.replyEmbeds(request.message.toJda()).setEphemeral(true).queue { it ->
                 it.retrieveOriginal().queue {
-                    client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+                    context.sendResponse(SendMessageResponse::class.java.simpleName, context.gson.toJson(SendMessageResponse(it.id)), request.responseId)
                 }
             }
         } else {
@@ -240,12 +263,12 @@ class MessageRequests(private val shardManager: ShardManager) {
             hook.ack()
             hook.ready()
             hook.editOriginalEmbeds(request.message.toJda()).queue {
-                client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+                context.sendResponse(SendMessageResponse::class.java.simpleName, context.gson.toJson(SendMessageResponse(it.id)), request.responseId)
             }
         }
     }
 
-    fun consume(request: SendSlashMenuCommandRequest, client: SocketIOClient) {
+    fun consume(request: SendSlashMenuCommandRequest, context: SocketContext) {
         val guild: Guild? = shardManager.getGuildById(request.guildId)
 
         if (guild == null) {
@@ -260,7 +283,7 @@ class MessageRequests(private val shardManager: ShardManager) {
         if (request.ephemeral) {
             interaction.reply(request.message).setEphemeral(true).queue { it ->
                 it.retrieveOriginal().queue {
-                    client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+                    context.sendResponse(SendMessageResponse::class.java.simpleName, context.gson.toJson(SendMessageResponse(it.id)), request.responseId)
                 }
             }
         } else {
@@ -268,7 +291,7 @@ class MessageRequests(private val shardManager: ShardManager) {
             hook.ack()
             hook.ready()
             hook.editOriginal(request.message).queue {
-                client.sendEvent("sendMessageResponse-${request.responseId}", SendMessageResponse(it.id))
+                context.sendResponse(SendMessageResponse::class.java.simpleName, context.gson.toJson(SendMessageResponse(it.id)), request.responseId)
             }
         }
     }

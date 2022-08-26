@@ -64,7 +64,7 @@ allprojects {
 }
 
 ext {
-    serverSocketIOVersion = '1.7.19'
+    bootSocketVersion = '5.3.22'
     jdaVersion = "5.0.0-alpha.5"
     reactorVersion = "3.1.1.RELEASE"
     gsonVersion = '2.8.2'

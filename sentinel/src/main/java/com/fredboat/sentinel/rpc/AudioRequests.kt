@@ -20,7 +20,9 @@ import org.springframework.stereotype.Service
  * Requests related to audio
  */
 @Service
-class AudioRequests(private val shardManager: ShardManager) {
+class AudioRequests {
+
+    lateinit var shardManager: ShardManager
 
     fun consume(request: AudioQueueRequest) {
         val guild: Guild = shardManager.getGuildById(request.guild)

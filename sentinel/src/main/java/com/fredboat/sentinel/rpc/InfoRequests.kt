@@ -7,8 +7,8 @@
 
 package com.fredboat.sentinel.rpc
 
-import com.corundumstudio.socketio.SocketIOClient
 import com.fredboat.sentinel.entities.*
+import com.fredboat.sentinel.io.SocketContext
 import com.fredboat.sentinel.util.toEntity
 import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.sharding.ShardManager
@@ -18,72 +18,74 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
-class InfoRequests(private val shardManager: ShardManager) {
+class InfoRequests {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(InfoRequests::class.java)
     }
 
-    fun consume(request: GuildsRequest, client: SocketIOClient) {
-        val guilds = shardManager.guilds
+    lateinit var shardManager: ShardManager
+
+    fun consume(request: GuildsRequest, context: SocketContext) {
+        val guilds = shardManager.guildCache
         guilds.run {
-            client.sendEvent("guildsResponse-${request.responseId}", GuildsResponse(
+            context.sendResponse(GuildsResponse::class.java.simpleName, context.gson.toJson(GuildsResponse(
                 this.map { it.id }.toList()
-            ))
+            )), request.responseId)
         }
     }
 
-    fun consume(request: GuildInfoRequest, client: SocketIOClient) {
+    fun consume(request: GuildInfoRequest, context: SocketContext) {
         val guild = shardManager.getGuildById(request.id)
                 ?: throw IllegalStateException("Guild ${request.id} not found")
         guild.run {
-            client.sendEvent("guildInfo-${request.responseId}", GuildInfo(
+            context.sendResponse(GuildInfo::class.java.simpleName, context.gson.toJson(GuildInfo(
                 id,
                 guild.iconUrl,
                 guild.memberCache.count { it.onlineStatus != OnlineStatus.OFFLINE },
                 verificationLevel.name
-            ))
+            )), request.responseId)
         }
     }
 
-    fun consume(request: RoleInfoRequest, client: SocketIOClient) {
+    fun consume(request: RoleInfoRequest, context: SocketContext) {
         val role = shardManager.getRoleById(request.id)
                 ?: throw IllegalStateException("Role ${request.id} not found")
         role.run {
-            client.sendEvent("roleInfo-${request.responseId}", RoleInfo(
+            context.sendResponse(RoleInfo::class.java.simpleName, context.gson.toJson(RoleInfo(
                 id,
                 position,
                 color?.rgb,
                 isHoisted,
                 isMentionable,
                 isManaged
-            ))
+            )), request.responseId)
         }
     }
 
-    fun consume(request: FindMembersByRoleRequest, client: SocketIOClient) {
+    fun consume(request: FindMembersByRoleRequest, context: SocketContext) {
         val role = shardManager.getRoleById(request.id)
                 ?: throw IllegalStateException("Role ${request.id} not found")
         shardManager.getGuildById(request.guildId)!!.findMembersWithRoles(role).onSuccess { it ->
-            client.sendEvent("membersByRoleResponse-${request.responseId}", MembersByRoleResponse(
+            context.sendResponse(MembersByRoleResponse::class.java.simpleName, context.gson.toJson(MembersByRoleResponse(
                 it.map { it.toEntity() }
-            ))
+            )), request.responseId)
         }
     }
 
-    fun consume(request: GetMembersByPrefixRequest, client: SocketIOClient) {
+    fun consume(request: GetMembersByPrefixRequest, context: SocketContext) {
         shardManager.getGuildById(request.guildId)!!.retrieveMembersByPrefix(request.prefix, request.limit).onSuccess { it ->
-            client.sendEvent("membersByPrefixResponse-${request.responseId}", it.map { it.toEntity() })
+            context.sendResponse(MembersByPrefixResponse::class.java.simpleName, context.gson.toJson(it.map { it.toEntity() }), request.responseId)
         }
     }
 
-    fun consume(request: GetMembersByIdsRequest, client: SocketIOClient) {
+    fun consume(request: GetMembersByIdsRequest, context: SocketContext) {
         shardManager.getGuildById(request.guildId)!!.retrieveMembersByIds(request.ids.map { it.toLong() }).onSuccess { it ->
-            client.sendEvent("membersByIdsResponse-${request.responseId}", it.map { it.toEntity() })
+            context.sendResponse(MembersByIdsResponse::class.java.simpleName, context.gson.toJson(it.map { it.toEntity() }), request.responseId)
         }
     }
 
-    fun consume(request: MemberInfoRequest, client: SocketIOClient) {
+    fun consume(request: MemberInfoRequest, context: SocketContext) {
         val guild = shardManager.getGuildById(request.guildId)
 
         if (guild == null) {
@@ -91,8 +93,8 @@ class InfoRequests(private val shardManager: ShardManager) {
             return
         }
 
-        return guild.retrieveMemberById(request.id).queue { it ->
-            client.sendEvent("memberInfo-${request.responseId}", MemberInfo(
+        guild.retrieveMemberById(request.id).queue { it ->
+            context.sendResponse(MemberInfo::class.java.simpleName, context.gson.toJson(MemberInfo(
                 it.user.id,
                 it.user.name,
                 it.nickname,
@@ -106,11 +108,11 @@ class InfoRequests(private val shardManager: ShardManager) {
                 it.roles.map { it.id },
                 PermissionUtil.getEffectivePermission(it).toString(),
                 it.voiceState?.channel?.id
-            ))
+            )), request.responseId)
         }
     }
 
-    fun consume(request: GetMemberRequest, client: SocketIOClient) {
+    fun consume(request: GetMemberRequest, context: SocketContext) {
         val guild = shardManager.getGuildById(request.guildId)
 
         if (guild == null) {
@@ -119,26 +121,26 @@ class InfoRequests(private val shardManager: ShardManager) {
         }
 
         guild.retrieveMemberById(request.id).queue {
-            client.sendEvent("member-${request.responseId}", it.toEntity())
+            context.sendResponse(Member::class.java.simpleName, context.gson.toJson(it.toEntity()), request.responseId)
         }
     }
 
-    fun consume(request: UserInfoRequest, client: SocketIOClient) {
+    fun consume(request: UserInfoRequest, context: SocketContext) {
         shardManager.retrieveUserById(request.id).queue { it ->
-            client.sendEvent("userInfo-${request.responseId}", UserInfo(
+            context.sendResponse(UserInfo::class.java.simpleName, context.gson.toJson(UserInfo(
                 it.id,
                 it.name,
                 it.discriminator,
                 it.effectiveAvatarUrl,
                 it.isBot,
                 it.mutualGuilds.map { it.id }
-            ))
+            )), request.responseId)
         }
     }
 
-    fun consume(request: GetUserRequest, client: SocketIOClient) {
+    fun consume(request: GetUserRequest, context: SocketContext) {
         shardManager.retrieveUserById(request.id).queue {
-            client.sendEvent("user-${request.responseId}", it.toEntity())
+            context.sendResponse(User::class.java.simpleName, context.gson.toJson(it.toEntity()), request.responseId)
         }
     }
 }
