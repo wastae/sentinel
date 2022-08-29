@@ -110,7 +110,6 @@ data class SlashCommandsEvent(
     val fromBot: Boolean,
     val locale: String,
     val command: String,
-    val commandId: String,
     val options: List<Option>
 )
 
