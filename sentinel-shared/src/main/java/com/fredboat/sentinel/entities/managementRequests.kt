@@ -38,6 +38,11 @@ data class RemoveSlashCommandsRequest(
     val guildId: String?
 )
 
+data class RemoveSlashCommandRequest(
+    val commandId: String,
+    val guildId: String?
+)
+
 data class RegisterSlashCommandRequest(
     val commandName: String,
     val commandDescription: String,
