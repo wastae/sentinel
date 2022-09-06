@@ -1,10 +1,12 @@
 package com.fredboat.sentinel.io
 
 import com.fredboat.sentinel.config.RoutingKey
+import com.fredboat.sentinel.config.SentinelProperties
 import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.jda.SubscriptionCache
 import com.fredboat.sentinel.jda.VoiceServerUpdateCache
 import com.fredboat.sentinel.metrics.Counters
+import com.fredboat.sentinel.rpc.FanoutConsumer
 import com.fredboat.sentinel.util.toEntity
 import com.fredboat.sentinel.util.toEntityLite
 import com.fredboat.sentinel.util.toTextEntity
@@ -58,8 +60,8 @@ import org.springframework.web.socket.WebSocketSession
 import org.springframework.web.socket.adapter.standard.StandardWebSocketSession
 import java.util.concurrent.*
 
-
 class SocketContext internal constructor(
+    private val sentinelProperties: SentinelProperties,
     private val key: RoutingKey,
     val gson: Gson,
     voiceServerUpdateCache: VoiceServerUpdateCache,
@@ -88,6 +90,7 @@ class SocketContext internal constructor(
         shardManager.addEventListener(jdaWebsocketEventListener)
 
         send(JSONObject().put("op", "initial").put("routingKey", key))
+        FanoutConsumer.sendHello(this, sentinelProperties, key)
     }
 
     fun pause() {
@@ -97,12 +100,19 @@ class SocketContext internal constructor(
         }, resumeTimeout, TimeUnit.SECONDS)
     }
 
-    fun sendResponse(eventType: String, eventObject: String, responseId: String, jsonResponse: Boolean = true) {
+    fun sendResponse(
+        eventType: String,
+        eventObject: String,
+        responseId: String = "0",
+        jsonResponse: Boolean = true,
+        successful: Boolean = true
+    ) {
         val out = JSONObject()
         out.put("op", "response")
         out.put("routingKey", key)
         out.put("responseId", responseId)
         out.put("jsonObject", jsonResponse)
+        out.put("successful", successful)
         out.put("type", eventType)
         out.put("object", if (jsonResponse) JSONObject(eventObject) else eventObject)
 
@@ -155,6 +165,7 @@ class SocketContext internal constructor(
         sessionPaused = false
         this.session = session
         send(JSONObject().put("op", "initial").put("routingKey", key))
+        FanoutConsumer.sendHello(this, sentinelProperties, key)
         log.info("Replaying ${resumeEventQueue.size} events")
 
         // Bulk actions are not guaranteed to be atomic, so we need to do this imperatively
@@ -249,6 +260,7 @@ class SocketContext internal constructor(
             if (member != null) {
                 if (!subscriptionCache.contains(member.guild.idLong)) return
 
+                updateChannelPermissions(member.guild)
                 sendEvent(GuildMemberUpdate::class.java.simpleName, gson.toJson(GuildMemberUpdate(
                     member.guild.id,
                     member.toEntity()
@@ -449,6 +461,7 @@ class SocketContext internal constructor(
             if (event.rawData == null) return
             if (!subscriptionCache.contains(event.guild!!.idLong)) return
 
+            event.deferEdit().queue()
             sendEvent(SelectionMenuEvent::class.java.simpleName, gson.toJson(SelectionMenuEvent(
                 event.rawData!!.toJson(),
                 event.values,

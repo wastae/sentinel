@@ -1,6 +1,7 @@
 package com.fredboat.sentinel.io
 
 import com.fredboat.sentinel.config.RoutingKey
+import com.fredboat.sentinel.config.SentinelProperties
 import com.fredboat.sentinel.jda.RemoteSessionController
 import com.fredboat.sentinel.jda.SubscriptionCache
 import com.fredboat.sentinel.jda.VoiceServerUpdateCache
@@ -28,6 +29,7 @@ class SocketServer(
     subscription: SubscriptionHandler,
     sessionController: RemoteSessionController,
     fanoutConsumer: FanoutConsumer,
+    private val sentinelProperties: SentinelProperties,
     private val key: RoutingKey,
     private val voiceServerUpdateCache: VoiceServerUpdateCache,
     private val subscriptionCache: SubscriptionCache
@@ -67,7 +69,16 @@ class SocketServer(
             return
         }
 
-        contextMap[session.id] = SocketContext(key, gson, voiceServerUpdateCache, subscriptionCache, shardManager, this, session)
+        contextMap[session.id] = SocketContext(
+            sentinelProperties,
+            key,
+            gson,
+            voiceServerUpdateCache,
+            subscriptionCache,
+            shardManager,
+            this,
+            session
+        )
 
         log.info("Connection successfully established with $clientName")
     }
