@@ -33,7 +33,7 @@ class WebSocketHandlers(
     }
 
     fun consume(context: SocketContext, request: JSONObject) {
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO.limitedParallelism(1000)).launch {
             val `object` = request.getJSONObject("object").toString()
 
             when (request.getString("eventType")) {
@@ -62,6 +62,7 @@ class WebSocketHandlers(
                 //UserListRequest::class.java.simpleName -> management.consume(context.gson.fromJson(`object`, UserListRequest::class.java), context)
                 //BanListRequest::class.java.simpleName -> management.consume(context.gson.fromJson(`object`, BanListRequest::class.java), context)
                 RemoveSlashCommandsRequest::class.java.simpleName -> management.consume(context.gson.fromJson(`object`, RemoveSlashCommandsRequest::class.java))
+                RemoveSlashCommandRequest::class.java.simpleName -> management.consume(context.gson.fromJson(`object`, RemoveSlashCommandRequest::class.java))
                 RegisterSlashCommandRequest::class.java.simpleName -> management.consume(context.gson.fromJson(`object`, RegisterSlashCommandRequest::class.java))
                 RegisterContextCommandRequest::class.java.simpleName -> management.consume(context.gson.fromJson(`object`, RegisterContextCommandRequest::class.java))
 
