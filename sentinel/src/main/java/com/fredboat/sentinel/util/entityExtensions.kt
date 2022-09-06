@@ -73,13 +73,13 @@ fun AudioChannel.toVoiceEntity() = VoiceChannel(
     name,
     members.map { it.user.id },
     if (this is StageChannel) 0 else (this as net.dv8tion.jda.api.entities.VoiceChannel).userLimit,
-    PermissionUtil.getExplicitPermission(this, guild.selfMember).toString()
+    PermissionUtil.getEffectivePermission(this.permissionContainer, guild.selfMember).toString()
 )
 
 fun GuildChannel.toTextEntity() = TextChannel(
     id,
     name,
-    PermissionUtil.getExplicitPermission(this, guild.selfMember).toString()
+    PermissionUtil.getEffectivePermission(this.permissionContainer, guild.selfMember).toString()
 )
 
 fun net.dv8tion.jda.api.entities.Role.toEntity() = Role(
