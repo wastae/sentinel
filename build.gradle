@@ -9,7 +9,7 @@ buildscript {
     ext {
         gradleGitVersion = '2.1.0'
         kotlin_version = '1.6.10'
-        bootVersion = '2.6.2'
+        bootVersion = '2.7.3'
         aptVersion = '0.17'
     }
 
@@ -57,15 +57,14 @@ allprojects {
     repositories {
         mavenLocal()
         mavenCentral()
-        maven { url 'https://jitpack.io' }
         jcenter()
         maven { url 'https://dl.bintray.com/palantir/releases' }
+        maven { url 'https://jitpack.io' }
     }
 }
 
 ext {
-    bootSocketVersion = '5.3.22'
-    jdaVersion = "5.0.0-alpha.5"
+    jdaVersion = "5.0.0-alpha.18"
     reactorVersion = "3.1.1.RELEASE"
     gsonVersion = '2.8.2'
     jacksonKotlinVersion = "2.13.1"

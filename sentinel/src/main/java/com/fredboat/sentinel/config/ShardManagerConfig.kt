@@ -14,15 +14,14 @@ import com.fredboat.sentinel.jda.SubscribeCachePolicy
 import com.fredboat.sentinel.jda.VoiceInterceptor
 import com.fredboat.sentinel.rpc.*
 import net.dv8tion.jda.api.GatewayEncoding
-import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.Message.MentionType
 import net.dv8tion.jda.api.requests.GatewayIntent
-import net.dv8tion.jda.api.requests.restaction.MessageAction
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.ChunkingFilter
 import net.dv8tion.jda.api.utils.Compression
 import net.dv8tion.jda.api.utils.cache.CacheFlag
+import net.dv8tion.jda.api.utils.messages.MessageRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
@@ -54,7 +53,7 @@ class ShardManagerConfig {
     ): ShardManager {
 
         val intents = listOf(
-            //GatewayIntent.MESSAGE_CONTENT,
+            GatewayIntent.MESSAGE_CONTENT,
             GatewayIntent.DIRECT_MESSAGES,
             GatewayIntent.GUILD_MESSAGES,
             GatewayIntent.GUILD_MEMBERS,
@@ -82,8 +81,7 @@ class ShardManagerConfig {
         val shardManager: ShardManager
         try {
             shardManager = builder.build()
-            Message.suppressContentIntentWarning()
-            MessageAction.setDefaultMentions(EnumSet.complementOf(EnumSet.of(
+            MessageRequest.setDefaultMentions(EnumSet.complementOf(EnumSet.of(
                 MentionType.EVERYONE,
                 MentionType.HERE,
                 MentionType.ROLE

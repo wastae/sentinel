@@ -33,8 +33,7 @@ compileTestKotlin {
 
 dependencies {
     compile project(":sentinel-shared")
-    //compile "net.dv8tion:JDA:$jdaVersion"
-    compile "com.github.walkyst:jda:1633b1bccd"
+    compile "net.dv8tion:JDA:$jdaVersion"
     compile "net.sf.trove4j:trove4j:3.0.3"
     compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0"
     compile "jakarta.xml.bind:jakarta.xml.bind-api:2.3.2"
@@ -43,7 +42,9 @@ dependencies {
     //compile "org.jetbrains.kotlin:kotlin-script-runtime:$kotlin_version"      // For kotlin eval
     //compile "org.jetbrains.kotlin:kotlin-script-util:$kotlin_version"       // For kotlin eval
     //compile "org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlin_version" // For kotlin eval
-    compile "org.springframework:spring-websocket:$bootSocketVersion"
+    compile ("org.springframework.boot:spring-boot-starter-websocket:$bootVersion") {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-tomcat'
+    }
     compile ("org.springframework.boot:spring-boot-starter-web:$bootVersion") {
         exclude group: 'org.springframework.boot', module: 'spring-boot-starter-tomcat'
     }
