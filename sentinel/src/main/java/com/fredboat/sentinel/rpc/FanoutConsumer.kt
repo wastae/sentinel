@@ -39,7 +39,7 @@ class FanoutConsumer(
                 key.key
             ) }
 
-            context.sendResponse(SentinelHello::class.java.simpleName, context.gson.toJson(message), "0")
+            context.sendResponse(SentinelHello::class.java.simpleName, context.gson.toJson(message))
         }
     }
 

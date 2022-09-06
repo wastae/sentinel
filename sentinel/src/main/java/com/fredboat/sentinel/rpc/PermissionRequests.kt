@@ -14,10 +14,16 @@ import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.entities.VoiceChannel
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.utils.PermissionUtil
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
 class PermissionRequests {
+
+    companion object {
+        private val log: Logger = LoggerFactory.getLogger(PermissionRequests::class.java)
+    }
 
     lateinit var shardManager: ShardManager
 
@@ -26,7 +32,13 @@ class PermissionRequests {
      */
     fun consume(request: GuildPermissionRequest, context: SocketContext) {
         val guild = shardManager.getGuildById(request.guild)
-                ?: throw RuntimeException("Got request for guild which isn't found")
+
+        if (guild == null) {
+            val msg = "Guild ${request.guild} not found"
+            log.error(msg)
+            context.sendResponse(PermissionCheckResponse::class.java.simpleName, msg, request.responseId, false, false)
+            return
+        }
 
         request.member?.apply {
             val member = guild.getMemberById(this)
@@ -78,7 +90,13 @@ class PermissionRequests {
                 ?: shardManager.getChannelById(VoiceChannel::class.java, request.channel)
                 ?: shardManager.getChannelById(StageChannel::class.java, request.channel)
         channel = channel ?: shardManager.getCategoryById(request.channel)
-        channel ?: throw RuntimeException("Got request for channel which isn't found")
+
+        if (channel == null) {
+            val msg = "Channel ${request.channel} not found"
+            log.error(msg)
+            context.sendResponse(PermissionCheckResponse::class.java.simpleName, msg, request.responseId, false, false)
+            return
+        }
 
         val guild = channel.guild
 
@@ -122,7 +140,13 @@ class PermissionRequests {
 
     fun consume(request: BulkGuildPermissionRequest, context: SocketContext) {
         val guild = shardManager.getGuildById(request.guild)
-                ?: throw RuntimeException("Got request for guild which isn't found")
+
+        if (guild == null) {
+            val msg = "Guild ${request.guild} not found"
+            log.error(msg)
+            context.sendResponse(BulkGuildPermissionResponse::class.java.simpleName, msg, request.responseId, false, false)
+            return
+        }
 
         val bulkGuildPermissionResponse = BulkGuildPermissionResponse(request.members.map {
             val member = guild.getMemberById(it) ?: return@map null

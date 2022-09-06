@@ -16,7 +16,7 @@ class VoiceInterceptor(private val voiceServerUpdateCache: VoiceServerUpdateCach
         val event = VoiceServerUpdate(update.sessionId, json)
         voiceServerUpdateCache[update.guildId] = event
         SocketServer.contextMap.forEach {
-            it.value.sendResponse(VoiceServerUpdate::class.java.simpleName, it.value.gson.toJson(event), "0")
+            it.value.sendResponse(VoiceServerUpdate::class.java.simpleName, it.value.gson.toJson(event))
         }
     }
 

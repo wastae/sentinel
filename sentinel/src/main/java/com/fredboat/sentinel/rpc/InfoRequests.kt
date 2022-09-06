@@ -9,6 +9,7 @@ package com.fredboat.sentinel.rpc
 
 import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.io.SocketContext
+import com.fredboat.sentinel.util.execute
 import com.fredboat.sentinel.util.toEntity
 import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.sharding.ShardManager
@@ -37,7 +38,14 @@ class InfoRequests {
 
     fun consume(request: GuildInfoRequest, context: SocketContext) {
         val guild = shardManager.getGuildById(request.id)
-                ?: throw IllegalStateException("Guild ${request.id} not found")
+
+        if (guild == null) {
+            val msg = "Guild ${request.id} not found"
+            log.error(msg)
+            context.sendResponse(GuildInfo::class.java.simpleName, msg, request.responseId, false, false)
+            return
+        }
+
         guild.run {
             context.sendResponse(GuildInfo::class.java.simpleName, context.gson.toJson(GuildInfo(
                 id,
@@ -50,7 +58,14 @@ class InfoRequests {
 
     fun consume(request: RoleInfoRequest, context: SocketContext) {
         val role = shardManager.getRoleById(request.id)
-                ?: throw IllegalStateException("Role ${request.id} not found")
+
+        if (role == null) {
+            val msg = "Role ${request.id} not found"
+            log.error(msg)
+            context.sendResponse(RoleInfo::class.java.simpleName, msg, request.responseId, false, false)
+            return
+        }
+
         role.run {
             context.sendResponse(RoleInfo::class.java.simpleName, context.gson.toJson(RoleInfo(
                 id,
@@ -65,23 +80,50 @@ class InfoRequests {
 
     fun consume(request: FindMembersByRoleRequest, context: SocketContext) {
         val role = shardManager.getRoleById(request.id)
-                ?: throw IllegalStateException("Role ${request.id} not found")
-        shardManager.getGuildById(request.guildId)!!.findMembersWithRoles(role).onSuccess { it ->
+
+        if (role == null) {
+            val msg = "Role ${request.id} not found"
+            log.error(msg)
+            context.sendResponse(MembersByRoleResponse::class.java.simpleName, msg, request.responseId, false, false)
+            return
+        }
+
+        shardManager.getGuildById(request.guildId)!!.findMembersWithRoles(role).execute(
+            MembersByRoleResponse::class.java.simpleName,
+            request.responseId,
+            context
+        ).onSuccess { members ->
             context.sendResponse(MembersByRoleResponse::class.java.simpleName, context.gson.toJson(MembersByRoleResponse(
-                it.map { it.toEntity() }
+                members.map { it.toEntity() }
             )), request.responseId)
         }
     }
 
     fun consume(request: GetMembersByPrefixRequest, context: SocketContext) {
-        shardManager.getGuildById(request.guildId)!!.retrieveMembersByPrefix(request.prefix, request.limit).onSuccess { it ->
-            context.sendResponse(MembersByPrefixResponse::class.java.simpleName, context.gson.toJson(it.map { it.toEntity() }), request.responseId)
+        shardManager.getGuildById(request.guildId)!!.retrieveMembersByPrefix(request.prefix, request.limit).execute(
+            MembersByPrefixResponse::class.java.simpleName,
+            request.responseId,
+            context
+        ).onSuccess { it ->
+            context.sendResponse(
+                MembersByPrefixResponse::class.java.simpleName,
+                context.gson.toJson(it.map { it.toEntity() }),
+                request.responseId
+            )
         }
     }
 
     fun consume(request: GetMembersByIdsRequest, context: SocketContext) {
-        shardManager.getGuildById(request.guildId)!!.retrieveMembersByIds(request.ids.map { it.toLong() }).onSuccess { it ->
-            context.sendResponse(MembersByIdsResponse::class.java.simpleName, context.gson.toJson(it.map { it.toEntity() }), request.responseId)
+        shardManager.getGuildById(request.guildId)!!.retrieveMembersByIds(request.ids.map { it.toLong() }).execute(
+            MembersByIdsResponse::class.java.simpleName,
+            request.responseId,
+            context
+        ).onSuccess { it ->
+            context.sendResponse(
+                MembersByIdsResponse::class.java.simpleName,
+                context.gson.toJson(it.map { it.toEntity() }),
+                request.responseId
+            )
         }
     }
 
@@ -89,11 +131,17 @@ class InfoRequests {
         val guild = shardManager.getGuildById(request.guildId)
 
         if (guild == null) {
-            log.error("Received MemberInfoRequest in guild ${request.guildId} which was not found")
+            val msg = "Received MemberInfoRequest in guild ${request.guildId} which was not found"
+            log.error(msg)
+            context.sendResponse(MemberInfo::class.java.simpleName, msg, request.responseId, false, false)
             return
         }
 
-        guild.retrieveMemberById(request.id).queue { it ->
+        guild.retrieveMemberById(request.id).execute(
+            MemberInfo::class.java.simpleName,
+            request.responseId,
+            context
+        ).whenCompleteAsync { it, _ ->
             context.sendResponse(MemberInfo::class.java.simpleName, context.gson.toJson(MemberInfo(
                 it.user.id,
                 it.user.name,
@@ -116,17 +164,27 @@ class InfoRequests {
         val guild = shardManager.getGuildById(request.guildId)
 
         if (guild == null) {
-            log.error("Received GetMemberRequest in guild ${request.guildId} which was not found")
+            val msg = "Received GetMemberRequest in guild ${request.guildId} which was not found"
+            log.error(msg)
+            context.sendResponse(Member::class.java.simpleName, msg, request.responseId, false, false)
             return
         }
 
-        guild.retrieveMemberById(request.id).queue {
+        guild.retrieveMemberById(request.id).execute(
+            Member::class.java.simpleName,
+            request.responseId,
+            context
+        ).whenCompleteAsync { it, _ ->
             context.sendResponse(Member::class.java.simpleName, context.gson.toJson(it.toEntity()), request.responseId)
         }
     }
 
     fun consume(request: UserInfoRequest, context: SocketContext) {
-        shardManager.retrieveUserById(request.id).queue { it ->
+        shardManager.retrieveUserById(request.id).execute(
+            UserInfo::class.java.simpleName,
+            request.responseId,
+            context
+        ).whenCompleteAsync { it, _ ->
             context.sendResponse(UserInfo::class.java.simpleName, context.gson.toJson(UserInfo(
                 it.id,
                 it.name,
@@ -139,7 +197,11 @@ class InfoRequests {
     }
 
     fun consume(request: GetUserRequest, context: SocketContext) {
-        shardManager.retrieveUserById(request.id).queue {
+        shardManager.retrieveUserById(request.id).execute(
+            User::class.java.simpleName,
+            request.responseId,
+            context
+        ).whenCompleteAsync { it, _ ->
             context.sendResponse(User::class.java.simpleName, context.gson.toJson(it.toEntity()), request.responseId)
         }
     }

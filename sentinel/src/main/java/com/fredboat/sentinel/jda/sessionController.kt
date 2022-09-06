@@ -88,13 +88,13 @@ class RemoteSessionController(
             SocketServer.contextMap.forEach {
                 it.value.sendResponse(RemoveSessionEvent::class.java.simpleName, it.value.gson.toJson(RemoveSessionEvent(
                     shardInfo.shardId, shardInfo.shardTotal, routingKey.key
-                )), "0")
+                )))
             }
         } else {
             SocketServer.contextMap.forEach {
                 it.value.sendResponse(AppendSessionEvent::class.java.simpleName, it.value.gson.toJson(AppendSessionEvent(
                     shardInfo.shardId, shardInfo.shardTotal, routingKey.key
-                )), "0")
+                )))
             }
         }
     }

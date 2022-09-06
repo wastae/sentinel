@@ -12,9 +12,16 @@ import com.fredboat.sentinel.entities.GuildUnsubscribeRequest
 import com.fredboat.sentinel.io.SocketContext
 import com.fredboat.sentinel.jda.SubscriptionCache
 import com.fredboat.sentinel.jda.VoiceServerUpdateCache
+import com.fredboat.sentinel.util.execute
 import com.fredboat.sentinel.util.toEntity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import net.dv8tion.jda.api.entities.AudioChannel
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -31,26 +38,31 @@ class SubscriptionHandler(
 
     lateinit var shardManager: ShardManager
 
-    fun consume(request: GuildSubscribeRequest, context: SocketContext) {
+    suspend fun consume(request: GuildSubscribeRequest, context: SocketContext) {
         val jda = shardManager.getShardById(request.shardId)?.awaitReady()
         if (jda == null) {
-            log.warn("Attempt subscribe to ${request.id} guild while JDA instance is null")
+            val msg = "Attempt subscribe to ${request.id} guild while JDA instance is null"
+            log.error(msg)
+            context.sendResponse(Guild::class.java.simpleName, msg, request.responseId, false, false)
             return
         }
 
         val guild = jda.getGuildById(request.id)
-        log.info(
-            "Request subscribe to $guild received after " +
-                    "${System.currentTimeMillis() - request.requestTime.toLong()}ms"
-        )
+        log.info("Request subscribe to $guild received after ${System.currentTimeMillis() - request.requestTime.toLong()}ms")
         if (guild == null) {
-            log.warn("Attempt subscribe to unknown guild ${request.id}")
+            val msg = "Attempt subscribe to unknown guild ${request.id}"
+            log.error(msg)
+            context.sendResponse(Guild::class.java.simpleName, msg, request.responseId, false, false)
             return
         }
 
         val added = subscriptionCache.add(request.id.toLong())
         if (added) {
-            guild.loadMembers().onSuccess {
+            guild.loadMembers().execute(
+                Guild::class.java.simpleName,
+                request.responseId,
+                context
+            ).onSuccess {
                 sendGuildSubscribeResponse(request, context, guild)
                 log.info(
                     StringBuilder()
@@ -84,7 +96,7 @@ class SubscriptionHandler(
         if (removed) {
             val guild = shardManager.getGuildById(request.id)
             if (guild != null) {
-                guild.pruneMemberCache()
+                //guild.pruneMemberCache()
                 log.info("Request to unsubscribe from ${guild.id} processed, total user cache size ${shardManager.userCache.size()}")
             } else {
                 log.warn("Attempt to unsubscribe from ${request.id} while guild is null in JDA")

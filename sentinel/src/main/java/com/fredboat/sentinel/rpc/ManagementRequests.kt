@@ -92,9 +92,16 @@ class ManagementRequests {
             val guild = shardManager.getGuildById(request.guildId!!)!!
             guild.updateCommands().queue()
         } else {
-            shardManager.shards.forEach {
-                it.updateCommands().queue()
-            }
+            shardManager.shards[0].updateCommands().queue()
+        }
+    }
+
+    fun consume(request: RemoveSlashCommandRequest) {
+        if (request.guildId != null) {
+            val guild = shardManager.getGuildById(request.guildId!!)!!
+            guild.deleteCommandById(request.commandId).queue()
+        } else {
+            shardManager.shards[0].deleteCommandById(request.commandId).queue()
         }
     }
 
@@ -103,9 +110,7 @@ class ManagementRequests {
             val guild = shardManager.getGuildById(request.guildId!!)!!
             guild.upsertCommand(buildSlashCommand(request)).queue()
         } else {
-            shardManager.shards.forEach {
-                it.upsertCommand(buildSlashCommand(request)).queue()
-            }
+            shardManager.shards[0].upsertCommand(buildSlashCommand(request)).queue()
         }
     }
 
@@ -114,9 +119,7 @@ class ManagementRequests {
             val guild = shardManager.getGuildById(request.guildId!!)!!
             guild.upsertCommand(buildContextCommand(request)).queue()
         } else {
-            shardManager.shards.forEach {
-                it.upsertCommand(buildContextCommand(request)).queue()
-            }
+            shardManager.shards[0].upsertCommand(buildContextCommand(request)).queue()
         }
     }
 
