@@ -21,6 +21,7 @@ val Shard.shardString: String get() = "[$id/$total]"
 data class Guild(
     val id: String,
     val name: String,
+    val icon: String?,
     val owner: String?, // Discord has a history of having guilds without owners :(
     val members: List<Member>,
     val textChannels: List<TextChannel>,
@@ -32,6 +33,7 @@ data class Guild(
 data class GuildLite(
     val id: String,
     val name: String,
+    val icon: String?,
     val owner: String?,
     val textChannels: List<TextChannel>,
     val voiceChannels: List<VoiceChannel>,
