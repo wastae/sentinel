@@ -42,6 +42,7 @@ data class User(
     val id: String,
     val name: String,
     val discrim: String,
+    val avatar: String,
     val bot: Boolean
 )
 
@@ -50,6 +51,7 @@ data class Member(
     val name: String,
     val nickname: String?,
     val discrim: String,
+    val avatar: String,
     val guildId: String,
     val bot: Boolean,
     val roles: List<String>,
