@@ -19,14 +19,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
-class InfoRequests {
+class InfoRequests(private val shardManager: ShardManager) {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(InfoRequests::class.java)
     }
-
-    lateinit var shardManager: ShardManager
-
     fun consume(request: GuildsRequest, context: SocketContext) {
         val guilds = shardManager.guildCache
         guilds.run {
@@ -49,8 +46,8 @@ class InfoRequests {
         guild.run {
             context.sendResponse(GuildInfo::class.java.simpleName, context.gson.toJson(GuildInfo(
                 id,
-                guild.iconUrl,
-                guild.memberCache.count { it.onlineStatus != OnlineStatus.OFFLINE },
+                iconUrl,
+                memberCache.count { it.onlineStatus != OnlineStatus.OFFLINE },
                 verificationLevel.name
             )), request.responseId)
         }

@@ -2,7 +2,32 @@ package com.fredboat.sentinel.io
 
 import com.fredboat.sentinel.config.RoutingKey
 import com.fredboat.sentinel.config.SentinelProperties
-import com.fredboat.sentinel.entities.*
+import com.fredboat.sentinel.entities.ButtonEvent
+import com.fredboat.sentinel.entities.ChannelPermissionsUpdate
+import com.fredboat.sentinel.entities.ContextCommandsEvent
+import com.fredboat.sentinel.entities.GuildMemberCreate
+import com.fredboat.sentinel.entities.GuildMemberDelete
+import com.fredboat.sentinel.entities.GuildMemberUpdate
+import com.fredboat.sentinel.entities.GuildUpdateLiteEvent
+import com.fredboat.sentinel.entities.LifecycleEventEnum
+import com.fredboat.sentinel.entities.PrivateMessageReceivedEvent
+import com.fredboat.sentinel.entities.RoleCreate
+import com.fredboat.sentinel.entities.RoleDelete
+import com.fredboat.sentinel.entities.RoleUpdate
+import com.fredboat.sentinel.entities.SelectionMenuEvent
+import com.fredboat.sentinel.entities.ShardLifecycleEvent
+import com.fredboat.sentinel.entities.ShardStatusChange
+import com.fredboat.sentinel.entities.SlashAutoCompleteEvent
+import com.fredboat.sentinel.entities.SlashCommandsEvent
+import com.fredboat.sentinel.entities.TextChannelCreate
+import com.fredboat.sentinel.entities.TextChannelDelete
+import com.fredboat.sentinel.entities.TextChannelUpdate
+import com.fredboat.sentinel.entities.VoiceChannelCreate
+import com.fredboat.sentinel.entities.VoiceChannelDelete
+import com.fredboat.sentinel.entities.VoiceChannelUpdate
+import com.fredboat.sentinel.entities.VoiceJoinEvent
+import com.fredboat.sentinel.entities.VoiceLeaveEvent
+import com.fredboat.sentinel.entities.VoiceMoveEvent
 import com.fredboat.sentinel.jda.SubscriptionCache
 import com.fredboat.sentinel.jda.VoiceServerUpdateCache
 import com.fredboat.sentinel.metrics.Counters
@@ -17,11 +42,20 @@ import io.undertow.websockets.core.WebSocketCallback
 import io.undertow.websockets.core.WebSocketChannel
 import io.undertow.websockets.core.WebSockets
 import io.undertow.websockets.jsr.UndertowSession
-import net.dv8tion.jda.api.entities.*
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.TextChannel
-import net.dv8tion.jda.api.entities.VoiceChannel
-import net.dv8tion.jda.api.events.*
+import net.dv8tion.jda.api.entities.MessageType
+import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel
+import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
+import net.dv8tion.jda.api.events.RawGatewayEvent
+import net.dv8tion.jda.api.events.StatusChangeEvent
 import net.dv8tion.jda.api.events.channel.ChannelCreateEvent
 import net.dv8tion.jda.api.events.channel.ChannelDeleteEvent
 import net.dv8tion.jda.api.events.channel.GenericChannelEvent
@@ -33,23 +67,31 @@ import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent
+import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateAvatarEvent
+import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameEvent
 import net.dv8tion.jda.api.events.guild.override.GenericPermissionOverrideEvent
 import net.dv8tion.jda.api.events.guild.update.GuildUpdateNameEvent
 import net.dv8tion.jda.api.events.guild.update.GuildUpdateOwnerEvent
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent
 import net.dv8tion.jda.api.events.http.HttpRequestEvent
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
-import net.dv8tion.jda.api.events.interaction.component.SelectMenuInteractionEvent
+import net.dv8tion.jda.api.events.interaction.component.StringSelectInteractionEvent
+import net.dv8tion.jda.api.events.message.MessageDeleteEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent
 import net.dv8tion.jda.api.events.role.GenericRoleEvent
 import net.dv8tion.jda.api.events.role.RoleCreateEvent
 import net.dv8tion.jda.api.events.role.RoleDeleteEvent
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePermissionsEvent
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePositionEvent
+import net.dv8tion.jda.api.events.session.ReadyEvent
+import net.dv8tion.jda.api.events.session.SessionDisconnectEvent
+import net.dv8tion.jda.api.events.session.SessionRecreateEvent
+import net.dv8tion.jda.api.events.session.SessionResumeEvent
+import net.dv8tion.jda.api.events.session.ShutdownEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.utils.PermissionUtil
@@ -58,13 +100,11 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.web.socket.WebSocketSession
 import org.springframework.web.socket.adapter.standard.StandardWebSocketSession
-import java.util.concurrent.*
 
 class SocketContext internal constructor(
     private val sentinelProperties: SentinelProperties,
     private val key: RoutingKey,
     val gson: Gson,
-    voiceServerUpdateCache: VoiceServerUpdateCache,
     subscriptionCache: SubscriptionCache,
     private val shardManager: ShardManager,
     private val socketServer: SocketServer,
@@ -86,7 +126,7 @@ class SocketContext internal constructor(
     private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
     init {
-        jdaWebsocketEventListener = JdaWebsocketEventListener(gson, voiceServerUpdateCache, subscriptionCache)
+        jdaWebsocketEventListener = JdaWebsocketEventListener(gson, subscriptionCache)
         shardManager.addEventListener(jdaWebsocketEventListener)
 
         send(JSONObject().put("op", "initial").put("routingKey", key))
@@ -182,14 +222,13 @@ class SocketContext internal constructor(
 
     private inner class JdaWebsocketEventListener(
         private val gson: Gson,
-        private val voiceServerUpdateCache: VoiceServerUpdateCache,
         private val subscriptionCache: SubscriptionCache
     ) : ListenerAdapter() {
 
         /* Shard lifecycle */
 
         override fun onStatusChange(event: StatusChangeEvent) = event.run {
-            log.info("${jda.shardInfo}: $oldStatus -> $newStatus")
+            log.info("Shard ${jda.shardInfo.shardId}: $oldStatus -> $newStatus")
             sendEvent(ShardStatusChange::class.java.simpleName, gson.toJson(ShardStatusChange(jda.toEntity())))
         }
 
@@ -197,7 +236,7 @@ class SocketContext internal constructor(
             sendEvent(ShardLifecycleEvent::class.java.simpleName, gson.toJson(ShardLifecycleEvent(event.jda.toEntity(), LifecycleEventEnum.READIED)))
         }
 
-        override fun onDisconnect(event: DisconnectEvent) {
+        override fun onSessionDisconnect(event: SessionDisconnectEvent) {
             sendEvent(ShardLifecycleEvent::class.java.simpleName, gson.toJson(ShardLifecycleEvent(event.jda.toEntity(), LifecycleEventEnum.DISCONNECTED)))
 
             val frame: WebSocketFrame? = if (event.isClosedByServer)
@@ -206,15 +245,15 @@ class SocketContext internal constructor(
             val prefix = if (event.isClosedByServer) "s" else "c"
             val code = "$prefix${frame?.closeCode}"
 
-            log.warn("${event.jda.shardInfo} closed. {} {}", code, frame?.closeReason)
+            log.warn("Shard ${event.jda.shardInfo.shardId} closed. {} {}", code, frame?.closeReason)
             Counters.shardDisconnects.labels(code).inc()
         }
 
-        override fun onResumed(event: ResumedEvent) =
+        override fun onSessionResume(event: SessionResumeEvent) =
             sendEvent(ShardLifecycleEvent::class.java.simpleName, gson.toJson(ShardLifecycleEvent(event.jda.toEntity(), LifecycleEventEnum.RESUMED)))
 
 
-        override fun onReconnected(event: ReconnectedEvent) =
+        override fun onSessionRecreate(event: SessionRecreateEvent) =
             sendEvent(ShardLifecycleEvent::class.java.simpleName, gson.toJson(ShardLifecycleEvent(event.jda.toEntity(), LifecycleEventEnum.RECONNECTED)))
 
 
@@ -223,15 +262,16 @@ class SocketContext internal constructor(
 
 
         /* Guild jda */
+
         override fun onGuildJoin(event: GuildJoinEvent) {
-            sendEvent(GuildJoinEvent::class.java.simpleName, gson.toJson(GuildJoinEvent(
+            sendEvent(com.fredboat.sentinel.entities.GuildJoinEvent::class.java.simpleName, gson.toJson(com.fredboat.sentinel.entities.GuildJoinEvent(
                 event.guild.id,
                 event.guild.locale.locale
             )))
         }
 
         override fun onGuildLeave(event: GuildLeaveEvent) {
-            sendEvent(GuildLeaveEvent::class.java.simpleName, gson.toJson(GuildLeaveEvent(
+            sendEvent(com.fredboat.sentinel.entities.GuildLeaveEvent::class.java.simpleName, gson.toJson(com.fredboat.sentinel.entities.GuildLeaveEvent(
                 event.guild.id,
                 (event.guild.selfMember.timeJoined.toEpochSecond() * 1000).toString()
             )))
@@ -253,6 +293,8 @@ class SocketContext internal constructor(
             )))
         }
 
+        override fun onGuildMemberUpdateAvatar(event: GuildMemberUpdateAvatarEvent) = onMemberChange(event.member)
+        override fun onGuildMemberUpdateNickname(event: GuildMemberUpdateNicknameEvent) = onMemberChange(event.member)
         override fun onGuildMemberRoleAdd(event: GuildMemberRoleAddEvent) = onMemberChange(event.member)
         override fun onGuildMemberRoleRemove(event: GuildMemberRoleRemoveEvent) = onMemberChange(event.member)
 
@@ -269,57 +311,47 @@ class SocketContext internal constructor(
         }
 
         /* Voice jda */
-        override fun onGuildVoiceJoin(event: GuildVoiceJoinEvent) {
+
+        override fun onGuildVoiceUpdate(event: GuildVoiceUpdateEvent) {
             if (!subscriptionCache.contains(event.guild.idLong)) return
 
-            if (event.channelJoined.type == ChannelType.STAGE && event.member.user.idLong == event.guild.selfMember.user.idLong) {
-                event.guild.requestToSpeak()
+            if (event.channelJoined == null && event.channelLeft != null) {
+                sendEvent(VoiceLeaveEvent::class.java.simpleName, gson.toJson(VoiceLeaveEvent(
+                    event.guild.id,
+                    event.channelLeft!!.id,
+                    event.member.toEntity()
+                )))
+            } else if (event.channelJoined != null && event.channelLeft == null) {
+                requestSpeak(event)
+                sendEvent(VoiceJoinEvent::class.java.simpleName, gson.toJson(VoiceJoinEvent(
+                    event.guild.id,
+                    event.channelJoined!!.id,
+                    event.member.toEntity()
+                )))
+            } else if (event.channelJoined != null && event.channelLeft != null) {
+                requestSpeak(event)
+                sendEvent(VoiceMoveEvent::class.java.simpleName, gson.toJson(VoiceMoveEvent(
+                    event.guild.id,
+                    event.channelLeft!!.id,
+                    event.channelJoined!!.id,
+                    event.member.toEntity()
+                )))
             }
-
-            sendEvent(VoiceJoinEvent::class.java.simpleName, gson.toJson(VoiceJoinEvent(
-                event.guild.id,
-                event.channelJoined.id,
-                event.member.toEntity()
-            )))
         }
 
-        override fun onGuildVoiceLeave(event: GuildVoiceLeaveEvent) {
-            if (event.member.user.idLong == event.guild.selfMember.user.idLong) {
-                voiceServerUpdateCache.onVoiceLeave(event.guild.id)
-            }
-            if (!subscriptionCache.contains(event.guild.idLong)) {
-                event.guild.pruneMemberCache()
-                return
-            }
-
-            sendEvent(VoiceLeaveEvent::class.java.simpleName, gson.toJson(VoiceLeaveEvent(
-                event.guild.id,
-                event.channelLeft.id,
-                event.member.toEntity()
-            )))
-        }
-
-        override fun onGuildVoiceMove(event: GuildVoiceMoveEvent) {
-            if (!subscriptionCache.contains(event.guild.idLong)) return
-
-            if (event.channelJoined.type == ChannelType.STAGE && event.member.user.idLong == event.guild.selfMember.user.idLong) {
+        private fun requestSpeak(event: GuildVoiceUpdateEvent) {
+            if (event.channelJoined!!.type == ChannelType.STAGE && event.member.user.idLong == event.guild.selfMember.user.idLong) {
                 event.guild.requestToSpeak()
             }
-
-            sendEvent(VoiceMoveEvent::class.java.simpleName, gson.toJson(VoiceMoveEvent(
-                event.guild.id,
-                event.channelLeft.id,
-                event.channelJoined.id,
-                event.member.toEntity()
-            )))
         }
 
         /* Message jda */
-        override fun onMessageReceived(event: net.dv8tion.jda.api.events.message.MessageReceivedEvent) {
+
+        override fun onMessageReceived(event: MessageReceivedEvent) {
             if (event.message.type != MessageType.DEFAULT) return
             if (event.isWebhookMessage) return
             if (event.isFromGuild && !event.channelType.isThread && !event.channelType.isAudio) {
-                sendEvent(MessageReceivedEvent::class.java.simpleName, gson.toJson(MessageReceivedEvent(
+                sendEvent(com.fredboat.sentinel.entities.MessageReceivedEvent::class.java.simpleName, gson.toJson(com.fredboat.sentinel.entities.MessageReceivedEvent(
                     event.message.id,
                     event.message.guild.id,
                     event.channel.id,
@@ -338,20 +370,20 @@ class SocketContext internal constructor(
             }
         }
 
-        override fun onMessageDelete(event: net.dv8tion.jda.api.events.message.MessageDeleteEvent) {
-            sendEvent(MessageDeleteEvent::class.java.simpleName, gson.toJson(MessageDeleteEvent(
+        override fun onMessageDelete(event: MessageDeleteEvent) {
+            sendEvent(com.fredboat.sentinel.entities.MessageDeleteEvent::class.java.simpleName, gson.toJson(com.fredboat.sentinel.entities.MessageDeleteEvent(
                 event.messageId,
                 event.guild.id,
                 event.channel.id
             )))
         }
 
-        override fun onMessageReactionAdd(event: net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent) {
+        override fun onMessageReactionAdd(event: MessageReactionAddEvent) {
             if (event.isFromGuild && (event.channelType.isThread || event.channelType.isAudio)) return
             if (event.member == null) return
             if (!subscriptionCache.contains(event.guild.idLong)) return
 
-            sendEvent(MessageReactionAddEvent::class.java.simpleName, gson.toJson(MessageReactionAddEvent(
+            sendEvent(com.fredboat.sentinel.entities.MessageReactionAddEvent::class.java.simpleName, gson.toJson(com.fredboat.sentinel.entities.MessageReactionAddEvent(
                 event.messageId,
                 event.guild.id,
                 event.channel.id,
@@ -402,7 +434,7 @@ class SocketContext internal constructor(
                 event.member!!.id,
                 event.member!!.user.isBot,
                 event.userLocale.locale,
-                event.commandPath,
+                event.fullCommandName.replace(" ", "/"),
                 event.options.map { it.toEntity() }
             )))
         }
@@ -455,7 +487,7 @@ class SocketContext internal constructor(
             )))
         }
 
-        override fun onSelectMenuInteraction(event: SelectMenuInteractionEvent) {
+        override fun onStringSelectInteraction(event: StringSelectInteractionEvent) {
             if (event.guild == null) return
             if (event.member == null) return
             if (event.rawData == null) return
@@ -527,7 +559,8 @@ class SocketContext internal constructor(
             } else if (event.channel is AudioChannel) {
                 when (event) {
                     is ChannelCreateEvent -> {
-                        sendEvent(VoiceChannelCreate::class.java.simpleName, gson.toJson(VoiceChannelCreate(
+                        sendEvent(
+                            VoiceChannelCreate::class.java.simpleName, gson.toJson(VoiceChannelCreate(
                             event.guild.id,
                             (event.channel as AudioChannel).toVoiceEntity()
                         )))

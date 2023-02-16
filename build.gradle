@@ -64,7 +64,7 @@ allprojects {
 }
 
 ext {
-    jdaVersion = "5.0.0-alpha.18"
+    jdaVersion = "5.0.0-beta.3"
     reactorVersion = "3.1.1.RELEASE"
     gsonVersion = '2.8.2'
     jacksonKotlinVersion = "2.13.1"

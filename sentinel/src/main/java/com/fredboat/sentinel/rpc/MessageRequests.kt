@@ -7,14 +7,38 @@
 
 package com.fredboat.sentinel.rpc
 
-import com.fredboat.sentinel.entities.*
+import com.fredboat.sentinel.entities.AddReactionRequest
+import com.fredboat.sentinel.entities.AddReactionsRequest
+import com.fredboat.sentinel.entities.EditButtonsRequest
+import com.fredboat.sentinel.entities.EditEmbedRequest
+import com.fredboat.sentinel.entities.EditEmbedResponse
+import com.fredboat.sentinel.entities.EditMessageRequest
+import com.fredboat.sentinel.entities.EditSelectionMenuRequest
+import com.fredboat.sentinel.entities.EditSlashCommandRequest
+import com.fredboat.sentinel.entities.MessageDeleteRequest
+import com.fredboat.sentinel.entities.RemoveComponentsRequest
+import com.fredboat.sentinel.entities.RemoveReactionRequest
+import com.fredboat.sentinel.entities.RemoveReactionsRequest
+import com.fredboat.sentinel.entities.SendContextCommandRequest
+import com.fredboat.sentinel.entities.SendEmbedRequest
+import com.fredboat.sentinel.entities.SendMessageButtonsRequest
+import com.fredboat.sentinel.entities.SendMessageRequest
+import com.fredboat.sentinel.entities.SendMessageResponse
+import com.fredboat.sentinel.entities.SendMessageSelectionMenuRequest
+import com.fredboat.sentinel.entities.SendPrivateMessageRequest
+import com.fredboat.sentinel.entities.SendSlashCommandRequest
+import com.fredboat.sentinel.entities.SendSlashEmbedCommandRequest
+import com.fredboat.sentinel.entities.SendSlashMenuCommandRequest
+import com.fredboat.sentinel.entities.SendTypingRequest
+import com.fredboat.sentinel.entities.SlashAutoCompleteRequest
+import com.fredboat.sentinel.entities.SlashDeferReplyRequest
 import com.fredboat.sentinel.io.SocketContext
 import com.fredboat.sentinel.util.execute
 import com.fredboat.sentinel.util.toJda
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.NewsChannel
-import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.interactions.components.ActionComponent
 import net.dv8tion.jda.api.interactions.components.ActionRow
@@ -26,19 +50,17 @@ import net.dv8tion.jda.internal.entities.UserImpl
 import net.dv8tion.jda.internal.interactions.InteractionHookImpl
 import net.dv8tion.jda.internal.interactions.command.CommandAutoCompleteInteractionImpl
 import net.dv8tion.jda.internal.interactions.command.CommandInteractionImpl
-import net.dv8tion.jda.internal.interactions.component.SelectMenuInteractionImpl
+import net.dv8tion.jda.internal.interactions.component.StringSelectInteractionImpl
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
-class MessageRequests{
+class MessageRequests(private val shardManager: ShardManager) {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(MessageRequests::class.java)
     }
-
-    lateinit var shardManager: ShardManager
 
     fun consume(request: SendMessageRequest, context: SocketContext) {
         val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
@@ -330,7 +352,7 @@ class MessageRequests{
             return
         }
 
-        val interaction = SelectMenuInteractionImpl(
+        val interaction = StringSelectInteractionImpl(
             guild.jda as JDAImpl, DataObject.fromJson(request.interaction).getObject("d")
         )
 

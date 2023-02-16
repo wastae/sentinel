@@ -19,6 +19,7 @@ import net.dv8tion.jda.api.interactions.commands.build.SubcommandGroupData
 import net.dv8tion.jda.api.interactions.components.ActionRow
 import net.dv8tion.jda.api.interactions.components.ItemComponent
 import java.time.Instant
+import net.dv8tion.jda.api.interactions.components.selections.StringSelectMenu
 
 private val threadLocal: ThreadLocal<EmbedBuilder> = ThreadLocal.withInitial { EmbedBuilder() }
 
@@ -97,7 +98,7 @@ fun SlashSubcommand.toJda(): SubcommandData {
 }
 
 fun SelectMenu.toJda(): net.dv8tion.jda.api.interactions.components.selections.SelectMenu {
-    val menu = net.dv8tion.jda.api.interactions.components.selections.SelectMenu.create(customId).setPlaceholder(placeholder)
+    val menu = StringSelectMenu.create(customId).setPlaceholder(placeholder)
     selectOptions.forEach {
         menu.addOption(it.label, it.value)
     }

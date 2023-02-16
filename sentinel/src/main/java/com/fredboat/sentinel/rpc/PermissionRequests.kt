@@ -7,11 +7,17 @@
 
 package com.fredboat.sentinel.rpc
 
-import com.fredboat.sentinel.entities.*
+import com.fredboat.sentinel.entities.BulkGuildPermissionRequest
+import com.fredboat.sentinel.entities.BulkGuildPermissionResponse
+import com.fredboat.sentinel.entities.ChannelPermissionRequest
+import com.fredboat.sentinel.entities.GuildPermissionRequest
+import com.fredboat.sentinel.entities.PermissionCheckResponse
 import com.fredboat.sentinel.io.SocketContext
-import net.dv8tion.jda.api.entities.*
-import net.dv8tion.jda.api.entities.TextChannel
-import net.dv8tion.jda.api.entities.VoiceChannel
+import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel
+import net.dv8tion.jda.api.entities.channel.concrete.StageChannel
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.slf4j.Logger
@@ -19,13 +25,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
-class PermissionRequests {
+class PermissionRequests(private val shardManager: ShardManager) {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(PermissionRequests::class.java)
     }
-
-    lateinit var shardManager: ShardManager
 
     /**
      * Returns true if the Role and/or Member has the given permissions in a Guild

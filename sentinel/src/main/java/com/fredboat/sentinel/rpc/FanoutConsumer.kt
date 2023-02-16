@@ -9,11 +9,12 @@ package com.fredboat.sentinel.rpc
 
 import com.fredboat.sentinel.config.RoutingKey
 import com.fredboat.sentinel.config.SentinelProperties
+import com.fredboat.sentinel.config.ShardManagerConfig
 import com.fredboat.sentinel.entities.FredBoatHello
 import com.fredboat.sentinel.entities.SentinelHello
 import com.fredboat.sentinel.entities.SyncSessionQueueRequest
-import com.fredboat.sentinel.jda.RemoteSessionController
 import com.fredboat.sentinel.io.SocketContext
+import com.fredboat.sentinel.jda.RemoteSessionController
 import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.sharding.ShardManager
@@ -25,7 +26,8 @@ import org.springframework.stereotype.Service
 class FanoutConsumer(
     private val sentinelProperties: SentinelProperties,
     private val key: RoutingKey,
-    private val sessionController: RemoteSessionController
+    private val sessionController: RemoteSessionController,
+    private val shardManager: ShardManager
 ) {
 
     companion object {
@@ -44,7 +46,6 @@ class FanoutConsumer(
     }
 
     var knownFredBoatId: String? = null
-    lateinit var shardManager: ShardManager
 
     fun onHello(event: FredBoatHello, context: SocketContext) {
         if (event.id != knownFredBoatId) {

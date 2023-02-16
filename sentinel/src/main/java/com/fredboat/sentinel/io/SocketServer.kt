@@ -2,6 +2,7 @@ package com.fredboat.sentinel.io
 
 import com.fredboat.sentinel.config.RoutingKey
 import com.fredboat.sentinel.config.SentinelProperties
+import com.fredboat.sentinel.config.ShardManagerConfig
 import com.fredboat.sentinel.jda.RemoteSessionController
 import com.fredboat.sentinel.jda.SubscriptionCache
 import com.fredboat.sentinel.jda.VoiceServerUpdateCache
@@ -16,6 +17,7 @@ import org.springframework.web.socket.CloseStatus
 import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
 import org.springframework.web.socket.handler.TextWebSocketHandler
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("UastIncorrectHttpHeaderInspection")
@@ -31,8 +33,8 @@ class SocketServer(
     fanoutConsumer: FanoutConsumer,
     private val sentinelProperties: SentinelProperties,
     private val key: RoutingKey,
-    private val voiceServerUpdateCache: VoiceServerUpdateCache,
-    private val subscriptionCache: SubscriptionCache
+    private val subscriptionCache: SubscriptionCache,
+    private val shardManager: ShardManager
 ) : TextWebSocketHandler() {
 
     private val handlers = WebSocketHandlers(
@@ -53,8 +55,6 @@ class SocketServer(
         val contextMap = ConcurrentHashMap<String, SocketContext>()
     }
 
-    lateinit var shardManager: ShardManager
-
     override fun afterConnectionEstablished(session: WebSocketSession) {
         val resumeKey = session.handshakeHeaders.getFirst("Resume-Key")
         val clientName = session.handshakeHeaders.getFirst("Client-Name")
@@ -73,7 +73,6 @@ class SocketServer(
             sentinelProperties,
             key,
             gson,
-            voiceServerUpdateCache,
             subscriptionCache,
             shardManager,
             this,
@@ -109,10 +108,13 @@ class SocketServer(
     }
 
     override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
-        try {
-            handleTextMessageSafe(session, message)
-        } catch (e: Exception) {
-            log.error("Exception while handling websocket message", e)
+        CompletableFuture.runAsync {
+            try {
+                log.info(message.payload)
+                handleTextMessageSafe(session, message)
+            } catch (e: Exception) {
+                log.error("Exception while handling websocket message", e)
+            }
         }
     }
 

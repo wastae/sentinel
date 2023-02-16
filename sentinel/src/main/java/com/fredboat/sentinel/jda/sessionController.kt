@@ -7,15 +7,15 @@
 
 package com.fredboat.sentinel.jda
 
-import com.fredboat.sentinel.io.SocketServer
 import com.fredboat.sentinel.config.RoutingKey
 import com.fredboat.sentinel.config.SentinelProperties
+import com.fredboat.sentinel.config.ShardManagerConfig
 import com.fredboat.sentinel.entities.AppendSessionEvent
 import com.fredboat.sentinel.entities.RemoveSessionEvent
 import com.fredboat.sentinel.entities.RunSessionRequest
 import com.fredboat.sentinel.io.SocketContext
+import com.fredboat.sentinel.io.SocketServer
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.SessionController.SessionConnectNode
 import net.dv8tion.jda.api.utils.SessionController.ShardedGateway
 import net.dv8tion.jda.api.utils.SessionControllerAdapter
@@ -30,21 +30,20 @@ class RemoteSessionController(
 
     private val adapter = SessionControllerAdapter()
     private val localQueue = ConcurrentHashMap<Int, SessionConnectNode>()
-    lateinit var shardManager: ShardManager
 
     override fun appendSession(node: SessionConnectNode) {
         localQueue[node.shardInfo.shardId] = node
-        log.info("Added ${node.shardInfo} to the queue. Queue size is ${localQueue.size}.")
+        log.info("Added shard ${node.shardInfo.shardId} to the queue. Queue size is ${localQueue.size}.")
         node.send(false)
     }
 
     override fun removeSession(node: SessionConnectNode) {
         if (node.jda.status == JDA.Status.RECONNECT_QUEUED) {
-            log.info("${node.shardInfo} is reconnecting, not removing it from queue. Queue size is ${localQueue.size}")
+            log.info("Shard ${node.shardInfo.shardId} is reconnecting, not removing it from queue. Queue size is ${localQueue.size}")
             return
         }
         localQueue.remove(node.shardInfo.shardId)
-        log.info("Removed ${node.shardInfo} from the queue. Queue size is ${localQueue.size}.")
+        log.info("Removed shard ${node.shardInfo.shardId} from the queue. Queue size is ${localQueue.size}.")
         node.send(true)
     }
 
@@ -55,7 +54,7 @@ class RemoteSessionController(
     }
 
     fun onRunRequest(request: RunSessionRequest, context: SocketContext) {
-        val status = shardManager.getShardById(request.shardId)?.status
+        val status = ShardManagerConfig.INSTANCE.getShardById(request.shardId)?.status
         log.info("Received request to run shard ${request.shardId}, which has status $status")
         val node = localQueue[request.shardId]
         if (node == null) {
@@ -65,7 +64,7 @@ class RemoteSessionController(
             throw IllegalStateException("Node ${request.shardId} is not queued")
         }
 
-        if (shardManager.getShardById(request.shardId)?.status == JDA.Status.AWAITING_LOGIN_CONFIRMATION) {
+        if (ShardManagerConfig.INSTANCE.getShardById(request.shardId)?.status == JDA.Status.AWAITING_LOGIN_CONFIRMATION) {
             val msg = "Refusing to run shard ${request.shardId} as it has status $status:${request.responseId}"
             log.error(msg)
             node.send(true)
@@ -77,7 +76,7 @@ class RemoteSessionController(
 
         context.sendResponse(
             "OnRunResponse",
-            "Started node ${node.shardInfo}:${request.responseId}",
+            "Started node ${node.shardInfo.shardId}:${request.responseId}",
             request.responseId,
             false
         )

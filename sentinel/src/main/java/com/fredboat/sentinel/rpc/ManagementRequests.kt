@@ -8,13 +8,11 @@
 package com.fredboat.sentinel.rpc
 
 import com.fredboat.sentinel.entities.*
-import com.fredboat.sentinel.entities.ModRequestType.*
 import com.fredboat.sentinel.io.SocketContext
 import com.fredboat.sentinel.util.toEntityExtended
 import com.fredboat.sentinel.util.toJda
 import com.fredboat.sentinel.util.toJdaExt
 import net.dv8tion.jda.api.entities.Icon
-import net.dv8tion.jda.api.entities.UserSnowflake
 import net.dv8tion.jda.api.interactions.commands.Command
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.interactions.commands.build.Commands
@@ -24,21 +22,19 @@ import org.springframework.stereotype.Service
 import java.util.*
 
 @Service
-class ManagementRequests {
+class ManagementRequests(private val shardManager: ShardManager) {
 
-    lateinit var shardManager: ShardManager
+    //fun consume(request: ModRequest) {
+    //    val guild = shardManager.getGuildById(request.guildId)
+    //            ?: throw RuntimeException("Guild ${request.guildId} not found")
 
-    fun consume(request: ModRequest) {
-        val guild = shardManager.getGuildById(request.guildId)
-                ?: throw RuntimeException("Guild ${request.guildId} not found")
-
-        val action = when (request.type) {
-            KICK -> guild.kick(UserSnowflake.fromId(request.userId), request.reason)
-            BAN -> guild.ban(UserSnowflake.fromId(request.userId), request.banDeleteDays, request.reason)
-            UNBAN -> guild.unban(UserSnowflake.fromId(request.userId))
-        }
-        action.queue()
-    }
+    //    val action = when (request.type) {
+    //        KICK -> guild.kick(UserSnowflake.fromId(request.userId), request.reason)
+    //        BAN -> guild.ban(UserSnowflake.fromId(request.userId), request.banDeleteDays, request.reason)
+    //        UNBAN -> guild.unban(UserSnowflake.fromId(request.userId))
+    //    }
+    //    action.queue()
+    //}
 
     fun consume(request: SetAvatarRequest) {
         val decoded = Base64.getDecoder().decode(request.base64)

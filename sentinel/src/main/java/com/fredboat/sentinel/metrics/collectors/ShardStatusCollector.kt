@@ -9,18 +9,15 @@ package com.fredboat.sentinel.metrics.collectors
 
 import io.prometheus.client.Collector
 import io.prometheus.client.GaugeMetricFamily
-import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.sharding.ShardManager
 import org.springframework.stereotype.Service
-import java.util.*
 
 /**
  * Created by napster on 19.04.18.
  */
 @Service
-class ShardStatusCollector(
-    private val shardManager: ShardManager
-) : Collector() {
+class ShardStatusCollector(private val shardManager: ShardManager) : Collector() {
 
     override fun collect(): List<MetricFamilySamples> {
         val mfs = ArrayList<MetricFamilySamples>()

@@ -14,32 +14,58 @@ import com.fredboat.sentinel.jda.SubscriptionCache
 import com.fredboat.sentinel.jda.VoiceServerUpdateCache
 import com.fredboat.sentinel.util.execute
 import com.fredboat.sentinel.util.toEntity
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import net.dv8tion.jda.api.entities.AudioChannel
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.sharding.ShardManager
-import net.dv8tion.jda.internal.utils.PermissionUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 @Service
 class SubscriptionHandler(
     private val voiceServerUpdateCache: VoiceServerUpdateCache,
-    private val subscriptionCache: SubscriptionCache
+    private val subscriptionCache: SubscriptionCache,
+    private val shardManager: ShardManager
 ) {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(SubscriptionHandler::class.java)
     }
 
-    lateinit var shardManager: ShardManager
+    private val subscribeQueue = ConcurrentHashMap<GuildSubscribeRequest, SocketContext>()
 
-    suspend fun consume(request: GuildSubscribeRequest, context: SocketContext) {
-        val jda = shardManager.getShardById(request.shardId)?.awaitReady()
+    @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.SECONDS)
+    private fun checkQueue() {
+        log.info("Checking for queued subscribe requests, currently size ${subscribeQueue.size}")
+        subscribeQueue.forEach { (request, context) ->
+            val status = shardManager.shardCache.getElementById(request.shardId)!!.status
+            if (status != JDA.Status.CONNECTED) {
+                log.info("Shard ${request.shardId} still is not connected and have status ${status.name}")
+                return@forEach
+            }
+
+            log.info("Re-running subscribe request to ${request.id} with shard ${request.shardId}")
+            subscribeQueue.remove(request)
+            consume(request, context)
+        }
+    }
+
+    fun consume(request: GuildSubscribeRequest, context: SocketContext) {
+        val status = shardManager.shardCache.getElementById(request.shardId)!!.status
+        if (status != JDA.Status.CONNECTED) {
+            log.info("Received subscribe request for shard ${request.shardId} what is not ready and have status ${status.name}")
+            if (!subscribeQueue.containsKey(request)) {
+                log.info("Placing guild subscribe request to ${request.id} with shard ${request.shardId} into queue")
+                subscribeQueue[request] = context
+            }
+
+            return
+        }
+
+        val jda = shardManager.getShardById(request.shardId)
         if (jda == null) {
             val msg = "Attempt subscribe to ${request.id} guild while JDA instance is null"
             log.error(msg)
