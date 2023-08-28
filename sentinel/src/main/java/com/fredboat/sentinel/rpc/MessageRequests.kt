@@ -18,6 +18,8 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.data.DataObject
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
+import net.dv8tion.jda.api.utils.messages.MessageEditBuilder
 import net.dv8tion.jda.internal.JDAImpl
 import net.dv8tion.jda.internal.entities.UserImpl
 import net.dv8tion.jda.internal.interactions.InteractionHookImpl
@@ -47,12 +49,12 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        val sendMessage = channel.sendMessage(request.content)
-        request.embed?.let { sendMessage.setEmbeds(it.toJda()) }
+        val sendMessage = MessageCreateBuilder()
+        sendMessage.setContent(request.content)
+        sendMessage.setEmbeds(listOfNotNull(request.embed?.toJda()))
         request.buttons?.let { sendMessage.setComponents(it.toJda()) }
         request.menu?.let { sendMessage.setActionRow(it.toJda()) }
-
-        sendMessage.execute(
+        channel.sendMessage(sendMessage.build()).execute(
             SendMessageResponse::class.java.simpleName,
             request.responseId,
             context
@@ -91,16 +93,20 @@ class MessageRequests(private val shardManager: ShardManager) {
             ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
         if (channel == null) {
-            log.error("Received EditMessageRequest for channel ${request.channel} which was not found")
+            val msg = "Received EditMessageRequest for channel ${request.channel} which was not found"
+            log.error(msg)
+            context.sendResponse(
+                EditMessageResponse::class.java.simpleName, msg, request.responseId, false, false
+            )
             return
         }
 
-        val editMessage = channel.editMessageById(request.messageId, request.content)
-        request.embed?.let { editMessage.setEmbeds(it.toJda()) }
+        val editMessage = MessageEditBuilder()
+        editMessage.setContent(request.content)
+        editMessage.setEmbeds(listOfNotNull(request.embed?.toJda()))
         request.buttons?.let { editMessage.setComponents(it.toJda()) }
         request.menu?.let { editMessage.setActionRow(it.toJda()) }
-
-        editMessage.queue({
+        channel.editMessageById(request.messageId, editMessage.build()).queue({
             context.sendResponse(EditMessageResponse::class.java.simpleName, context.gson.toJson(EditMessageResponse(
                 it.id,
                 it.guild.id,
@@ -214,7 +220,7 @@ class MessageRequests(private val shardManager: ShardManager) {
         }
     }
 
-    fun consume(request: SendSlashCommandRequest, context: SocketContext) {
+    fun consume(request: SendSlashRequest, context: SocketContext) {
         val guild: Guild? = shardManager.getGuildById(request.guildId)
 
         if (guild == null) {
@@ -231,12 +237,12 @@ class MessageRequests(private val shardManager: ShardManager) {
         )
 
         if (request.ephemeral) {
-            val reply = interaction.reply(request.content)
-            reply.setEphemeral(true)
-            request.embed?.let { reply.setEmbeds(it.toJda()) }
-            request.buttons?.let { reply.setComponents(it.toJda()) }
-            request.menu?.let { reply.setActionRow(it.toJda()) }
-            reply.execute(
+            val sendMessage = MessageCreateBuilder()
+            sendMessage.setContent(request.content)
+            sendMessage.setEmbeds(listOfNotNull(request.embed?.toJda()))
+            request.buttons?.let { sendMessage.setComponents(it.toJda()) }
+            request.menu?.let { sendMessage.setActionRow(it.toJda()) }
+            interaction.reply(sendMessage.build()).setEphemeral(true).execute(
                 SendMessageResponse::class.java.simpleName,
                 request.responseId,
                 context
@@ -256,11 +262,12 @@ class MessageRequests(private val shardManager: ShardManager) {
             val hook = interaction.hook as InteractionHookImpl
             hook.ack()
             hook.ready()
-            val edit = hook.editOriginal(request.content)
-            request.embed?.let { edit.setEmbeds(it.toJda()) }
-            request.buttons?.let { edit.setComponents(it.toJda()) }
-            request.menu?.let { edit.setActionRow(it.toJda()) }
-            edit.execute(
+            val editMessage = MessageEditBuilder()
+            editMessage.setContent(request.content)
+            editMessage.setEmbeds(listOfNotNull(request.embed?.toJda()))
+            request.buttons?.let { editMessage.setComponents(it.toJda()) }
+            request.menu?.let { editMessage.setActionRow(it.toJda()) }
+            hook.editOriginal(editMessage.build()).execute(
                 SendMessageResponse::class.java.simpleName,
                 request.responseId,
                 context
@@ -273,7 +280,7 @@ class MessageRequests(private val shardManager: ShardManager) {
         }
     }
 
-    fun consume(request: EditSlashCommandRequest) {
+    fun consume(request: EditSlashRequest) {
         val guild: Guild? = shardManager.getGuildById(request.guildId)
 
         if (guild == null) {
@@ -288,11 +295,12 @@ class MessageRequests(private val shardManager: ShardManager) {
         val hook = interaction.hook as InteractionHookImpl
         hook.ack()
         hook.ready()
-        val edit = hook.editOriginal(request.content)
-        request.embed?.let { edit.setEmbeds(it.toJda()) }
-        request.buttons?.let { edit.setComponents(it.toJda()) }
-        request.menu?.let { edit.setActionRow(it.toJda()) }
-        edit.queue()
+        val editMessage = MessageEditBuilder()
+        editMessage.setContent(request.content)
+        editMessage.setEmbeds(listOfNotNull(request.embed?.toJda()))
+        request.buttons?.let { editMessage.setComponents(it.toJda()) }
+        request.menu?.let { editMessage.setActionRow(it.toJda()) }
+        hook.editOriginal(editMessage.build()).queue()
     }
 
     fun consume(request: SlashDeferReplyRequest) {

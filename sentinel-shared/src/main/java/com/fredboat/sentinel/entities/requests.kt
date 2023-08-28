@@ -28,7 +28,7 @@ data class GuildRequest(
 /** Returns [SendMessageResponse]*/
 data class SendMessageRequest(
     val channel: String,
-    val content: String,
+    val content: String?,
     val embed: Embed?,
     val buttons: Buttons?,
     val menu: SelectMenu?,
@@ -50,7 +50,7 @@ data class SendMessageResponse(
 data class EditMessageRequest(
     val channel: String,
     val messageId: String,
-    val content: String,
+    val content: String?,
     val embed: Embed?,
     val buttons: Buttons?,
     val menu: SelectMenu?,
@@ -110,12 +110,10 @@ data class SendContextCommandRequest(
 )
 
 /** Returns [SendMessageResponse]*/
-data class SendSlashCommandRequest(
+data class SendSlashRequest(
     val interaction: ByteArray,
     val guildId: String,
-    val channelId: String,
-    val userId: String,
-    val content: String,
+    val content: String?,
     val embed: Embed?,
     val buttons: Buttons?,
     val menu: SelectMenu?,
@@ -123,13 +121,13 @@ data class SendSlashCommandRequest(
     val responseId: String
 )
 
-data class EditSlashCommandRequest(
+data class EditSlashRequest(
     val interaction: ByteArray,
+    val guildId: String,
     val content: String,
     val embed: Embed?,
     val buttons: Buttons?,
-    val menu: SelectMenu?,
-    val guildId: String
+    val menu: SelectMenu?
 )
 
 data class SlashDeferReplyRequest(
