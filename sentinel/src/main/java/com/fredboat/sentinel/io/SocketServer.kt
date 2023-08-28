@@ -2,12 +2,13 @@ package com.fredboat.sentinel.io
 
 import com.fredboat.sentinel.config.RoutingKey
 import com.fredboat.sentinel.config.SentinelProperties
-import com.fredboat.sentinel.config.ShardManagerConfig
 import com.fredboat.sentinel.jda.RemoteSessionController
 import com.fredboat.sentinel.jda.SubscriptionCache
-import com.fredboat.sentinel.jda.VoiceServerUpdateCache
 import com.fredboat.sentinel.rpc.*
 import com.google.gson.Gson
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import net.dv8tion.jda.api.sharding.ShardManager
 import org.json.JSONObject
 import org.slf4j.Logger
@@ -17,7 +18,6 @@ import org.springframework.web.socket.CloseStatus
 import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
 import org.springframework.web.socket.handler.TextWebSocketHandler
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("UastIncorrectHttpHeaderInspection")
@@ -108,9 +108,9 @@ class SocketServer(
     }
 
     override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
-        CompletableFuture.runAsync {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
-                log.info(message.payload)
+                log.debug(message.payload)
                 handleTextMessageSafe(session, message)
             } catch (e: Exception) {
                 log.error("Exception while handling websocket message", e)

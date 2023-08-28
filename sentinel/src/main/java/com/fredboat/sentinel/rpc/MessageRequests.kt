@@ -7,31 +7,7 @@
 
 package com.fredboat.sentinel.rpc
 
-import com.fredboat.sentinel.entities.AddReactionRequest
-import com.fredboat.sentinel.entities.AddReactionsRequest
-import com.fredboat.sentinel.entities.EditButtonsRequest
-import com.fredboat.sentinel.entities.EditEmbedRequest
-import com.fredboat.sentinel.entities.EditEmbedResponse
-import com.fredboat.sentinel.entities.EditMessageRequest
-import com.fredboat.sentinel.entities.EditSelectionMenuRequest
-import com.fredboat.sentinel.entities.EditSlashCommandRequest
-import com.fredboat.sentinel.entities.MessageDeleteRequest
-import com.fredboat.sentinel.entities.RemoveComponentsRequest
-import com.fredboat.sentinel.entities.RemoveReactionRequest
-import com.fredboat.sentinel.entities.RemoveReactionsRequest
-import com.fredboat.sentinel.entities.SendContextCommandRequest
-import com.fredboat.sentinel.entities.SendEmbedRequest
-import com.fredboat.sentinel.entities.SendMessageButtonsRequest
-import com.fredboat.sentinel.entities.SendMessageRequest
-import com.fredboat.sentinel.entities.SendMessageResponse
-import com.fredboat.sentinel.entities.SendMessageSelectionMenuRequest
-import com.fredboat.sentinel.entities.SendPrivateMessageRequest
-import com.fredboat.sentinel.entities.SendSlashCommandRequest
-import com.fredboat.sentinel.entities.SendSlashEmbedCommandRequest
-import com.fredboat.sentinel.entities.SendSlashMenuCommandRequest
-import com.fredboat.sentinel.entities.SendTypingRequest
-import com.fredboat.sentinel.entities.SlashAutoCompleteRequest
-import com.fredboat.sentinel.entities.SlashDeferReplyRequest
+import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.io.SocketContext
 import com.fredboat.sentinel.util.execute
 import com.fredboat.sentinel.util.toJda
@@ -40,9 +16,6 @@ import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.emoji.Emoji
-import net.dv8tion.jda.api.interactions.components.ActionComponent
-import net.dv8tion.jda.api.interactions.components.ActionRow
-import net.dv8tion.jda.api.interactions.components.LayoutComponent
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.data.DataObject
 import net.dv8tion.jda.internal.JDAImpl
@@ -50,7 +23,6 @@ import net.dv8tion.jda.internal.entities.UserImpl
 import net.dv8tion.jda.internal.interactions.InteractionHookImpl
 import net.dv8tion.jda.internal.interactions.command.CommandAutoCompleteInteractionImpl
 import net.dv8tion.jda.internal.interactions.command.CommandInteractionImpl
-import net.dv8tion.jda.internal.interactions.component.StringSelectInteractionImpl
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -69,36 +41,26 @@ class MessageRequests(private val shardManager: ShardManager) {
         if (channel == null) {
             val msg = "Received SendMessageRequest for channel ${request.channel} which was not found"
             log.error(msg)
-            context.sendResponse(SendMessageResponse::class.java.simpleName, msg, request.responseId, false, false)
+            context.sendResponse(
+                SendMessageResponse::class.java.simpleName, msg, request.responseId, false, false
+            )
             return
         }
 
-        channel.sendMessage(request.message).execute(
+        val sendMessage = channel.sendMessage(request.content)
+        request.embed?.let { sendMessage.setEmbeds(it.toJda()) }
+        request.buttons?.let { sendMessage.setComponents(it.toJda()) }
+        request.menu?.let { sendMessage.setActionRow(it.toJda()) }
+
+        sendMessage.execute(
             SendMessageResponse::class.java.simpleName,
             request.responseId,
             context
         ).whenCompleteAsync { it, _ ->
-            context.sendResponse(SendMessageResponse::class.java.simpleName, context.gson.toJson(SendMessageResponse(it.id)), request.responseId)
-        }
-    }
-
-    fun consume(request: SendEmbedRequest, context: SocketContext) {
-        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
-            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
-
-        if (channel == null) {
-            val msg = "Received SendEmbedRequest for channel ${request.channel} which was not found"
-            log.error(msg)
-            context.sendResponse(SendMessageResponse::class.java.simpleName, msg, request.responseId, false, false)
-            return
-        }
-
-        channel.sendMessageEmbeds(request.embed.toJda()).execute(
-            SendMessageResponse::class.java.simpleName,
-            request.responseId,
-            context
-        ).whenCompleteAsync { it, _ ->
-            context.sendResponse(SendMessageResponse::class.java.simpleName, context.gson.toJson(SendMessageResponse(it.id)), request.responseId)
+            context.sendResponse(
+                SendMessageResponse::class.java.simpleName,
+                context.gson.toJson(SendMessageResponse(it.id)), request.responseId
+            )
         }
     }
 
@@ -111,17 +73,20 @@ class MessageRequests(private val shardManager: ShardManager) {
             request.responseId,
             context
         ).whenCompleteAsync { channel, _ ->
-            channel.sendMessage(request.message).execute(
+            channel.sendMessage(request.content).execute(
                 SendMessageResponse::class.java.simpleName,
                 request.responseId,
                 context
             ).whenCompleteAsync { it, _ ->
-                context.sendResponse(SendMessageResponse::class.java.simpleName, context.gson.toJson(SendMessageResponse(it.id)), request.responseId)
+                context.sendResponse(
+                    SendMessageResponse::class.java.simpleName,
+                    context.gson.toJson(SendMessageResponse(it.id)), request.responseId
+                )
             }
         }
     }
 
-    fun consume(request: EditMessageRequest) {
+    fun consume(request: EditMessageRequest, context: SocketContext) {
         val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
             ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
 
@@ -130,29 +95,20 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        channel.editMessageById(request.messageId, request.message).queue()
-    }
+        val editMessage = channel.editMessageById(request.messageId, request.content)
+        request.embed?.let { editMessage.setEmbeds(it.toJda()) }
+        request.buttons?.let { editMessage.setComponents(it.toJda()) }
+        request.menu?.let { editMessage.setActionRow(it.toJda()) }
 
-    fun consume(request: EditEmbedRequest, context: SocketContext) {
-        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
-            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
-
-        if (channel == null) {
-            val msg = "Received EditEmbedRequest for channel ${request.channel} which was not found"
-            log.error(msg)
-            context.sendResponse(SendMessageResponse::class.java.simpleName, msg, request.responseId, false, false)
-            return
-        }
-
-        channel.editMessageEmbedsById(request.messageId, request.embed.toJda()).queue({
-            context.sendResponse(EditEmbedResponse::class.java.simpleName, context.gson.toJson(EditEmbedResponse(
+        editMessage.queue({
+            context.sendResponse(EditMessageResponse::class.java.simpleName, context.gson.toJson(EditMessageResponse(
                 it.id,
                 it.guild.id,
                 true,
                 null
             )), request.responseId)
         }, {
-            context.sendResponse(EditEmbedResponse::class.java.simpleName, context.gson.toJson(EditEmbedResponse(
+            context.sendResponse(EditMessageResponse::class.java.simpleName, context.gson.toJson(EditMessageResponse(
                 request.messageId,
                 channel.guild.id,
                 false,
@@ -249,11 +205,11 @@ class MessageRequests(private val shardManager: ShardManager) {
 
         if (guild != null) {
             val interaction = CommandInteractionImpl(guild.jda as JDAImpl, dataObject)
-            interaction.reply(request.message).setEphemeral(true).queue()
+            interaction.reply(request.content).setEphemeral(true).queue()
         } else { // DM
             shardManager.retrieveUserById(request.userId).queue {
                 val interaction = CommandInteractionImpl(it.jda as JDAImpl, dataObject)
-                interaction.reply(request.message).setEphemeral(true).queue()
+                interaction.reply(request.content).setEphemeral(true).queue()
             }
         }
     }
@@ -264,7 +220,9 @@ class MessageRequests(private val shardManager: ShardManager) {
         if (guild == null) {
             val msg = "Received SendSlashCommandRequest for guild ${request.guildId} which was not found"
             log.error(msg)
-            context.sendResponse(SendMessageResponse::class.java.simpleName, msg, request.responseId, false, false)
+            context.sendResponse(
+                SendMessageResponse::class.java.simpleName, msg, request.responseId, false, false
+            )
             return
         }
 
@@ -273,7 +231,12 @@ class MessageRequests(private val shardManager: ShardManager) {
         )
 
         if (request.ephemeral) {
-            interaction.reply(request.message).setEphemeral(true).execute(
+            val reply = interaction.reply(request.content)
+            reply.setEphemeral(true)
+            request.embed?.let { reply.setEmbeds(it.toJda()) }
+            request.buttons?.let { reply.setComponents(it.toJda()) }
+            request.menu?.let { reply.setActionRow(it.toJda()) }
+            reply.execute(
                 SendMessageResponse::class.java.simpleName,
                 request.responseId,
                 context
@@ -283,103 +246,29 @@ class MessageRequests(private val shardManager: ShardManager) {
                     request.responseId,
                     context
                 ).whenCompleteAsync { it, _ ->
-                    context.sendResponse(SendMessageResponse::class.java.simpleName, context.gson.toJson(SendMessageResponse(it.id)), request.responseId)
+                    context.sendResponse(
+                        SendMessageResponse::class.java.simpleName,
+                        context.gson.toJson(SendMessageResponse(it.id)), request.responseId
+                    )
                 }
             }
         } else {
             val hook = interaction.hook as InteractionHookImpl
             hook.ack()
             hook.ready()
-            hook.editOriginal(request.message).execute(
+            val edit = hook.editOriginal(request.content)
+            request.embed?.let { edit.setEmbeds(it.toJda()) }
+            request.buttons?.let { edit.setComponents(it.toJda()) }
+            request.menu?.let { edit.setActionRow(it.toJda()) }
+            edit.execute(
                 SendMessageResponse::class.java.simpleName,
                 request.responseId,
                 context
             ).whenCompleteAsync { it, _ ->
-                context.sendResponse(SendMessageResponse::class.java.simpleName, context.gson.toJson(SendMessageResponse(it.id)), request.responseId)
-            }
-        }
-    }
-
-    fun consume(request: SendSlashEmbedCommandRequest, context: SocketContext) {
-        val guild: Guild? = shardManager.getGuildById(request.guildId)
-
-        if (guild == null) {
-            val msg = "Received SendSlashEmbedCommandRequest for guild ${request.guildId} which was not found"
-            log.error(msg)
-            context.sendResponse(SendMessageResponse::class.java.simpleName, msg, request.responseId, false, false)
-            return
-        }
-
-        val interaction = CommandInteractionImpl(
-            guild.jda as JDAImpl, DataObject.fromJson(request.interaction).getObject("d")
-        )
-
-        if (request.ephemeral) {
-            interaction.replyEmbeds(request.message.toJda()).setEphemeral(true).execute(
-                SendMessageResponse::class.java.simpleName,
-                request.responseId,
-                context
-            ).whenCompleteAsync { hook, _ ->
-                hook.retrieveOriginal().execute(
+                context.sendResponse(
                     SendMessageResponse::class.java.simpleName,
-                    request.responseId,
-                    context
-                ).whenCompleteAsync { it, _ ->
-                    context.sendResponse(SendMessageResponse::class.java.simpleName, context.gson.toJson(SendMessageResponse(it.id)), request.responseId)
-                }
-            }
-        } else {
-            val hook = interaction.hook as InteractionHookImpl
-            hook.ack()
-            hook.ready()
-            hook.editOriginalEmbeds(request.message.toJda()).execute(
-                SendMessageResponse::class.java.simpleName,
-                request.responseId,
-                context
-            ).whenCompleteAsync { it, _ ->
-                context.sendResponse(SendMessageResponse::class.java.simpleName, context.gson.toJson(SendMessageResponse(it.id)), request.responseId)
-            }
-        }
-    }
-
-    fun consume(request: SendSlashMenuCommandRequest, context: SocketContext) {
-        val guild: Guild? = shardManager.getGuildById(request.guildId)
-
-        if (guild == null) {
-            val msg = "Received SendSlashMenuCommandRequest for guild ${request.guildId} which was not found"
-            log.error(msg)
-            context.sendResponse(SendMessageResponse::class.java.simpleName, msg, request.responseId, false, false)
-            return
-        }
-
-        val interaction = StringSelectInteractionImpl(
-            guild.jda as JDAImpl, DataObject.fromJson(request.interaction).getObject("d")
-        )
-
-        if (request.ephemeral) {
-            interaction.reply(request.message).setEphemeral(true).execute(
-                SendMessageResponse::class.java.simpleName,
-                request.responseId,
-                context
-            ).whenCompleteAsync { hook, _ ->
-                hook.retrieveOriginal().execute(
-                    SendMessageResponse::class.java.simpleName,
-                    request.responseId,
-                    context
-                ).whenCompleteAsync { it, _ ->
-                    context.sendResponse(SendMessageResponse::class.java.simpleName, context.gson.toJson(SendMessageResponse(it.id)), request.responseId)
-                }
-            }
-        } else {
-            val hook = interaction.hook as InteractionHookImpl
-            hook.ack()
-            hook.ready()
-            hook.editOriginal(request.message).execute(
-                SendMessageResponse::class.java.simpleName,
-                request.responseId,
-                context
-            ).whenCompleteAsync { it, _ ->
-                context.sendResponse(SendMessageResponse::class.java.simpleName, context.gson.toJson(SendMessageResponse(it.id)), request.responseId)
+                    context.gson.toJson(SendMessageResponse(it.id)), request.responseId
+                )
             }
         }
     }
@@ -399,7 +288,11 @@ class MessageRequests(private val shardManager: ShardManager) {
         val hook = interaction.hook as InteractionHookImpl
         hook.ack()
         hook.ready()
-        hook.editOriginal(request.message).queue()
+        val edit = hook.editOriginal(request.content)
+        request.embed?.let { edit.setEmbeds(it.toJda()) }
+        request.buttons?.let { edit.setComponents(it.toJda()) }
+        request.menu?.let { edit.setActionRow(it.toJda()) }
+        edit.queue()
     }
 
     fun consume(request: SlashDeferReplyRequest) {
@@ -425,78 +318,10 @@ class MessageRequests(private val shardManager: ShardManager) {
             return
         }
 
-        val interaction = CommandAutoCompleteInteractionImpl((guild.jda as JDAImpl), DataObject.fromJson(request.interaction).getObject("d"))
+        val interaction = CommandAutoCompleteInteractionImpl(
+            guild.jda as JDAImpl,
+            DataObject.fromJson(request.interaction).getObject("d")
+        )
         interaction.replyChoices(request.autoCompletion.toJda()).queue()
-    }
-
-    /**
-     * Components
-     */
-
-    fun consume(request: SendMessageButtonsRequest) {
-        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
-            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
-
-        if (channel == null) {
-            log.error("Received SendMessageButtonsRequest for channel ${request.channel} which was not found")
-            return
-        }
-
-        channel.sendMessage(request.message).setComponents(request.buttons.toJda()).queue()
-    }
-
-    fun consume(request: SendMessageSelectionMenuRequest) {
-        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
-            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
-
-        if (channel == null) {
-            log.error("Received SendMessageSelectionMenuRequest for channel ${request.channel} which was not found")
-            return
-        }
-
-        channel.sendMessage(request.message).setActionRow(request.menu.toJda()).queue()
-    }
-
-    fun consume(request: EditButtonsRequest) {
-        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
-            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
-
-        if (channel == null) {
-            log.error("Received EditButtonsRequest for channel ${request.channel} which was not found")
-            return
-        }
-
-        channel.editMessageComponentsById(request.messageId, request.buttons.toJda()).queue()
-    }
-
-    fun consume(request: EditSelectionMenuRequest) {
-        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
-            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
-
-        if (channel == null) {
-            log.error("Received EditSelectionMenuRequest for channel ${request.channel} which was not found")
-            return
-        }
-
-        channel.editMessageComponentsById(request.messageId, ActionRow.of(request.menu.toJda())).queue()
-    }
-
-    fun consume(request: RemoveComponentsRequest) {
-        if (request.messageId == "0") return
-        val channel = shardManager.getChannelById(TextChannel::class.java, request.channel)
-            ?: shardManager.getChannelById(NewsChannel::class.java, request.channel)
-
-        if (channel == null) {
-            log.error("Received RemoveComponentsRequest for channel ${request.channel} which was not found")
-            return
-        }
-
-        channel.retrieveMessageById(request.messageId).queue { message ->
-            val components: List<ActionRow> = ArrayList(message.actionRows)
-            val ids = ArrayList<String>()
-            message.actionRows.forEach { actionRow -> actionRow.components.forEach { ids.add((it as ActionComponent).id!!) } }
-            ids.forEach { LayoutComponent.updateComponent(components, it, null) }
-            channel.editMessageComponentsById(request.messageId, components).queue()
-        }
     }
 }

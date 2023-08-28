@@ -28,21 +28,17 @@ data class GuildRequest(
 /** Returns [SendMessageResponse]*/
 data class SendMessageRequest(
     val channel: String,
-    val message: String,
-    val responseId: String
-)
-
-/** Returns [SendMessageResponse]*/
-data class SendEmbedRequest(
-    val channel: String,
-    val embed: Embed,
+    val content: String,
+    val embed: Embed?,
+    val buttons: Buttons?,
+    val menu: SelectMenu?,
     val responseId: String
 )
 
 /** Returns [SendMessageResponse]*/
 data class SendPrivateMessageRequest(
     val recipient: String,
-    val message: String,
+    val content: String,
     val responseId: String
 )
 
@@ -50,22 +46,18 @@ data class SendMessageResponse(
     val messageId: String
 )
 
-/** Returns [Unit]*/
+/** Returns [EditMessageResponse]*/
 data class EditMessageRequest(
     val channel: String,
     val messageId: String,
-    val message: String
-)
-
-/** Returns [EditEmbedResponse]*/
-data class EditEmbedRequest(
-    val channel: String,
-    val messageId: String,
-    val embed: Embed,
+    val content: String,
+    val embed: Embed?,
+    val buttons: Buttons?,
+    val menu: SelectMenu?,
     val responseId: String
 )
 
-data class EditEmbedResponse(
+data class EditMessageResponse(
     val messageId: String,
     val guildId: String,
     val successful: Boolean,
@@ -114,7 +106,7 @@ data class SendTypingRequest(
 data class SendContextCommandRequest(
     val interaction: ByteArray,
     val userId: String,
-    val message: String
+    val content: String
 )
 
 /** Returns [SendMessageResponse]*/
@@ -123,36 +115,20 @@ data class SendSlashCommandRequest(
     val guildId: String,
     val channelId: String,
     val userId: String,
-    val message: String,
-    val ephemeral: Boolean,
-    val responseId: String
-)
-
-/** Returns [SendMessageResponse]*/
-data class SendSlashEmbedCommandRequest(
-    val interaction: ByteArray,
-    val guildId: String,
-    val channelId: String,
-    val userId: String,
-    val message: Embed,
-    val ephemeral: Boolean,
-    val responseId: String
-)
-
-/** Returns [SendMessageResponse]*/
-data class SendSlashMenuCommandRequest(
-    val interaction: ByteArray,
-    val guildId: String,
-    val channelId: String,
-    val userId: String,
-    val message: String,
+    val content: String,
+    val embed: Embed?,
+    val buttons: Buttons?,
+    val menu: SelectMenu?,
     val ephemeral: Boolean,
     val responseId: String
 )
 
 data class EditSlashCommandRequest(
     val interaction: ByteArray,
-    val message: String,
+    val content: String,
+    val embed: Embed?,
+    val buttons: Buttons?,
+    val menu: SelectMenu?,
     val guildId: String
 )
 
@@ -167,44 +143,6 @@ data class SlashAutoCompleteRequest(
     val channelId: String,
     val userId: String,
     val autoCompletion: Choices
-)
-
-/**
- * Components
- */
-
-/** Returns [Unit]*/
-data class SendMessageButtonsRequest(
-    val channel: String,
-    val message: String,
-    val buttons: Buttons
-)
-
-/** Returns [Unit]*/
-data class SendMessageSelectionMenuRequest(
-    val channel: String,
-    val message: String,
-    val menu: SelectMenu
-)
-
-/** Returns [Unit]*/
-data class EditButtonsRequest(
-    val channel: String,
-    val messageId: String,
-    val buttons: Buttons
-)
-
-/** Returns [Unit]*/
-data class EditSelectionMenuRequest(
-    val channel: String,
-    val messageId: String,
-    val menu: SelectMenu
-)
-
-/** Returns [Unit]*/
-data class RemoveComponentsRequest(
-    val channel: String,
-    val messageId: String
 )
 
 /** Returns [PermissionCheckResponse]*/
@@ -269,11 +207,11 @@ data class SentinelInfoResponse(
     val shards: List<ExtendedShardInfo>?
 )
 
-/** For the ;;shards command */
+/** For the shards command */
 data class ExtendedShardInfo(
     val shard: Shard,
-    val guilds: Int,
-    val users: Int
+    val guilds: String,
+    val users: String
 )
 
 /** Dump all user IDs to a [List] with [String]s */

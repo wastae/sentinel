@@ -100,7 +100,7 @@ class RemoteSessionController(
 
     /* Handle gateway and global ratelimit */
 
-    override fun getGlobalRatelimit(): Long = globalRatelimit.get()
+    override fun getGlobalRatelimit(): Long = globalRatelimit.classic
 
     override fun setGlobalRatelimit(ratelimit: Long) {
         // This event should be sent to all other sentinels
@@ -109,7 +109,7 @@ class RemoteSessionController(
         //        ratelimit
         //    )))
         //}
-        globalRatelimit.set(ratelimit)
+        globalRatelimit.classic = ratelimit
     }
 
     override fun getGateway(): String {

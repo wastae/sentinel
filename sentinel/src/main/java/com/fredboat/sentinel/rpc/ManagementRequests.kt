@@ -63,7 +63,7 @@ class ManagementRequests(private val shardManager: ShardManager) {
         context.sendResponse(SentinelInfoResponse::class.java.simpleName, context.gson.toJson(SentinelInfoResponse(
             shardManager.guildCache.size().toString(),
             shardManager.userCache.size().toString(),
-            shardManager.roleCache.size().toString(),
+            "0", // shardManager.roleCache.size().toString(),
             shardManager.categoryCache.size().toString(),
             shardManager.textChannelCache.size().toString(),
             shardManager.voiceChannelCache.size().toString(),

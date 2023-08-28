@@ -49,7 +49,6 @@ dependencies {
 //        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-tomcat'
 //    }
     compile "org.springframework.boot:spring-boot-starter-undertow:$bootVersion"
-    compile "io.projectreactor:reactor-core:$reactorVersion"
     annotationProcessor "org.springframework.boot:spring-boot-configuration-processor:$bootVersion"
     compile "com.google.code.gson:gson:$gsonVersion"
     compile "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonKotlinVersion"

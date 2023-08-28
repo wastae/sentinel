@@ -34,8 +34,8 @@ fun JDA.toEntity() = Shard(
 
 fun JDA.toEntityExtended() = ExtendedShardInfo(
     toEntity(),
-    guildCache.size().toInt(),
-    userCache.size().toInt()
+    guildCache.size().toString(),
+    userCache.size().toString()
 )
 
 fun net.dv8tion.jda.api.entities.Guild.toEntity(updateCache: VoiceServerUpdateCache) = Guild(

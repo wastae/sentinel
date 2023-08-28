@@ -2,34 +2,8 @@ package com.fredboat.sentinel.io
 
 import com.fredboat.sentinel.config.RoutingKey
 import com.fredboat.sentinel.config.SentinelProperties
-import com.fredboat.sentinel.entities.ButtonEvent
-import com.fredboat.sentinel.entities.ChannelPermissionsUpdate
-import com.fredboat.sentinel.entities.ContextCommandsEvent
-import com.fredboat.sentinel.entities.GuildMemberCreate
-import com.fredboat.sentinel.entities.GuildMemberDelete
-import com.fredboat.sentinel.entities.GuildMemberUpdate
-import com.fredboat.sentinel.entities.GuildUpdateLiteEvent
-import com.fredboat.sentinel.entities.LifecycleEventEnum
-import com.fredboat.sentinel.entities.PrivateMessageReceivedEvent
-import com.fredboat.sentinel.entities.RoleCreate
-import com.fredboat.sentinel.entities.RoleDelete
-import com.fredboat.sentinel.entities.RoleUpdate
-import com.fredboat.sentinel.entities.SelectionMenuEvent
-import com.fredboat.sentinel.entities.ShardLifecycleEvent
-import com.fredboat.sentinel.entities.ShardStatusChange
-import com.fredboat.sentinel.entities.SlashAutoCompleteEvent
-import com.fredboat.sentinel.entities.SlashCommandsEvent
-import com.fredboat.sentinel.entities.TextChannelCreate
-import com.fredboat.sentinel.entities.TextChannelDelete
-import com.fredboat.sentinel.entities.TextChannelUpdate
-import com.fredboat.sentinel.entities.VoiceChannelCreate
-import com.fredboat.sentinel.entities.VoiceChannelDelete
-import com.fredboat.sentinel.entities.VoiceChannelUpdate
-import com.fredboat.sentinel.entities.VoiceJoinEvent
-import com.fredboat.sentinel.entities.VoiceLeaveEvent
-import com.fredboat.sentinel.entities.VoiceMoveEvent
+import com.fredboat.sentinel.entities.*
 import com.fredboat.sentinel.jda.SubscriptionCache
-import com.fredboat.sentinel.jda.VoiceServerUpdateCache
 import com.fredboat.sentinel.metrics.Counters
 import com.fredboat.sentinel.rpc.FanoutConsumer
 import com.fredboat.sentinel.util.toEntity
@@ -42,11 +16,9 @@ import io.undertow.websockets.core.WebSocketCallback
 import io.undertow.websockets.core.WebSocketChannel
 import io.undertow.websockets.core.WebSockets
 import io.undertow.websockets.jsr.UndertowSession
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.MessageType
 import net.dv8tion.jda.api.entities.channel.ChannelType
@@ -87,11 +59,7 @@ import net.dv8tion.jda.api.events.role.RoleCreateEvent
 import net.dv8tion.jda.api.events.role.RoleDeleteEvent
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePermissionsEvent
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePositionEvent
-import net.dv8tion.jda.api.events.session.ReadyEvent
-import net.dv8tion.jda.api.events.session.SessionDisconnectEvent
-import net.dv8tion.jda.api.events.session.SessionRecreateEvent
-import net.dv8tion.jda.api.events.session.SessionResumeEvent
-import net.dv8tion.jda.api.events.session.ShutdownEvent
+import net.dv8tion.jda.api.events.session.*
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.internal.utils.PermissionUtil
@@ -100,6 +68,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.web.socket.WebSocketSession
 import org.springframework.web.socket.adapter.standard.StandardWebSocketSession
+import java.util.concurrent.*
 
 class SocketContext internal constructor(
     private val sentinelProperties: SentinelProperties,
@@ -123,7 +92,7 @@ class SocketContext internal constructor(
     var resumeTimeout = 60L // Seconds
     private var sessionTimeoutFuture: ScheduledFuture<Unit>? = null
     private var jdaWebsocketEventListener: JdaWebsocketEventListener?
-    private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+    private val scheduledExecutor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
     init {
         jdaWebsocketEventListener = JdaWebsocketEventListener(gson, subscriptionCache)
@@ -135,7 +104,7 @@ class SocketContext internal constructor(
 
     fun pause() {
         sessionPaused = true
-        sessionTimeoutFuture = executor.schedule<Unit>({
+        sessionTimeoutFuture = scheduledExecutor.schedule<Unit>({
             socketServer.onSessionResumeTimeout(this)
         }, resumeTimeout, TimeUnit.SECONDS)
     }
@@ -160,13 +129,19 @@ class SocketContext internal constructor(
     }
 
     private fun sendEvent(eventType: String, eventObject: String) {
-        val out = JSONObject()
-        out.put("op", "event")
-        out.put("routingKey", key)
-        out.put("type", eventType)
-        out.put("object", JSONObject(eventObject))
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val out = JSONObject()
+                out.put("op", "event")
+                out.put("routingKey", key)
+                out.put("type", eventType)
+                out.put("object", JSONObject(eventObject))
 
-        send(out)
+                send(out)
+            } catch (e: Exception) {
+                log.error("Exception while sending websocket message", e)
+            }
+        }
     }
 
     /**
@@ -264,14 +239,14 @@ class SocketContext internal constructor(
         /* Guild jda */
 
         override fun onGuildJoin(event: GuildJoinEvent) {
-            sendEvent(com.fredboat.sentinel.entities.GuildJoinEvent::class.java.simpleName, gson.toJson(com.fredboat.sentinel.entities.GuildJoinEvent(
+            sendEvent(com.fredboat.sentinel.entities.GuildJoinEvent::class.java.simpleName, gson.toJson(GuildJoinEvent(
                 event.guild.id,
                 event.guild.locale.locale
             )))
         }
 
         override fun onGuildLeave(event: GuildLeaveEvent) {
-            sendEvent(com.fredboat.sentinel.entities.GuildLeaveEvent::class.java.simpleName, gson.toJson(com.fredboat.sentinel.entities.GuildLeaveEvent(
+            sendEvent(com.fredboat.sentinel.entities.GuildLeaveEvent::class.java.simpleName, gson.toJson(GuildLeaveEvent(
                 event.guild.id,
                 (event.guild.selfMember.timeJoined.toEpochSecond() * 1000).toString()
             )))
@@ -351,7 +326,7 @@ class SocketContext internal constructor(
             if (event.message.type != MessageType.DEFAULT) return
             if (event.isWebhookMessage) return
             if (event.isFromGuild && !event.channelType.isThread && !event.channelType.isAudio) {
-                sendEvent(com.fredboat.sentinel.entities.MessageReceivedEvent::class.java.simpleName, gson.toJson(com.fredboat.sentinel.entities.MessageReceivedEvent(
+                sendEvent(com.fredboat.sentinel.entities.MessageReceivedEvent::class.java.simpleName, gson.toJson(MessageReceivedEvent(
                     event.message.id,
                     event.message.guild.id,
                     event.channel.id,
@@ -371,7 +346,7 @@ class SocketContext internal constructor(
         }
 
         override fun onMessageDelete(event: MessageDeleteEvent) {
-            sendEvent(com.fredboat.sentinel.entities.MessageDeleteEvent::class.java.simpleName, gson.toJson(com.fredboat.sentinel.entities.MessageDeleteEvent(
+            sendEvent(com.fredboat.sentinel.entities.MessageDeleteEvent::class.java.simpleName, gson.toJson(MessageDeleteEvent(
                 event.messageId,
                 event.guild.id,
                 event.channel.id
@@ -383,7 +358,7 @@ class SocketContext internal constructor(
             if (event.member == null) return
             if (!subscriptionCache.contains(event.guild.idLong)) return
 
-            sendEvent(com.fredboat.sentinel.entities.MessageReactionAddEvent::class.java.simpleName, gson.toJson(com.fredboat.sentinel.entities.MessageReactionAddEvent(
+            sendEvent(com.fredboat.sentinel.entities.MessageReactionAddEvent::class.java.simpleName, gson.toJson(MessageReactionAddEvent(
                 event.messageId,
                 event.guild.id,
                 event.channel.id,
