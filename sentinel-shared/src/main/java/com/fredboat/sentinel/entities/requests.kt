@@ -124,7 +124,7 @@ data class SendSlashRequest(
 data class EditSlashRequest(
     val interaction: ByteArray,
     val guildId: String,
-    val content: String,
+    val content: String?,
     val embed: Embed?,
     val buttons: Buttons?,
     val menu: SelectMenu?
