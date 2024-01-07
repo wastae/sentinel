@@ -12,6 +12,7 @@ package com.fredboat.sentinel.entities
 data class GuildInfo(
     val id: String,
     val iconUrl: String?,
+    val bannerUrl: String?,
     val onlineMembers: Int,
     val verificationLevel: String
 )

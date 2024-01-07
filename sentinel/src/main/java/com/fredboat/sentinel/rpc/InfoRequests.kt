@@ -47,6 +47,7 @@ class InfoRequests(private val shardManager: ShardManager) {
             context.sendResponse(GuildInfo::class.java.simpleName, context.gson.toJson(GuildInfo(
                 id,
                 iconUrl,
+                bannerUrl,
                 memberCache.count { it.onlineStatus != OnlineStatus.OFFLINE },
                 verificationLevel.name
             )), request.responseId)
