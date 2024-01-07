@@ -143,8 +143,8 @@ class InfoRequests(private val shardManager: ShardManager) {
             context.sendResponse(MemberInfo::class.java.simpleName, context.gson.toJson(MemberInfo(
                 it.user.id,
                 it.user.name,
+                it.user.globalName,
                 it.nickname,
-                it.user.discriminator,
                 it.guild.id,
                 it.user.effectiveAvatarUrl,
                 it.color?.rgb,
@@ -186,7 +186,7 @@ class InfoRequests(private val shardManager: ShardManager) {
             context.sendResponse(UserInfo::class.java.simpleName, context.gson.toJson(UserInfo(
                 it.id,
                 it.name,
-                it.discriminator,
+                it.globalName,
                 it.effectiveAvatarUrl,
                 it.isBot,
                 it.mutualGuilds.map { it.id }

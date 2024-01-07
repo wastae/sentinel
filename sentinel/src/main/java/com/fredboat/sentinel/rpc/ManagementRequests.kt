@@ -18,11 +18,17 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.sharding.ShardManager
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.*
 
 @Service
 class ManagementRequests(private val shardManager: ShardManager) {
+
+    companion object {
+        private val log: Logger = LoggerFactory.getLogger(ManagementRequests::class.java)
+    }
 
     //fun consume(request: ModRequest) {
     //    val guild = shardManager.getGuildById(request.guildId)
@@ -64,7 +70,7 @@ class ManagementRequests(private val shardManager: ShardManager) {
             shardManager.guildCache.size().toString(),
             shardManager.userCache.size().toString(),
             "0", // shardManager.roleCache.size().toString(),
-            shardManager.categoryCache.size().toString(),
+            "0", // shardManager.categoryCache.size().toString(),
             shardManager.textChannelCache.size().toString(),
             shardManager.voiceChannelCache.size().toString(),
             if (request.includeShards) shardManager.shards.map { it.toEntityExtended() } else null

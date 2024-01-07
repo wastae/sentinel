@@ -424,7 +424,6 @@ class SocketContext internal constructor(
                 return
             }
             if (event.guild == null) return
-            if (event.channel == null) return
             if (event.rawData == null) return
 
             if (event.focusedOption.value.isEmpty()) {
@@ -435,7 +434,7 @@ class SocketContext internal constructor(
             sendEvent(SlashAutoCompleteEvent::class.java.simpleName, gson.toJson(SlashAutoCompleteEvent(
                 event.rawData!!.toJson(),
                 event.guild!!.id,
-                event.channel!!.id,
+                event.channel.id,
                 PermissionUtil.getEffectivePermission((event.channel as GuildChannel).permissionContainer, event.guild!!.selfMember).toString(),
                 PermissionUtil.getEffectivePermission((event.channel as GuildChannel).permissionContainer, event.member).toString(),
                 event.member!!.id,

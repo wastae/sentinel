@@ -33,8 +33,8 @@ data class RoleInfoRequest(val id: String, val responseId: String)
 data class MemberInfo(
     val id: String,
     val name: String,
+    val globalName: String?,
     val nickname: String?,
-    val discrim: String,
     val guildId: String,
     val avatarUrl: String,
     val colorRgb: Int?,
@@ -65,7 +65,7 @@ data class GetMembersByIdsRequest(val ids: List<String>, val guildId: String, va
 data class UserInfo(
     val id: String,
     val name: String,
-    val discrim: String,
+    val globalName: String?,
     val avatarUrl: String,
     val bot: Boolean,
     val mutualGuilds: List<String>

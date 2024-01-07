@@ -65,7 +65,7 @@ fun net.dv8tion.jda.api.entities.Guild.toEntityLite() = GuildLite(
 fun net.dv8tion.jda.api.entities.User.toEntity() = User(
     id,
     name,
-    discriminator,
+    globalName,
     effectiveAvatarUrl,
     isBot
 )
@@ -73,8 +73,8 @@ fun net.dv8tion.jda.api.entities.User.toEntity() = User(
 fun net.dv8tion.jda.api.entities.Member.toEntity() = Member(
     user.id,
     user.name,
+    user.globalName,
     nickname,
-    user.discriminator,
     effectiveAvatarUrl,
     guild.id,
     user.isBot,

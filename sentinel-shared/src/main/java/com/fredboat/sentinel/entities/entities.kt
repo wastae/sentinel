@@ -45,7 +45,7 @@ data class GuildLite(
 data class User(
     val id: String,
     val name: String,
-    val discrim: String,
+    val globalName: String?,
     val avatar: String,
     val bot: Boolean
 )
@@ -53,18 +53,14 @@ data class User(
 data class Member(
     val id: String,
     val name: String,
+    val globalName: String?,
     val nickname: String?,
-    val discrim: String,
     val avatar: String,
     val guildId: String,
     val bot: Boolean,
     val roles: List<String>,
     val permissions: String,
     val voiceChannel: String?
-)
-
-data class RedisMember(
-    val byteArray: ByteArray
 )
 
 data class TextChannel(
