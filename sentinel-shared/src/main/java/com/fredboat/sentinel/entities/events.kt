@@ -65,8 +65,7 @@ data class MessageReceivedEvent(
     val channelPermissions: String,
     val memberPermissions: String,
     val content: String,
-    val author: String,
-    val fromBot: Boolean,
+    val member: Member,
     val attachments: List<String>
 )
 
@@ -87,15 +86,14 @@ data class MessageReactionAddEvent(
     val channel: String,
     val channelPermissions: String,
     val memberPermissions: String,
-    val author: String,
-    val fromBot: Boolean,
+    val member: Member,
     val reaction: String
 )
 
 data class ContextCommandsEvent(
     val interaction: ByteArray,
     val content: String,
-    val author: String,
+    val member: Member,
     val locale: String,
     val routingKey: String
 )
@@ -106,8 +104,7 @@ data class SlashCommandsEvent(
     val channel: String,
     val channelPermissions: String,
     val memberPermissions: String,
-    val author: String,
-    val fromBot: Boolean,
+    val member: Member,
     val locale: String,
     val command: String,
     val options: List<Option>
@@ -119,8 +116,7 @@ data class SlashAutoCompleteEvent(
     val channel: String,
     val channelPermissions: String,
     val memberPermissions: String,
-    val author: String,
-    val fromBot: Boolean,
+    val member: Member,
     val input: String
 )
 
@@ -134,8 +130,7 @@ data class ButtonEvent(
     val messageId: String,
     val guild: String,
     val channel: String,
-    val author: String,
-    val fromBot: Boolean
+    val member: Member
 )
 
 data class SelectionMenuEvent(
@@ -145,6 +140,5 @@ data class SelectionMenuEvent(
     val messageId: String,
     val guild: String,
     val channel: String,
-    val author: String,
-    val fromBot: Boolean
+    val member: Member
 )
