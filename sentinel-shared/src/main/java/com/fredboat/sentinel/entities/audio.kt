@@ -7,6 +7,17 @@
 
 package com.fredboat.sentinel.entities
 
+data class VoiceStateInfoRequest(
+    val guild: String,
+    val responseId: String
+)
+
+data class VoiceStateInfoResponse(
+    val guild: String,
+    val channel: String?,
+    val voiceServerState: VoiceServerUpdate?
+)
+
 data class AudioQueueRequest(
     val type: AudioQueueRequestEnum,
     val guild: String,
