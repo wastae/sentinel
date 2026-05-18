@@ -143,14 +143,14 @@ data class SlashAutoCompleteRequest(
     val autoCompletion: Choices
 )
 
-data class MenuStringSelectRequest(
+data class MenuStringSelectReplyRequest(
     val interaction: ByteArray,
     val guildId: String,
     val content: String?,
     val embed: Embed?,
     val buttons: Buttons?,
     val menu: SelectMenu?,
-    val ephemeral: Boolean,
+    val ephemeral: Boolean
 )
 
 /** Returns [PermissionCheckResponse]*/
