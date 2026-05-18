@@ -82,10 +82,10 @@ data class SlashSubcommand(
  */
 
 data class Buttons(
-    var buttons: MutableList<Button> = mutableListOf()
+    var buttons: MutableList<MinereaButton> = mutableListOf()
 )
 
-data class Button(
+data class MinereaButton(
     var id: String = "",
     var label: String = "",
     var emoji: String = ""
@@ -188,12 +188,12 @@ fun Choices.choice(name: String, value: String) {
  * Components
  */
 
-inline fun Buttons.button(block: Button.() -> Unit) {
-    buttons.add(Button().apply(block))
+inline fun Buttons.button(block: MinereaButton.() -> Unit) {
+    buttons.add(MinereaButton().apply(block))
 }
 
 fun Buttons.button(label: String, value: String) {
-    buttons.add(Button(label, value))
+    buttons.add(MinereaButton(label, value))
 }
 
 inline fun SelectMenu.option(block: Option.() -> Unit) {
