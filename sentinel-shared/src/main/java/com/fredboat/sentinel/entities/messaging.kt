@@ -86,9 +86,11 @@ data class Buttons(
 )
 
 data class MinereaButton(
+    var type: Int = 1,
     var id: String = "",
     var label: String = "",
-    var emoji: String = ""
+    var emoji: String = "",
+    var url: String = ""
 )
 
 data class SelectMenu(
@@ -192,14 +194,6 @@ inline fun Buttons.button(block: MinereaButton.() -> Unit) {
     buttons.add(MinereaButton().apply(block))
 }
 
-fun Buttons.button(label: String, value: String) {
-    buttons.add(MinereaButton(label, value))
-}
-
 inline fun SelectMenu.option(block: Option.() -> Unit) {
     selectOptions.add(Option().apply(block))
-}
-
-fun SelectMenu.option(label: String, value: String) {
-    selectOptions.add(Option(label, value))
 }
