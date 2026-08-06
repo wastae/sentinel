@@ -86,7 +86,7 @@ data class Buttons(
 )
 
 data class MinereaButton(
-    var type: Int = 1,
+    var type: Int,
     var id: String = "",
     var label: String = "",
     var emoji: String = "",
@@ -190,8 +190,8 @@ fun Choices.choice(name: String, value: String) {
  * Components
  */
 
-inline fun Buttons.button(block: MinereaButton.() -> Unit) {
-    buttons.add(MinereaButton().apply(block))
+inline fun Buttons.button(type: Int, block: MinereaButton.() -> Unit) {
+    buttons.add(MinereaButton(type = type).apply(block))
 }
 
 inline fun SelectMenu.option(block: Option.() -> Unit) {
